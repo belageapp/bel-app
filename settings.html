@@ -241,6 +241,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
           <button class="btn btn-primary" onclick="saveWorkdays()" id="wd-save-btn">保存する</button>
           <button class="btn btn-secondary" onclick="initWorkdays()">初期値に戻す</button>
           <span id="wd-status" style="font-size:12px;color:#1D9E75"></span>
+          <span id="wd-total" style="font-size:13px;font-weight:600;color:#185FA5;margin-left:8px"></span>
         </div>
       </div>
       <div id="wd-calendar" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:4px"></div>
@@ -634,6 +635,7 @@ async function loadWorkdays(){
     wdData = generateDefaultWorkdays(year);
   }
   renderCalendar(year);
+  updateYearTotal();
   document.getElementById('wd-status').textContent = '';
 }
 window.loadWorkdays = loadWorkdays;
@@ -708,13 +710,21 @@ window.toggleDay = function(key){
   const count = Object.entries(wdData).filter(([k,v])=>k.startsWith(monthKey)&&v===1).length;
   const countEl = document.getElementById(`count-${monthKey}`);
   if(countEl) countEl.textContent = `稼働${count}日`;
+  updateYearTotal();
 };
+
+function updateYearTotal(){
+  const total = Object.values(wdData).filter(v=>v===1).length;
+  const el = document.getElementById('wd-total');
+  if(el) el.textContent = `年間稼働日数：${total}日`;
+}
 
 window.initWorkdays = function(){
   const year = parseInt(document.getElementById('wd-year').value);
   if(!confirm('初期値（日曜OFF、それ以外ON）にリセットしますか？'))return;
   wdData = generateDefaultWorkdays(year);
   renderCalendar(year);
+  updateYearTotal();
 };
 
 window.saveWorkdays = async function(){
