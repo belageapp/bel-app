@@ -93,8 +93,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const MONTHS=[4,5,6,7,8,9,10,11,12,1,2,3];
-const ML=["4月","5月","6月","7月","8月","9月","10月","11月","12月","1月","2月","3月"];
+const MONTHS_ARR=[4,5,6,7,8,9,10,11,12,1,2,3];
+const ML_ARR=["4月","5月","6月","7月","8月","9月","10月","11月","12月","1月","2月","3月"];
 const BREAK=0.93; const SALARY=0.44;
 let offices=[],prices=[],currentOffice=null,currentYear=2026;
 let wdData={},actualData={};
@@ -155,22 +155,22 @@ window.loadReport=async function(){
   const avn=(mi,key)=>parseFloat(av(mi,key))||0;
 
   // 実績計算
-  const aWd=MONTHS.map((_,i)=>avn(i,'wd'));
-  const aPpl=MONTHS.map((_,i)=>avn(i,'people'));
-  const aBasic=MONTHS.map((_,i)=>avn(i,'basicRev'));
-  const aBody=MONTHS.map((_,i)=>avn(i,'bodyRev'));
-  const aAct=MONTHS.map((_,i)=>avn(i,'actualRev'));
-  const aTreat=MONTHS.map((_,i)=>avn(i,'treatRev'));
-  const aSalaryS=MONTHS.map((_,i)=>avn(i,'salaryStaff'));
-  const aSalaryP=MONTHS.map((_,i)=>avn(i,'salaryPart'));
+  const aWd=MONTHS_ARR.map((_,i)=>avn(i,'wd'));
+  const aPpl=MONTHS_ARR.map((_,i)=>avn(i,'people'));
+  const aBasic=MONTHS_ARR.map((_,i)=>avn(i,'basicRev'));
+  const aBody=MONTHS_ARR.map((_,i)=>avn(i,'bodyRev'));
+  const aAct=MONTHS_ARR.map((_,i)=>avn(i,'actualRev'));
+  const aTreat=MONTHS_ARR.map((_,i)=>avn(i,'treatRev'));
+  const aSalaryS=MONTHS_ARR.map((_,i)=>avn(i,'salaryStaff'));
+  const aSalaryP=MONTHS_ARR.map((_,i)=>avn(i,'salaryPart'));
 
   // 自動計算
-  const aRev=MONTHS.map((_,i)=>aBasic[i]+aBody[i]+aAct[i]+aTreat[i]);
-  const aPpd=MONTHS.map((_,i)=>aWd[i]&&aPpl[i]?(aPpl[i]/aWd[i]):0);
-  const aPdef=MONTHS.map((_,i)=>capacity&&aPpd[i]?(aPpd[i]/capacity):0);
-  const aUnitP=MONTHS.map((_,i)=>aPpl[i]&&aRev[i]?(aRev[i]/aPpl[i]):0);
-  const aSalary=MONTHS.map((_,i)=>aSalaryS[i]+aSalaryP[i]);
-  const aGivRate=MONTHS.map((_,i)=>aRev[i]&&aSalary[i]?(aSalary[i]/aRev[i]):0);
+  const aRev=MONTHS_ARR.map((_,i)=>aBasic[i]+aBody[i]+aAct[i]+aTreat[i]);
+  const aPpd=MONTHS_ARR.map((_,i)=>aWd[i]&&aPpl[i]?(aPpl[i]/aWd[i]):0);
+  const aPdef=MONTHS_ARR.map((_,i)=>capacity&&aPpd[i]?(aPpd[i]/capacity):0);
+  const aUnitP=MONTHS_ARR.map((_,i)=>aPpl[i]&&aRev[i]?(aRev[i]/aPpl[i]):0);
+  const aSalary=MONTHS_ARR.map((_,i)=>aSalaryS[i]+aSalaryP[i]);
+  const aGivRate=MONTHS_ARR.map((_,i)=>aRev[i]&&aSalary[i]?(aSalary[i]/aRev[i]):0);
 
   // 実績小計・合計
   const ah1wd=sum(aWd.slice(0,6)),ah2wd=sum(aWd.slice(6));
@@ -192,10 +192,10 @@ window.loadReport=async function(){
   const atGr=avg(aGivRate.filter(v=>v>0));
 
   // 達成率
-  const achWd=MONTHS.map((_,i)=>wdPerMonth[i]&&aWd[i]?aWd[i]/wdPerMonth[i]:null);
-  const achPpl=MONTHS.map((_,i)=>tpm[i]&&aPpl[i]?aPpl[i]/tpm[i]:null);
-  const achRev=MONTHS.map((_,i)=>tRev[i]&&aRev[i]?aRev[i]/tRev[i]:null);
-  const achGr=MONTHS.map((_,i)=>SALARY&&aGivRate[i]?aGivRate[i]/SALARY:null);
+  const achWd=MONTHS_ARR.map((_,i)=>wdPerMonth[i]&&aWd[i]?aWd[i]/wdPerMonth[i]:null);
+  const achPpl=MONTHS_ARR.map((_,i)=>tpm[i]&&aPpl[i]?aPpl[i]/tpm[i]:null);
+  const achRev=MONTHS_ARR.map((_,i)=>tRev[i]&&aRev[i]?aRev[i]/tRev[i]:null);
+  const achGr=MONTHS_ARR.map((_,i)=>SALARY&&aGivRate[i]?aGivRate[i]/SALARY:null);
   const atAchWd=totalWd&&atWd?atWd/totalWd:null;
   const atAchPpl=totalTpm&&atPpl?atPpl/totalTpm:null;
   const atAchRev=totalTrev&&atRev?atRev/totalTrev:null;
@@ -231,9 +231,9 @@ window.loadReport=async function(){
       </tr>
       <tr>
         <th colspan="2" style="background:#f5f5f5"></th>
-        ${ML.slice(0,6).map(m=>`<th class="th-month">${m}</th>`).join('')}
+        ${ML_ARR.slice(0,6).map(m=>`<th class="th-month">${m}</th>`).join('')}
         <th class="th-total">合計</th>
-        ${ML.slice(6,12).map(m=>`<th class="th-month">${m}</th>`).join('')}
+        ${ML_ARR.slice(6,12).map(m=>`<th class="th-month">${m}</th>`).join('')}
         <th class="th-total">合計</th>
         <th class="th-total" style="background:#0F6E56;color:#fff">合計</th>
       </tr>
@@ -251,20 +251,20 @@ window.loadReport=async function(){
       <tr><td class="row-label">貢献人数／日</td>${Array(6).fill(`<td class="val-break">${bpd||'－'}</td>`).join('')}<td class="val-subtotal">－</td>${Array(6).fill(`<td class="val-break">${bpd||'－'}</td>`).join('')}<td class="val-subtotal">－</td><td class="val-total">－</td></tr>
       <tr><td class="row-label">貢献報酬</td>${bRev.slice(0,6).map(v=>`<td class="val-break">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>${bRev.slice(6).map(v=>`<td class="val-break">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td><td class="val-total">${totalBrev?totalBrev.toLocaleString():'－'}</td></tr>
       <!-- 実績 -->
-      <tr><td class="row-cat-actual" rowspan="12">実　績</td><td class="row-label">稼働日数</td>${MONTHS.map((_,i)=>`<td>${inp(i,'wd',av(i,'wd'))}</td>`).slice(0,6).join('')}<td class="val-subtotal" id="ah1wd">${ah1wd||'－'}</td>${MONTHS.map((_,i)=>`<td>${inp(i,'wd',av(i,'wd'))}</td>`).slice(6).join('')}<td class="val-subtotal" id="ah2wd">${ah2wd||'－'}</td><td class="val-total" id="atwd">${atWd||'－'}</td></tr>
-      <tr><td class="row-label">貢献人数／月</td>${MONTHS.map((_,i)=>`<td>${inp(i,'people',av(i,'people'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS.map((_,i)=>`<td>${inp(i,'people',av(i,'people'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atppl">${atPpl?atPpl.toLocaleString():'－'}</td></tr>
-      <tr><td class="row-label">貢献人数／日</td>${MONTHS.map((_,i)=>`<td class="val-actual" id="appd-${i}">${aPpd[i]?aPpd[i].toFixed(1):'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal" id="ah1ppd">${ah1ppd?ah1ppd.toFixed(1):'－'}</td>${MONTHS.map((_,i)=>`<td class="val-actual" id="appd-${i}">${aPpd[i]?aPpd[i].toFixed(1):'－'}</td>`).slice(6).join('')}<td class="val-subtotal" id="ah2ppd">${ah2ppd?ah2ppd.toFixed(1):'－'}</td><td class="val-total" id="atppd">${atPpd?atPpd.toFixed(1):'－'}</td></tr>
-      <tr><td class="row-label">貢献人数／定員</td>${MONTHS.map((_,i)=>`<td class="val-actual" id="apdef-${i}">${aPdef[i]?(aPdef[i]*100).toFixed(1)+'%':'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal" id="ah1pdef">${ah1pdef?(ah1pdef*100).toFixed(1)+'%':'－'}</td>${MONTHS.map((_,i)=>`<td class="val-actual" id="apdef-${i}">${aPdef[i]?(aPdef[i]*100).toFixed(1)+'%':'－'}</td>`).slice(6).join('')}<td class="val-subtotal" id="ah2pdef">${ah2pdef?(ah2pdef*100).toFixed(1)+'%':'－'}</td><td class="val-total" id="atpdef">${atPdef?(atPdef*100).toFixed(1)+'%':'－'}</td></tr>
-      <tr><td class="row-label">貢献報酬</td>${MONTHS.map((_,i)=>`<td class="val-actual" id="arev-${i}">${aRev[i]?aRev[i].toLocaleString():'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS.map((_,i)=>`<td class="val-actual" id="arev-${i}">${aRev[i]?aRev[i].toLocaleString():'－'}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atrev">${atRev?atRev.toLocaleString():'－'}</td></tr>
-      <tr><td class="row-label-sub">基本報酬</td>${MONTHS.map((_,i)=>`<td>${inp(i,'basicRev',av(i,'basicRev'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS.map((_,i)=>`<td>${inp(i,'basicRev',av(i,'basicRev'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atbasic">${atBasic?atBasic.toLocaleString():'－'}</td></tr>
-      <tr><td class="row-label-sub">体制加算</td>${MONTHS.map((_,i)=>`<td>${inp(i,'bodyRev',av(i,'bodyRev'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS.map((_,i)=>`<td>${inp(i,'bodyRev',av(i,'bodyRev'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atbody">${atBody?atBody.toLocaleString():'－'}</td></tr>
-      <tr><td class="row-label-sub">実績加算</td>${MONTHS.map((_,i)=>`<td>${inp(i,'actualRev',av(i,'actualRev'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS.map((_,i)=>`<td>${inp(i,'actualRev',av(i,'actualRev'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atactrev">${atActRev?atActRev.toLocaleString():'－'}</td></tr>
-      <tr><td class="row-label-sub">処遇改善加算</td>${MONTHS.map((_,i)=>`<td>${inp(i,'treatRev',av(i,'treatRev'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS.map((_,i)=>`<td>${inp(i,'treatRev',av(i,'treatRev'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="attreat">${atTreat?atTreat.toLocaleString():'－'}</td></tr>
-      <tr><td class="row-label">単価</td>${MONTHS.map((_,i)=>`<td class="val-actual" id="aunitp-${i}">${aUnitP[i]?aUnitP[i].toFixed(1):'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal" id="ah1unit">${ah1unit?ah1unit.toFixed(1):'－'}</td>${MONTHS.map((_,i)=>`<td class="val-actual" id="aunitp-${i}">${aUnitP[i]?aUnitP[i].toFixed(1):'－'}</td>`).slice(6).join('')}<td class="val-subtotal" id="ah2unit">${ah2unit?ah2unit.toFixed(1):'－'}</td><td class="val-total" id="atunit">${atUnit?atUnit.toFixed(1):'－'}</td></tr>
-      <tr><td class="row-label">給与額</td>${MONTHS.map((_,i)=>`<td class="val-actual" id="asal-${i}">${aSalary[i]?aSalary[i].toLocaleString():'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS.map((_,i)=>`<td class="val-actual" id="asal-${i}">${aSalary[i]?aSalary[i].toLocaleString():'－'}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atsal">${atSalary?atSalary.toLocaleString():'－'}</td></tr>
-      <tr><td class="row-label-sub">正社員</td>${MONTHS.map((_,i)=>`<td>${inp(i,'salaryStaff',av(i,'salaryStaff'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS.map((_,i)=>`<td>${inp(i,'salaryStaff',av(i,'salaryStaff'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atsals">${atSalaryS?atSalaryS.toLocaleString():'－'}</td></tr>
-      <tr><td class="row-cat-actual" style="background:#E8F5EE"></td><td class="row-label-sub">パート</td>${MONTHS.map((_,i)=>`<td>${inp(i,'salaryPart',av(i,'salaryPart'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS.map((_,i)=>`<td>${inp(i,'salaryPart',av(i,'salaryPart'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atsalp">${atSalaryP?atSalaryP.toLocaleString():'－'}</td></tr>
-      <tr><td class="row-cat-actual" style="background:#E8F5EE"></td><td class="row-label">給与比率</td>${MONTHS.map((_,i)=>`<td class="val-actual" id="agr-${i}">${aGivRate[i]?(aGivRate[i]*100).toFixed(1)+'%':'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal" id="ah1gr">${ah1gr?(ah1gr*100).toFixed(1)+'%':'－'}</td>${MONTHS.map((_,i)=>`<td class="val-actual" id="agr-${i}">${aGivRate[i]?(aGivRate[i]*100).toFixed(1)+'%':'－'}</td>`).slice(6).join('')}<td class="val-subtotal" id="ah2gr">${ah2gr?(ah2gr*100).toFixed(1)+'%':'－'}</td><td class="val-total" id="atgr">${atGr?(atGr*100).toFixed(1)+'%':'－'}</td></tr>
+      <tr><td class="row-cat-actual" rowspan="12">実　績</td><td class="row-label">稼働日数</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'wd',av(i,'wd'))}</td>`).slice(0,6).join('')}<td class="val-subtotal" id="ah1wd">${ah1wd||'－'}</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'wd',av(i,'wd'))}</td>`).slice(6).join('')}<td class="val-subtotal" id="ah2wd">${ah2wd||'－'}</td><td class="val-total" id="atwd">${atWd||'－'}</td></tr>
+      <tr><td class="row-label">貢献人数／月</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'people',av(i,'people'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'people',av(i,'people'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atppl">${atPpl?atPpl.toLocaleString():'－'}</td></tr>
+      <tr><td class="row-label">貢献人数／日</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="appd-${i}">${aPpd[i]?aPpd[i].toFixed(1):'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal" id="ah1ppd">${ah1ppd?ah1ppd.toFixed(1):'－'}</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="appd-${i}">${aPpd[i]?aPpd[i].toFixed(1):'－'}</td>`).slice(6).join('')}<td class="val-subtotal" id="ah2ppd">${ah2ppd?ah2ppd.toFixed(1):'－'}</td><td class="val-total" id="atppd">${atPpd?atPpd.toFixed(1):'－'}</td></tr>
+      <tr><td class="row-label">貢献人数／定員</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="apdef-${i}">${aPdef[i]?(aPdef[i]*100).toFixed(1)+'%':'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal" id="ah1pdef">${ah1pdef?(ah1pdef*100).toFixed(1)+'%':'－'}</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="apdef-${i}">${aPdef[i]?(aPdef[i]*100).toFixed(1)+'%':'－'}</td>`).slice(6).join('')}<td class="val-subtotal" id="ah2pdef">${ah2pdef?(ah2pdef*100).toFixed(1)+'%':'－'}</td><td class="val-total" id="atpdef">${atPdef?(atPdef*100).toFixed(1)+'%':'－'}</td></tr>
+      <tr><td class="row-label">貢献報酬</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="arev-${i}">${aRev[i]?aRev[i].toLocaleString():'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="arev-${i}">${aRev[i]?aRev[i].toLocaleString():'－'}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atrev">${atRev?atRev.toLocaleString():'－'}</td></tr>
+      <tr><td class="row-label-sub">基本報酬</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'basicRev',av(i,'basicRev'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'basicRev',av(i,'basicRev'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atbasic">${atBasic?atBasic.toLocaleString():'－'}</td></tr>
+      <tr><td class="row-label-sub">体制加算</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'bodyRev',av(i,'bodyRev'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'bodyRev',av(i,'bodyRev'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atbody">${atBody?atBody.toLocaleString():'－'}</td></tr>
+      <tr><td class="row-label-sub">実績加算</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'actualRev',av(i,'actualRev'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'actualRev',av(i,'actualRev'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atactrev">${atActRev?atActRev.toLocaleString():'－'}</td></tr>
+      <tr><td class="row-label-sub">処遇改善加算</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'treatRev',av(i,'treatRev'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'treatRev',av(i,'treatRev'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="attreat">${atTreat?atTreat.toLocaleString():'－'}</td></tr>
+      <tr><td class="row-label">単価</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="aunitp-${i}">${aUnitP[i]?aUnitP[i].toFixed(1):'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal" id="ah1unit">${ah1unit?ah1unit.toFixed(1):'－'}</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="aunitp-${i}">${aUnitP[i]?aUnitP[i].toFixed(1):'－'}</td>`).slice(6).join('')}<td class="val-subtotal" id="ah2unit">${ah2unit?ah2unit.toFixed(1):'－'}</td><td class="val-total" id="atunit">${atUnit?atUnit.toFixed(1):'－'}</td></tr>
+      <tr><td class="row-label">給与額</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="asal-${i}">${aSalary[i]?aSalary[i].toLocaleString():'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="asal-${i}">${aSalary[i]?aSalary[i].toLocaleString():'－'}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atsal">${atSalary?atSalary.toLocaleString():'－'}</td></tr>
+      <tr><td class="row-label-sub">正社員</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'salaryStaff',av(i,'salaryStaff'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'salaryStaff',av(i,'salaryStaff'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atsals">${atSalaryS?atSalaryS.toLocaleString():'－'}</td></tr>
+      <tr><td class="row-cat-actual" style="background:#E8F5EE"></td><td class="row-label-sub">パート</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'salaryPart',av(i,'salaryPart'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'salaryPart',av(i,'salaryPart'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atsalp">${atSalaryP?atSalaryP.toLocaleString():'－'}</td></tr>
+      <tr><td class="row-cat-actual" style="background:#E8F5EE"></td><td class="row-label">給与比率</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="agr-${i}">${aGivRate[i]?(aGivRate[i]*100).toFixed(1)+'%':'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal" id="ah1gr">${ah1gr?(ah1gr*100).toFixed(1)+'%':'－'}</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="agr-${i}">${aGivRate[i]?(aGivRate[i]*100).toFixed(1)+'%':'－'}</td>`).slice(6).join('')}<td class="val-subtotal" id="ah2gr">${ah2gr?(ah2gr*100).toFixed(1)+'%':'－'}</td><td class="val-total" id="atgr">${atGr?(atGr*100).toFixed(1)+'%':'－'}</td></tr>
       <!-- 達成率 -->
       <tr><td class="row-cat-achieve" rowspan="4">達成率</td><td class="row-label">稼働日数</td>${achWd.slice(0,6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal">－</td>${achWd.slice(6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal">－</td><td class="val-total ${achClass(atAchWd)}" id="atawd">${fmtPct(atAchWd)}</td></tr>
       <tr><td class="row-label">貢献人数／月</td>${achPpl.slice(0,6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal">－</td>${achPpl.slice(6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal">－</td><td class="val-total ${achClass(atAchPpl)}" id="atappl">${fmtPct(atAchPpl)}</td></tr>
@@ -315,21 +315,21 @@ window.recalc=function(mi){
 
 window.recalcTotals=function(){
   const getInp=(mi,k)=>parseFloat(document.getElementById(`inp-${mi}-${k}`)?.value)||0;
-  const aWd=MONTHS.map((_,i)=>getInp(i,'wd'));
-  const aPpl=MONTHS.map((_,i)=>getInp(i,'people'));
-  const aBasic=MONTHS.map((_,i)=>getInp(i,'basicRev'));
-  const aBody=MONTHS.map((_,i)=>getInp(i,'bodyRev'));
-  const aAct=MONTHS.map((_,i)=>getInp(i,'actualRev'));
-  const aTreat=MONTHS.map((_,i)=>getInp(i,'treatRev'));
-  const aSS=MONTHS.map((_,i)=>getInp(i,'salaryStaff'));
-  const aSP=MONTHS.map((_,i)=>getInp(i,'salaryPart'));
-  const aRev=MONTHS.map((_,i)=>aBasic[i]+aBody[i]+aAct[i]+aTreat[i]);
-  const aPpd=MONTHS.map((_,i)=>aWd[i]&&aPpl[i]?aPpl[i]/aWd[i]:0);
+  const aWd=MONTHS_ARR.map((_,i)=>getInp(i,'wd'));
+  const aPpl=MONTHS_ARR.map((_,i)=>getInp(i,'people'));
+  const aBasic=MONTHS_ARR.map((_,i)=>getInp(i,'basicRev'));
+  const aBody=MONTHS_ARR.map((_,i)=>getInp(i,'bodyRev'));
+  const aAct=MONTHS_ARR.map((_,i)=>getInp(i,'actualRev'));
+  const aTreat=MONTHS_ARR.map((_,i)=>getInp(i,'treatRev'));
+  const aSS=MONTHS_ARR.map((_,i)=>getInp(i,'salaryStaff'));
+  const aSP=MONTHS_ARR.map((_,i)=>getInp(i,'salaryPart'));
+  const aRev=MONTHS_ARR.map((_,i)=>aBasic[i]+aBody[i]+aAct[i]+aTreat[i]);
+  const aPpd=MONTHS_ARR.map((_,i)=>aWd[i]&&aPpl[i]?aPpl[i]/aWd[i]:0);
   const cap=window._capacity||0;
-  const aPdef=MONTHS.map((_,i)=>cap&&aPpd[i]?aPpd[i]/cap:0);
-  const aUnit=MONTHS.map((_,i)=>aPpl[i]&&aRev[i]?aRev[i]/aPpl[i]:0);
-  const aSal=MONTHS.map((_,i)=>aSS[i]+aSP[i]);
-  const aGr=MONTHS.map((_,i)=>aRev[i]&&aSal[i]?aSal[i]/aRev[i]:0);
+  const aPdef=MONTHS_ARR.map((_,i)=>cap&&aPpd[i]?aPpd[i]/cap:0);
+  const aUnit=MONTHS_ARR.map((_,i)=>aPpl[i]&&aRev[i]?aRev[i]/aPpl[i]:0);
+  const aSal=MONTHS_ARR.map((_,i)=>aSS[i]+aSP[i]);
+  const aGr=MONTHS_ARR.map((_,i)=>aRev[i]&&aSal[i]?aSal[i]/aRev[i]:0);
 
   const setEl=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   setEl('ah1wd',sum(aWd.slice(0,6))||'－');
@@ -375,7 +375,7 @@ window.saveActual=async function(){
   const btn=document.getElementById('save-btn');
   btn.textContent='保存中...';btn.disabled=true;
   const months={};
-  MONTHS.forEach((m,i)=>{
+  MONTHS_ARR.forEach((m,i)=>{
     const g=k=>parseFloat(document.getElementById(`inp-${i}-${k}`)?.value)||null;
     months[m]={wd:g('wd'),people:g('people'),basicRev:g('basicRev'),bodyRev:g('bodyRev'),actualRev:g('actualRev'),treatRev:g('treatRev'),salaryStaff:g('salaryStaff'),salaryPart:g('salaryPart')};
   });
