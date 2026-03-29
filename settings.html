@@ -9,209 +9,739 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f0f2f5;min-height:100vh;color:#333}
 .layout{display:flex;min-height:100vh}
 /* サイドバー */
-.sidebar{width:200px;background:#1D9E75;flex-shrink:0;padding:0;position:sticky;top:0;height:100vh}
+.sidebar{width:200px;background:#1D9E75;flex-shrink:0;padding:0}
 .sidebar-title{padding:20px 16px 16px;color:#fff;font-size:15px;font-weight:600;border-bottom:1px solid rgba(255,255,255,0.2)}
 .sidebar-subtitle{font-size:11px;opacity:0.7;font-weight:400;display:block;margin-top:2px}
-.nav-item{display:block;padding:12px 16px;color:rgba(255,255,255,0.85);font-size:13px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-left:3px solid transparent}
+.nav-item{display:block;padding:12px 16px;color:rgba(255,255,255,0.85);font-size:13px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-left:3px solid transparent;transition:all 0.15s}
+.nav-item:hover{background:rgba(255,255,255,0.1);color:#fff}
 .nav-item.active{background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;font-weight:500}
-/* メイン */
+.nav-section{padding:12px 16px 4px;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.5px;text-transform:uppercase}
+.back-link{display:block;padding:12px 16px;color:rgba(255,255,255,0.6);font-size:12px;cursor:pointer;border:none;background:none;width:100%;text-align:left;margin-top:auto;border-top:1px solid rgba(255,255,255,0.15);position:absolute;bottom:0;width:200px}
+.back-link:hover{color:#fff}
+/* メインコンテンツ */
 .main{flex:1;padding:28px 32px;overflow-y:auto}
 .page{display:none}.page.active{display:block}
 .page-header{margin-bottom:24px}
-.page-title{font-size:20px;font-weight:600;color:#1D9E75}
+.page-title{font-size:20px;font-weight:600;color:#1D9E75;margin-bottom:4px}
+.page-desc{font-size:13px;color:#888}
+/* カード */
 .card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:20px;overflow:hidden}
+.card-header{padding:14px 20px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
+.card-title{font-size:14px;font-weight:600;color:#333}
 .card-body{padding:20px}
+/* テーブル */
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{text-align:left;padding:9px 14px;background:#f8f8f8;color:#666;font-weight:500;border-bottom:1px solid #e8e8e8;white-space:nowrap}
+.data-table td{padding:10px 14px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#fafafa}
+/* フォーム */
+.form-row{display:flex;gap:12px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:12px;color:#666;font-weight:500}
+.form-group input,.form-group select{padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;outline:none;background:#fff;color:#333}
+.form-group input:focus,.form-group select:focus{border-color:#1D9E75}
+.form-group input[type="number"]{width:100px}
+/* ボタン */
+.btn{padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;border:none;font-family:inherit;font-weight:500}
+.btn-primary{background:#1D9E75;color:#fff}.btn-primary:hover{background:#0F6E56}
+.btn-secondary{background:#f0f0f0;color:#555;border:1px solid #ddd}.btn-secondary:hover{background:#e8e8e8}
+.btn-danger{background:#fff;color:#E24B4A;border:1px solid #E24B4A}.btn-danger:hover{background:#fff0f0}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-blue{background:#185FA5;color:#fff}.btn-blue:hover{background:#0C447C}
+/* バッジ */
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-green{background:#d4f4e8;color:#0F6E56}
+.badge-blue{background:#ddeef9;color:#185FA5}
+.badge-gray{background:#f0f0f0;color:#666}
+/* ステータス */
 .status-bar{background:#d4f4e8;color:#0F6E56;font-size:12px;padding:8px 14px;border-radius:6px;margin-bottom:14px;display:none}
-
-/* --- カレンダー最終兵器版 --- */
-#wd-calendar {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-top: 15px;
-}
-.cal-month {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    overflow: hidden;
-    width: 100%;
-}
-.cal-month-title {
-    background: #185FA5;
-    color: #fff;
-    font-size: 12px;
-    padding: 10px;
-    display: flex;
-    justify-content: space-between;
-}
-.cal-grid-container {
-    padding: 8px;
-    background: #fff;
-}
-/* 行単位で管理して隙間を防ぐ */
-.cal-row {
-    display: flex;
-    width: 100%;
-}
-.cal-dow, .cal-day {
-    flex: 0 0 calc(100% / 7); /* 7等分を強制 */
-    width: calc(100% / 7);
-    aspect-ratio: 1 / 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    border: 1px solid #eee;
-    margin: 0;
-    box-sizing: border-box;
-}
-.cal-dow {
-    border: none;
-    height: 30px;
-    aspect-ratio: auto;
-    color: #aaa;
-    font-weight: bold;
-    font-size: 10px;
-}
-.cal-dow.sun { color: #E24B4A; }
-.cal-dow.sat { color: #185FA5; }
-
-.cal-day {
-    cursor: pointer;
-    font-weight: 600;
-    background: #fff;
-}
-.cal-day.on { background: #1D9E75 !important; color: #fff; border-color: #0F6E56; }
-.cal-day.off { background: #f9f9f9; color: #ccc; }
-.cal-day.off.sun { background: #FFF0E0; color: #CC6600; }
-.cal-day.off.sat { background: #EBF3FB; color: #185FA5; }
-.cal-day.empty { border: none; cursor: default; pointer-events: none; background: transparent; }
-.cal-day:not(.empty):hover { filter: brightness(0.9); transform: scale(1.05); z-index: 2; }
+.error-bar{background:#fdecea;color:#A32D2D;font-size:12px;padding:8px 14px;border-radius:6px;margin-bottom:14px;display:none}
+/* 空状態 */
+.empty{text-align:center;padding:32px;color:#aaa;font-size:13px}
+/* 単価テーブル特別スタイル */
+.price-input{width:120px;padding:6px 8px;border:1px solid #ddd;border-radius:5px;font-size:13px;font-family:inherit;text-align:right}
+.price-input:focus{outline:none;border-color:#1D9E75}
+.capacity-badge{display:inline-block;background:#EBF3FB;color:#185FA5;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+/* 事業所テーブル */
+.office-price-select{padding:6px 8px;border:1px solid #ddd;border-radius:5px;font-size:12px;font-family:inherit;max-width:180px}
+.office-price-select:focus{outline:none;border-color:#1D9E75}
+.derived-price{font-size:12px;color:#1D9E75;font-weight:500;min-width:80px;display:inline-block}
+.cal-month{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden;min-width:0}
+.cal-month-title{background:#185FA5;color:#fff;font-size:12px;font-weight:600;padding:7px 12px;display:flex;justify-content:space-between;align-items:center}
+.cal-month-count{font-size:11px;opacity:0.85}
+.cal-grid-container{padding:8px;background:#fff}
+.cal-row{display:flex;width:100%}
+.cal-dow,.cal-day{flex:0 0 calc(100% / 7);width:calc(100% / 7);display:flex;align-items:center;justify-content:center;font-size:11px;box-sizing:border-box}
+.cal-dow{height:22px;color:#aaa;font-weight:500;font-size:10px;border:none}
+.cal-dow.sun{color:#E24B4A}
+.cal-dow.sat{color:#185FA5}
+.cal-day{aspect-ratio:1/1;cursor:pointer;font-weight:600;border:1px solid #eee;background:#fff}
+.cal-day.on{background:#1D9E75;color:#fff;border-color:#0F6E56}
+.cal-day.off{background:#f9f9f9;color:#ccc;border-color:#eee}
+.cal-day.off.sun{background:#FFF0E0;color:#CC6600;border-color:#FFDBB0}
+.cal-day.off.sat{background:#EBF3FB;color:#185FA5;border-color:#B5D4F4}
+.cal-day.empty{border:none;cursor:default;pointer-events:none;background:transparent}
+.cal-day:not(.empty):hover{filter:brightness(0.9);transform:scale(1.05);z-index:2}
 </style>
 </head>
 <body>
 <div class="layout">
-    <div class="sidebar">
-        <div class="sidebar-title">初期設定<span class="sidebar-subtitle">貢献人数速報</span></div>
-        <button class="nav-item" onclick="showPage('workdays',this)">稼働日設定</button>
-        <button class="back-link" onclick="location.href='index.html'">← アプリに戻る</button>
-    </div>
+  <div class="sidebar">
+    <div class="sidebar-title">初期設定<span class="sidebar-subtitle">貢献人数速報</span></div>
+    <div class="nav-section">マスタ設定</div>
+    <button class="nav-item active" onclick="showPage('service-types',this)">施設種別</button>
+    <button class="nav-item" onclick="showPage('prices',this)">単価設定</button>
+    <button class="nav-item" onclick="showPage('departments',this)">部署</button>
+    <button class="nav-item" onclick="showPage('areas',this)">エリア</button>
+    <button class="nav-item" onclick="showPage('offices',this)">事業所登録</button>
+    <div class="nav-section">年度設定</div>
+    <button class="nav-item" onclick="showPage('workdays',this)">稼働日設定</button>
+    <button class="back-link" onclick="location.href='index.html'">← アプリに戻る</button>
+  </div>
 
-    <div class="main">
-        <div class="status-bar" id="status-bar"></div>
-        
-        <div class="page active" id="page-workdays">
-            <div class="page-header"><div class="page-title">稼働日設定</div></div>
-            <div class="card" style="padding:20px">
-                <div style="display:flex;gap:15px;align-items:flex-end">
-                    <select id="wd-year" onchange="loadWorkdays()"><option value="2026" selected>2026年度</option></select>
-                    <select id="wd-office" style="width:200px" onchange="loadWorkdays()"></select>
-                    <button class="btn btn-primary" onclick="saveWorkdays()" style="background:#1D9E75; color:#fff; padding:8px 16px; border-radius:6px; cursor:pointer; border:none;">保存する</button>
-                </div>
-            </div>
-            <div id="wd-calendar"></div>
+  <div class="main">
+    <!-- ステータス -->
+    <div class="status-bar" id="status-bar"></div>
+    <div class="error-bar" id="error-bar"></div>
+
+    <!-- 施設種別 -->
+    <div class="page active" id="page-service-types">
+      <div class="page-header">
+        <div class="page-title">施設種別</div>
+        <div class="page-desc">事業所の種別を管理します。種別は単価設定・事業所登録で使用されます。</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">種別一覧</span>
         </div>
+        <div class="card-body">
+          <div class="form-row" style="margin-bottom:16px">
+            <div class="form-group">
+              <label>新しい種別名</label>
+              <input type="text" id="new-type-name" placeholder="例：放デイ" style="width:160px" maxlength="10">
+            </div>
+            <button class="btn btn-primary" onclick="addServiceType()">追加</button>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>種別名</th><th>登録日</th><th>操作</th></tr></thead>
+            <tbody id="type-tbody"><tr><td colspan="3" class="empty">読み込み中...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
-</div>
 
+    <!-- 単価設定 -->
+    <div class="page" id="page-prices">
+      <div class="page-header">
+        <div class="page-title">単価設定</div>
+        <div class="page-desc">施設種別と定員の組み合わせで単価を設定します。</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">単価一覧</span>
+        </div>
+        <div class="card-body">
+          <table class="data-table">
+            <thead><tr><th>施設種別</th><th>定員</th><th>単価（円）</th><th></th><th>操作</th></tr></thead>
+            <tbody id="price-tbody"><tr><td colspan="5" class="empty">読み込み中...</td></tr></tbody>
+          </table>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f0f0">
+            <div style="font-size:13px;font-weight:500;margin-bottom:10px;color:#555">新しい単価を追加</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>施設種別</label>
+                <select id="new-price-type" style="width:120px"></select>
+              </div>
+              <div class="form-group">
+                <label>定員</label>
+                <input type="number" id="new-price-capacity" placeholder="10" min="1" max="100">
+                <span style="font-size:11px;color:#aaa;margin-top:2px">0=定員設定なし</span>
+              </div>
+              <div class="form-group">
+                <label>単価（円）</label>
+                <input type="number" id="new-price-value" placeholder="12400" style="width:120px">
+              </div>
+              <button class="btn btn-blue" onclick="addPrice()">追加</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 部署 -->
+    <div class="page" id="page-departments">
+      <div class="page-header">
+        <div class="page-title">部署</div>
+        <div class="page-desc">事業所が所属する部署を管理します。</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">部署一覧</span></div>
+        <div class="card-body">
+          <div class="form-row" style="margin-bottom:16px">
+            <div class="form-group">
+              <label>新しい部署名</label>
+              <input type="text" id="new-dept-name" placeholder="例：発達支援事業部" style="width:220px">
+            </div>
+            <button class="btn btn-primary" onclick="addDepartment()">追加</button>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>部署名</th><th>事業所数</th><th>登録日</th><th>操作</th></tr></thead>
+            <tbody id="dept-tbody"><tr><td colspan="4" class="empty">読み込み中...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- エリア -->
+    <div class="page" id="page-areas">
+      <div class="page-header">
+        <div class="page-title">エリア</div>
+        <div class="page-desc">事業所が所属するエリアを管理します。</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">エリア一覧</span></div>
+        <div class="card-body">
+          <div class="form-row" style="margin-bottom:16px">
+            <div class="form-group">
+              <label>新しいエリア名</label>
+              <input type="text" id="new-area-name" placeholder="例：広島エリア" style="width:200px">
+            </div>
+            <button class="btn btn-primary" onclick="addArea()">追加</button>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>エリア名</th><th>事業所数</th><th>登録日</th><th>操作</th></tr></thead>
+            <tbody id="area-tbody"><tr><td colspan="4" class="empty">読み込み中...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- 稼働日設定 -->
+    <div class="page" id="page-workdays">
+      <div class="page-header">
+        <div class="page-title">稼働日設定</div>
+        <div class="page-desc">年度・事業所を選択して稼働日をクリックで設定してください。日曜は初期値OFF、それ以外はONです。</div>
+      </div>
+      <div class="card" style="padding:14px 20px">
+        <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
+          <div class="form-group">
+            <label>年度</label>
+            <select id="wd-year" style="width:120px" onchange="loadWorkdays()">
+              <option value="2025">2025年度</option>
+              <option value="2026" selected>2026年度</option>
+              <option value="2027">2027年度</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>事業所</label>
+            <select id="wd-office" style="width:180px" onchange="loadWorkdays()"></select>
+          </div>
+          <button class="btn btn-primary" onclick="saveWorkdays()" id="wd-save-btn">保存する</button>
+          <button class="btn btn-secondary" onclick="initWorkdays()">初期値に戻す</button>
+          <span id="wd-status" style="font-size:12px;color:#1D9E75"></span>
+        </div>
+      </div>
+      <div id="wd-calendar" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:4px;align-items:start"></div>
+    </div>
+
+
+    <!-- 事業所登録 -->
+    <div class="page" id="page-offices">
+      <div class="page-header">
+        <div class="page-title">事業所登録</div>
+        <div class="page-desc">事業所の部署・単価設定を管理します。</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">事業所一覧</span>
+          <button class="btn btn-primary btn-sm" onclick="saveOffices()">変更を保存</button>
+        </div>
+        <div class="card-body">
+          <table class="data-table">
+            <thead><tr><th>事業所名</th><th>部署</th><th>エリア</th><th>単価設定</th><th>単価</th></tr></thead>
+            <tbody id="office-tbody"><tr><td colspan="4" class="empty">読み込み中...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, doc, getDoc, setDoc, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, doc, getDoc, setDoc, addDoc, getDocs, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
-    authDomain: "daily-report-b90e8.firebaseapp.com",
-    projectId: "daily-report-b90e8",
-    storageBucket: "daily-report-b90e8.firebasestorage.app",
-    messagingSenderId: "16569831525",
-    appId: "1:16569831525:web:aa250f2061f762dfe1768c"
+  apiKey: "AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
+  authDomain: "daily-report-b90e8.firebaseapp.com",
+  projectId: "daily-report-b90e8",
+  storageBucket: "daily-report-b90e8.firebasestorage.app",
+  messagingSenderId: "16569831525",
+  appId: "1:16569831525:web:aa250f2061f762dfe1768c"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let wdData = {};
-let officesCache = [];
+const OFFICES_DEFAULT = [
+  {name:"HUGくみのいえ", dept:"発達支援事業部", order:1},
+  {name:"ReadyGO井口", dept:"発達支援事業部", order:2},
+  {name:"ReadyGO八木", dept:"発達支援事業部", order:3},
+  {name:"ReadyGO川内", dept:"発達支援事業部", order:4},
+  {name:"ここいろのいえ", dept:"発達支援事業部", order:5},
+  {name:"にじのいえ", dept:"発達支援事業部", order:6},
+  {name:"はれのいえ", dept:"発達支援事業部", order:7},
+  {name:"まなびあいのいえ", dept:"発達支援事業部", order:8},
+  {name:"ReadyGO高屋", dept:"発達支援事業部", order:9},
+  {name:"ReadyGO黒瀬", dept:"発達支援事業部", order:10},
+  {name:"ぐらっちぇ黒瀬", dept:"発達支援事業部", order:11},
+  {name:"ラフォーレ高陽", dept:"就労生活支援事業部", order:13},
+  {name:"ラフォーレ亀山", dept:"就労生活支援事業部", order:14},
+  {name:"レポ白木", dept:"就労生活支援事業部", order:15}
+];
 
-async function loadOffices() {
-    const snap = await getDocs(collection(db, 'offices'));
-    officesCache = [];
-    snap.forEach(d => officesCache.push({id: d.id, ...d.data()}));
-    document.getElementById('wd-office').innerHTML = officesCache.map(o => `<option value="${o.name}">${o.name}</option>`).join('');
+const DEFAULT_TYPES = [{name:"放デイ",order:1},{name:"児童発",order:2},{name:"生＆Ｂ",order:3},{name:"短期入",order:4}];
+const DEFAULT_DEPTS = ["発達支援事業部","就労生活支援事業部"];
+const DEFAULT_AREAS = ["広島エリア","東広島エリア","安芸エリア"];
+const DEFAULT_PRICES = [
+  {type:"放デイ", capacity:10, price:null, order:1},
+  {type:"放デイ", capacity:20, price:null, order:2},
+  {type:"児童発", capacity:10, price:null, order:3},
+  {type:"生＆Ｂ", capacity:20, price:null, order:4},
+  {type:"短期入", capacity:0, price:null, order:5}
+];
+
+let cache = {types:[], prices:[], depts:[], areas:[], offices:[]};
+
+function showStatus(msg, isErr=false){
+  const el = document.getElementById(isErr?'error-bar':'status-bar');
+  const other = document.getElementById(isErr?'status-bar':'error-bar');
+  other.style.display='none';
+  el.textContent=msg; el.style.display='block';
+  setTimeout(()=>el.style.display='none', 3000);
 }
 
-function renderCalendar(year) {
-    const cal = document.getElementById('wd-calendar');
-    const months = [[year,4],[year,5],[year,6],[year,7],[year,8],[year,9],[year,10],[year,11],[year,12],[year+1,1],[year+1,2],[year+1,3]];
-    const labels = ["4月","5月","6月","7月","8月","9月","10月","11月","12月","1月","2月","3月"];
-    
-    let html = "";
-    months.forEach(([y, m], idx) => {
-        const firstDay = new Date(y, m-1, 1).getDay();
-        const lastDate = new Date(y, m, 0).getDate();
-        const monthKey = `${y}-${String(m).padStart(2,'0')}`;
-        
-        let dayCells = [];
-        // 空白セル
-        for (let j=0; j<firstDay; j++) dayCells.push('<div class="cal-day empty"></div>');
-        // 日付セル
-        for (let d=1; d<=lastDate; d++) {
-            const key = `${monthKey}-${String(d).padStart(2,'0')}`;
-            const val = wdData[key] ?? (new Date(y,m-1,d).getDay()===0?0:1);
-            const dow = new Date(y,m-1,d).getDay();
-            let cls = val===1?'on':'off';
-            if(val===0 && dow===0) cls+=' sun';
-            if(val===0 && dow===6) cls+=' sat';
-            dayCells.push(`<div class="cal-day ${cls}" onclick="toggleDay('${key}')">${d}</div>`);
-        }
-        // 42セルに満たない分を埋める
-        while(dayCells.length < 42) dayCells.push('<div class="cal-day empty"></div>');
+window.showPage = function(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  if(id==='prices') renderPriceTypeSelect();
+  if(id==='offices') renderOfficeTable();
+  if(id==='workdays'){initWdOfficeSelect();loadWorkdays();}
+};
 
-        // 7つのセルごとに行(cal-row)で包む
-        let rowsHtml = "";
-        for (let i=0; i<dayCells.length; i+=7) {
-            rowsHtml += `<div class="cal-row">${dayCells.slice(i, i+7).join('')}</div>`;
-        }
+// ===== 初期データ投入 =====
+async function seedIfEmpty(){
+  // 種別
+  const tSnap = await getDocs(collection(db,'serviceTypes'));
+  if(tSnap.empty){
+    for(const t of DEFAULT_TYPES){
+      await addDoc(collection(db,'serviceTypes'),{name:t.name, order:t.order, createdAt: new Date().toISOString()});
+    }
+  }
+  // 部署
+  const dSnap = await getDocs(collection(db,'departments'));
+  if(dSnap.empty){
+    for(const d of DEFAULT_DEPTS){
+      await addDoc(collection(db,'departments'),{name:d, createdAt: new Date().toISOString()});
+    }
+  }
+  // 単価
+  const pSnap = await getDocs(collection(db,'prices'));
+  if(pSnap.empty){
+    for(const p of DEFAULT_PRICES){
+      await addDoc(collection(db,'prices'),{...p, createdAt: new Date().toISOString()});
+    }
+  }
+  // エリア
+  const aSnap = await getDocs(collection(db,'areas'));
+  if(aSnap.empty){
+    for(const a of DEFAULT_AREAS){
+      await addDoc(collection(db,'areas'),{name:a, createdAt: new Date().toISOString()});
+    }
+  }
+  // 事業所
+  const oSnap = await getDocs(collection(db,'offices'));
+  if(oSnap.empty){
+    for(const o of OFFICES_DEFAULT){
+      await addDoc(collection(db,'offices'),{name:o.name, dept:o.dept, area:'', priceId:'', price:null, order:o.order, createdAt: new Date().toISOString()});
+    }
+  }
+}
 
-        html += `<div class="cal-month">
-            <div class="cal-month-title"><span>${labels[idx]}</span></div>
-            <div class="cal-grid-container">
-                <div class="cal-row">
-                    <div class="cal-dow sun">日</div><div class="cal-dow">月</div><div class="cal-dow">火</div>
-                    <div class="cal-dow">水</div><div class="cal-dow">木</div><div class="cal-dow">金</div><div class="cal-dow sat">土</div>
-                </div>
-                ${rowsHtml}
-            </div>
-        </div>`;
+// ===== 施設種別 =====
+async function loadTypes(){
+  const snap = await getDocs(collection(db,'serviceTypes'));
+  cache.types = [];
+  snap.forEach(d=>cache.types.push({id:d.id,...d.data()}));
+  cache.types.sort((a,b)=>(a.order||99)-(b.order||99));
+  renderTypes();
+}
+function renderTypes(){
+  const tb = document.getElementById('type-tbody');
+  if(!cache.types.length){tb.innerHTML='<tr><td colspan="3" class="empty">まだ登録がありません</td></tr>';return;}
+  tb.innerHTML = cache.types.map(t=>`
+    <tr>
+      <td><span class="badge badge-green">${t.name}</span></td>
+      <td style="color:#aaa;font-size:12px">${t.createdAt?t.createdAt.substring(0,10):''}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteType('${t.id}','${t.name}')">削除</button></td>
+    </tr>`).join('');
+}
+window.addServiceType = async function(){
+  const name = document.getElementById('new-type-name').value.trim();
+  if(!name){showStatus('種別名を入力してください',true);return;}
+  if(cache.types.find(t=>t.name===name)){showStatus('同じ種別名がすでにあります',true);return;}
+  await addDoc(collection(db,'serviceTypes'),{name, createdAt: new Date().toISOString()});
+  document.getElementById('new-type-name').value='';
+  await loadTypes();
+  showStatus(`「${name}」を追加しました`);
+};
+window.deleteType = async function(id, name){
+  if(!confirm(`「${name}」を削除しますか？`))return;
+  await deleteDoc(doc(db,'serviceTypes',id));
+  await loadTypes();
+  showStatus(`「${name}」を削除しました`);
+};
+
+// ===== 単価設定 =====
+async function loadPrices(){
+  const snap = await getDocs(collection(db,'prices'));
+  cache.prices = [];
+  snap.forEach(d=>cache.prices.push({id:d.id,...d.data()}));
+  cache.prices.sort((a,b)=>(a.order||99)-(b.order||99));
+  renderPrices();
+}
+function renderPrices(){
+  const tb = document.getElementById('price-tbody');
+  if(!cache.prices.length){tb.innerHTML='<tr><td colspan="5" class="empty">まだ登録がありません</td></tr>';return;}
+  tb.innerHTML = cache.prices.map(p=>`
+    <tr>
+      <td><span class="badge badge-blue">${p.type}</span></td>
+      <td>${p.capacity>0?`<span class="capacity-badge">定員${p.capacity}</span>`:'<span style="color:#aaa;font-size:12px">設定なし</span>'}</td>
+      <td><input type="number" class="price-input" id="price-${p.id}" value="${p.price||''}" placeholder="未設定"></td>
+      <td><button class="btn btn-primary btn-sm" onclick="saveOnePrice('${p.id}')">保存</button></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deletePrice('${p.id}')">削除</button></td>
+    </tr>`).join('');
+}
+function renderPriceTypeSelect(){
+  const sel = document.getElementById('new-price-type');
+  sel.innerHTML = cache.types.map(t=>`<option value="${t.name}">${t.name}</option>`).join('');
+}
+window.saveOnePrice = async function(id){
+  const p = cache.prices.find(x=>x.id===id);
+  if(!p) return;
+  const v = document.getElementById(`price-${id}`)?.value;
+  const price = v===''||v==null?null:parseInt(v);
+  try{
+    await setDoc(doc(db,'prices',id),{type:p.type, capacity:p.capacity, price, createdAt:p.createdAt||''});
+    p.price = price;
+    showStatus(`${p.type}${p.capacity>0?' 定員'+p.capacity:''}の単価を保存しました`);
+    await loadPrices();
+  }catch(e){
+    showStatus('保存に失敗しました: '+e.message, true);
+  }
+};
+window.addPrice = async function(){
+  const type = document.getElementById('new-price-type').value;
+  const cap = parseInt(document.getElementById('new-price-capacity').value)||0;
+  const price = document.getElementById('new-price-value').value;
+  if(!type){showStatus('種別を選択してください',true);return;}
+  await addDoc(collection(db,'prices'),{type, capacity:cap, price:price?parseInt(price):null, createdAt:new Date().toISOString()});
+  document.getElementById('new-price-capacity').value='';
+  document.getElementById('new-price-value').value='';
+  await loadPrices();
+  showStatus('追加しました');
+};
+window.deletePrice = async function(id){
+  if(!confirm('この単価設定を削除しますか？'))return;
+  await deleteDoc(doc(db,'prices',id));
+  await loadPrices();
+  showStatus('削除しました');
+};
+
+// ===== 部署 =====
+async function loadDepts(){
+  const snap = await getDocs(collection(db,'departments'));
+  cache.depts = [];
+  snap.forEach(d=>cache.depts.push({id:d.id,...d.data()}));
+  renderDepts();
+}
+function renderDepts(){
+  const tb = document.getElementById('dept-tbody');
+  if(!cache.depts.length){tb.innerHTML='<tr><td colspan="4" class="empty">まだ登録がありません</td></tr>';return;}
+  tb.innerHTML = cache.depts.map(d=>{
+    const cnt = cache.offices.filter(o=>o.dept===d.name).length;
+    return`<tr>
+      <td style="font-weight:500">${d.name}</td>
+      <td><span class="badge badge-gray">${cnt}事業所</span></td>
+      <td style="color:#aaa;font-size:12px">${d.createdAt?d.createdAt.substring(0,10):''}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteDept('${d.id}','${d.name}')">削除</button></td>
+    </tr>`;
+  }).join('');
+}
+window.addDepartment = async function(){
+  const name = document.getElementById('new-dept-name').value.trim();
+  if(!name){showStatus('部署名を入力してください',true);return;}
+  if(cache.depts.find(d=>d.name===name)){showStatus('同じ部署名がすでにあります',true);return;}
+  await addDoc(collection(db,'departments'),{name, createdAt:new Date().toISOString()});
+  document.getElementById('new-dept-name').value='';
+  await loadDepts();
+  showStatus(`「${name}」を追加しました`);
+};
+window.deleteDept = async function(id, name){
+  if(!confirm(`「${name}」を削除しますか？`))return;
+  await deleteDoc(doc(db,'departments',id));
+  await loadDepts();
+  showStatus(`削除しました`);
+};
+
+// ===== エリア =====
+async function loadAreas(){
+  const snap = await getDocs(collection(db,'areas'));
+  cache.areas = [];
+  snap.forEach(d=>cache.areas.push({id:d.id,...d.data()}));
+  renderAreas();
+}
+function renderAreas(){
+  const tb = document.getElementById('area-tbody');
+  if(!cache.areas.length){tb.innerHTML='<tr><td colspan="4" class="empty">まだ登録がありません</td></tr>';return;}
+  tb.innerHTML = cache.areas.map(a=>{
+    const cnt = cache.offices.filter(o=>o.area===a.name).length;
+    return`<tr>
+      <td style="font-weight:500">${a.name}</td>
+      <td><span class="badge badge-gray">${cnt}事業所</span></td>
+      <td style="color:#aaa;font-size:12px">${a.createdAt?a.createdAt.substring(0,10):''}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteArea('${a.id}','${a.name}')">削除</button></td>
+    </tr>`;
+  }).join('');
+}
+window.addArea = async function(){
+  const name = document.getElementById('new-area-name').value.trim();
+  if(!name){showStatus('エリア名を入力してください',true);return;}
+  if(cache.areas.find(a=>a.name===name)){showStatus('同じエリア名がすでにあります',true);return;}
+  await addDoc(collection(db,'areas'),{name, createdAt:new Date().toISOString()});
+  document.getElementById('new-area-name').value='';
+  await loadAreas();
+  showStatus(`「${name}」を追加しました`);
+};
+window.deleteArea = async function(id, name){
+  if(!confirm(`「${name}」を削除しますか？`))return;
+  await deleteDoc(doc(db,'areas',id));
+  await loadAreas();
+  showStatus('削除しました');
+};
+
+// ===== 事業所 =====
+async function loadOffices(){
+  const snap = await getDocs(collection(db,'offices'));
+  cache.offices = [];
+  snap.forEach(d=>cache.offices.push({id:d.id,...d.data()}));
+  cache.offices.sort((a,b)=>(a.order||99)-(b.order||99));
+}
+function renderOfficeTable(){
+  const tb = document.getElementById('office-tbody');
+  if(!cache.offices.length){tb.innerHTML='<tr><td colspan="4" class="empty">まだ登録がありません</td></tr>';return;}
+  const deptOpts = cache.depts.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+  const priceOpts = ['<option value="">未設定</option>',
+    ...cache.prices.map(p=>`<option value="${p.id}">${p.type}${p.capacity>0?' 定員'+p.capacity:''}${p.price?' ('+p.price.toLocaleString()+'円)':''}</option>`)
+  ].join('');
+  tb.innerHTML = cache.offices.map(o=>`
+    <tr>
+      <td style="font-weight:500">${o.name}</td>
+      <td>
+        <select class="office-price-select" id="dept-${o.id}" onchange="updateOfficeDept('${o.id}',this.value)">
+          ${cache.depts.map(d=>`<option value="${d.name}"${o.dept===d.name?' selected':''}>${d.name}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="office-price-select" id="area-${o.id}" onchange="updateOfficeArea('${o.id}',this.value)">
+          <option value="">未設定</option>
+          ${cache.areas.map(a=>`<option value="${a.name}"${o.area===a.name?' selected':''}>${a.name}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="office-price-select" id="priceid-${o.id}" onchange="updateOfficePrice('${o.id}',this.value)">
+          ${['<option value="">未設定</option>',...cache.prices.map(p=>`<option value="${p.id}"${o.priceId===p.id?' selected':''}>${p.type}${p.capacity>0?' 定員'+p.capacity:''}${p.price?' ('+p.price.toLocaleString()+'円)':''}</option>`)].join('')}
+        </select>
+      </td>
+      <td><span class="derived-price" id="derived-${o.id}">${o.price?o.price.toLocaleString()+'円':'—'}</span></td>
+    </tr>`).join('');
+}
+window.updateOfficeDept = function(id, dept){
+  const o = cache.offices.find(x=>x.id===id);
+  if(o) o.dept = dept;
+};
+window.updateOfficeArea = function(id, area){
+  const o = cache.offices.find(x=>x.id===id);
+  if(o) o.area = area;
+};
+window.updateOfficePrice = function(id, priceId){
+  const o = cache.offices.find(x=>x.id===id);
+  const p = cache.prices.find(x=>x.id===priceId);
+  if(o){o.priceId=priceId; o.price=p&&p.price?p.price:null;}
+  document.getElementById(`derived-${id}`).textContent = p&&p.price?p.price.toLocaleString()+'円':'—';
+};
+window.saveOffices = async function(){
+  for(const o of cache.offices){
+    await setDoc(doc(db,'offices',o.id),{name:o.name,dept:o.dept||'',area:o.area||'',priceId:o.priceId||'',price:o.price||null,order:o.order||99,createdAt:o.createdAt||''});
+  }
+  await loadOffices();
+  renderAreas();
+  renderDepts();
+  showStatus('事業所設定を保存しました');
+};
+
+// ===== 初期化 =====
+// ===== 稼働日設定 =====
+const MONTHS_LABEL = ["4月","5月","6月","7月","8月","9月","10月","11月","12月","1月","2月","3月"];
+const DOW_LABEL = ["日","月","火","水","木","金","土"];
+
+let wdData = {}; // {YYYY-MM-DD: 0|1}
+
+function getFiscalMonths(year){
+  return [
+    [year,4],[year,5],[year,6],[year,7],[year,8],[year,9],
+    [year,10],[year,11],[year,12],[year+1,1],[year+1,2],[year+1,3]
+  ];
+}
+
+function daysInMonth(year,month){
+  return new Date(year,month,0).getDate();
+}
+
+function initWdOfficeSelect(){
+  const sel = document.getElementById('wd-office');
+  if(!sel) return;
+  sel.innerHTML = cache.offices.map(o=>`<option value="${o.name}">${o.name}</option>`).join('');
+}
+
+async function loadWorkdays(){
+  const year = parseInt(document.getElementById('wd-year').value);
+  const office = document.getElementById('wd-office').value;
+  if(!office) return;
+  document.getElementById('wd-status').textContent = '読み込み中...';
+  try{
+    const docId = `${year}_${office}`;
+    const snap = await getDoc(doc(db,'workdays',docId));
+    if(snap.exists()){
+      wdData = snap.data().days || {};
+    } else {
+      // 初期値生成
+      wdData = generateDefaultWorkdays(year);
+    }
+  }catch(e){
+    wdData = generateDefaultWorkdays(year);
+  }
+  renderCalendar(year);
+  document.getElementById('wd-status').textContent = '';
+}
+window.loadWorkdays = loadWorkdays;
+
+function generateDefaultWorkdays(year){
+  const data = {};
+  const months = getFiscalMonths(year);
+  months.forEach(([y,m])=>{
+    const days = daysInMonth(y,m);
+    for(let d=1;d<=days;d++){
+      const date = new Date(y,m-1,d);
+      const dow = date.getDay();
+      const key = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      data[key] = dow===0 ? 0 : 1; // 日曜=0、それ以外=1
+    }
+  });
+  return data;
+}
+
+function renderCalendar(year){
+  const cal = document.getElementById('wd-calendar');
+  const months = getFiscalMonths(year);
+  cal.innerHTML = months.map(([y,m],mi)=>{
+    const days = daysInMonth(y,m);
+    const firstDow = new Date(y,m-1,1).getDay();
+    const monthKey = `${y}-${String(m).padStart(2,'0')}`;
+    let count = 0;
+    let dayCells = [];
+    for(let i=0;i<firstDow;i++) dayCells.push('<div class="cal-day empty"></div>');
+    for(let d=1;d<=days;d++){
+      const key = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const val = wdData[key]??1;
+      const dow = new Date(y,m-1,d).getDay();
+      const isSun=dow===0,isSat=dow===6;
+      let cls=val===1?'on':'off';
+      if(val===0&&isSun)cls+=' sun';
+      if(val===0&&isSat)cls+=' sat';
+      if(val===1)count++;
+      dayCells.push(`<div class="cal-day ${cls}" data-key="${key}" onclick="toggleDay('${key}')">${d}</div>`);
+    }
+    while(dayCells.length<42) dayCells.push('<div class="cal-day empty"></div>');
+    let rowsHtml='';
+    for(let i=0;i<dayCells.length;i+=7){
+      rowsHtml+=`<div class="cal-row">${dayCells.slice(i,i+7).join('')}</div>`;
+    }
+    return `<div class="cal-month">
+      <div class="cal-month-title">
+        <span>${MONTHS_LABEL[mi]}</span>
+        <span class="cal-month-count" id="count-${monthKey}">稼働${count}日</span>
+      </div>
+      <div class="cal-grid-container">
+        <div class="cal-row">${DOW_LABEL.map((d,i)=>`<div class="cal-dow${i===0?' sun':i===6?' sat':''}">${d}</div>`).join('')}</div>
+        ${rowsHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.toggleDay = function(key){
+  wdData[key] = wdData[key]===1 ? 0 : 1;
+  const el = document.querySelector(`[data-key="${key}"]`);
+  if(!el) return;
+  const val = wdData[key];
+  const dow = new Date(key).getDay();
+  const isSun=dow===0,isSat=dow===6;
+  el.className = 'cal-day ' + (val===1?'on':'off'+(isSun?' sun':isSat?' sat':''));
+  const monthKey = key.substring(0,7);
+  const count = Object.entries(wdData).filter(([k,v])=>k.startsWith(monthKey)&&v===1).length;
+  const countEl = document.getElementById(`count-${monthKey}`);
+  if(countEl) countEl.textContent = `稼働${count}日`;
+};
+
+window.initWorkdays = function(){
+  const year = parseInt(document.getElementById('wd-year').value);
+  if(!confirm('初期値（日曜OFF、それ以外ON）にリセットしますか？'))return;
+  wdData = generateDefaultWorkdays(year);
+  renderCalendar(year);
+};
+
+window.saveWorkdays = async function(){
+  const year = parseInt(document.getElementById('wd-year').value);
+  const office = document.getElementById('wd-office').value;
+  if(!office){showStatus('事業所を選択してください',true);return;}
+  const btn = document.getElementById('wd-save-btn');
+  btn.textContent='保存中...';btn.disabled=true;
+  try{
+    const docId = `${year}_${office}`;
+    await setDoc(doc(db,'workdays',docId),{
+      office, fiscalYear:year, days:wdData,
+      updatedAt:new Date().toISOString()
     });
-    cal.innerHTML = html;
-}
-
-window.toggleDay = (key) => {
-    wdData[key] = wdData[key] === 1 ? 0 : 1;
-    renderCalendar(2026);
+    document.getElementById('wd-status').textContent='保存しました ✓';
+    setTimeout(()=>document.getElementById('wd-status').textContent='',2500);
+    showStatus(`${office}の${year}年度稼働日を保存しました`);
+  }catch(e){
+    showStatus('保存エラー: '+e.message,true);
+  }
+  btn.textContent='保存する';btn.disabled=false;
 };
 
-window.loadWorkdays = async () => {
-    const o = document.getElementById('wd-office').value;
-    const s = await getDoc(doc(db, 'workdays', `2026_${o}`));
-    wdData = s.exists() ? s.data().days : {};
-    renderCalendar(2026);
-};
-
-window.saveWorkdays = async () => {
-    const o = document.getElementById('wd-office').value;
-    await setDoc(doc(db, 'workdays', `2026_${o}`), {office: o, days: wdData});
-    alert('保存しました');
-};
-
-async function init() {
-    await loadOffices();
-    loadWorkdays();
+async function init(){
+  await seedIfEmpty();
+  await Promise.all([loadTypes(), loadPrices(), loadDepts(), loadAreas(), loadOffices()]);
+  renderOfficeTable();
+  initWdOfficeSelect();
 }
 init();
-
-window.showPage = (id) => {}; // 簡易化のため
 </script>
 </body>
 </html>
