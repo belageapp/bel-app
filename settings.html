@@ -261,7 +261,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
         </div>
         <div class="card-body">
           <table class="data-table">
-            <thead><tr><th>事業所名</th><th>部署</th><th>エリア</th><th>単価設定</th><th>単価</th></tr></thead>
+            <thead><tr><th>事業所名</th><th>部署</th><th>エリア</th><th>種別／定員</th><th>単価</th></tr></thead>
             <tbody id="office-tbody"><tr><td colspan="4" class="empty">読み込み中...</td></tr></tbody>
           </table>
         </div>
@@ -752,6 +752,8 @@ async function init(){
   await seedIfEmpty();
   await Promise.all([loadTypes(), loadPrices(), loadDepts(), loadAreas(), loadOffices()]);
   renderOfficeTable();
+  renderDepts();
+  renderAreas();
   initWdOfficeSelect();
 }
 init();
