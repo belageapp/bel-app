@@ -151,7 +151,7 @@ window.loadReport=async function(){
   const yearLabel=`${currentYear}年度（${currentYear}/4/1〜${currentYear+1}/3/31）`;
 
   // 実績値取得ヘルパー
-  const av=(mi,key)=>actualData[MONTHS_ARR[mi]]?.(key)||'';
+  const av=(mi,key)=>actualData[MONTHS_ARR[mi]]?.[key]||'';
   const avn=(mi,key)=>parseFloat(av(mi,key))||0;
 
   // 実績計算
