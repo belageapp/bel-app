@@ -195,11 +195,11 @@ window.loadReport=async function(){
   const achWd=MONTHS_ARR.map((_,i)=>wdPerMonth[i]&&aWd[i]?aWd[i]/wdPerMonth[i]:null);
   const achPpl=MONTHS_ARR.map((_,i)=>tpm[i]&&aPpl[i]?aPpl[i]/tpm[i]:null);
   const achRev=MONTHS_ARR.map((_,i)=>tRev[i]&&aRev[i]?aRev[i]/tRev[i]:null);
-  const achGr=MONTHS_ARR.map((_,i)=>SALARY&&aGivRate[i]?aGivRate[i]/SALARY:null);
-  const atAchWd=totalWd&&atWd?atWd/totalWd:null;
-  const atAchPpl=totalTpm&&atPpl?atPpl/totalTpm:null;
-  const atAchRev=totalTrev&&atRev?atRev/totalTrev:null;
-  const atAchGr=SALARY&&atGr?atGr/SALARY:null;
+  const achGr=MONTHS_ARR.map((_,i)=>SALARY&&aGivRate[i]?SALARY/aGivRate[i]:null);
+  const atAchWd=avgNonNull(achWd);
+  const atAchPpl=avgNonNull(achPpl);
+  const atAchRev=avgNonNull(achRev);
+  const atAchGr=avgNonNull(achGr);
 
   function inp(mi,key,val){
     return `<input class="inp" id="inp-${mi}-${key}" type="number" value="${val||''}" placeholder="0" onchange="recalc(${mi})">`;
@@ -266,10 +266,10 @@ window.loadReport=async function(){
       <tr><td class="row-cat-actual" style="background:#E8F5EE"></td><td class="row-label-sub">パート</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'salaryPart',av(i,'salaryPart'))}</td>`).slice(0,6).join('')}<td class="val-subtotal">－</td>${MONTHS_ARR.map((_,i)=>`<td>${inp(i,'salaryPart',av(i,'salaryPart'))}</td>`).slice(6).join('')}<td class="val-subtotal">－</td><td class="val-total" id="atsalp">${atSalaryP?atSalaryP.toLocaleString():'－'}</td></tr>
       <tr><td class="row-cat-actual" style="background:#E8F5EE"></td><td class="row-label">給与比率</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="agr-${i}">${aGivRate[i]?(aGivRate[i]*100).toFixed(1)+'%':'－'}</td>`).slice(0,6).join('')}<td class="val-subtotal" id="ah1gr">${ah1gr?(ah1gr*100).toFixed(1)+'%':'－'}</td>${MONTHS_ARR.map((_,i)=>`<td class="val-actual" id="agr-${i}">${aGivRate[i]?(aGivRate[i]*100).toFixed(1)+'%':'－'}</td>`).slice(6).join('')}<td class="val-subtotal" id="ah2gr">${ah2gr?(ah2gr*100).toFixed(1)+'%':'－'}</td><td class="val-total" id="atgr">${atGr?(atGr*100).toFixed(1)+'%':'－'}</td></tr>
       <!-- 達成率 -->
-      <tr><td class="row-cat-achieve" rowspan="4">達成率</td><td class="row-label">稼働日数</td>${achWd.slice(0,6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal">－</td>${achWd.slice(6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal">－</td><td class="val-total ${achClass(atAchWd)}" id="atawd">${fmtPct(atAchWd)}</td></tr>
-      <tr><td class="row-label">貢献人数／月</td>${achPpl.slice(0,6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal">－</td>${achPpl.slice(6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal">－</td><td class="val-total ${achClass(atAchPpl)}" id="atappl">${fmtPct(atAchPpl)}</td></tr>
-      <tr><td class="row-label">貢献報酬</td>${achRev.slice(0,6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal">－</td>${achRev.slice(6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal">－</td><td class="val-total ${achClass(atAchRev)}" id="atarev">${fmtPct(atAchRev)}</td></tr>
-      <tr><td class="row-label">給与比率</td>${achGr.slice(0,6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal">－</td>${achGr.slice(6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal">－</td><td class="val-total ${achClass(atAchGr)}" id="atagr">${fmtPct(atAchGr)}</td></tr>
+      <tr><td class="row-cat-achieve" rowspan="4">達成率</td><td class="row-label">稼働日数</td>${achWd.slice(0,6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal ${achClass(avgNonNull(achWd.slice(0,6)))}">${fmtPct(avgNonNull(achWd.slice(0,6)))}</td>${achWd.slice(6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal ${achClass(avgNonNull(achWd.slice(6)))}">${fmtPct(avgNonNull(achWd.slice(6)))}</td><td class="val-total ${achClass(atAchWd)}">${fmtPct(atAchWd)}</td></tr>
+      <tr><td class="row-label">貢献人数／月</td>${achPpl.slice(0,6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal ${achClass(avgNonNull(achPpl.slice(0,6)))}">${fmtPct(avgNonNull(achPpl.slice(0,6)))}</td>${achPpl.slice(6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal ${achClass(avgNonNull(achPpl.slice(6)))}">${fmtPct(avgNonNull(achPpl.slice(6)))}</td><td class="val-total ${achClass(atAchPpl)}">${fmtPct(atAchPpl)}</td></tr>
+      <tr><td class="row-label">貢献報酬</td>${achRev.slice(0,6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal ${achClass(avgNonNull(achRev.slice(0,6)))}">${fmtPct(avgNonNull(achRev.slice(0,6)))}</td>${achRev.slice(6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal ${achClass(avgNonNull(achRev.slice(6)))}">${fmtPct(avgNonNull(achRev.slice(6)))}</td><td class="val-total ${achClass(atAchRev)}">${fmtPct(atAchRev)}</td></tr>
+      <tr><td class="row-label">給与比率</td>${achGr.slice(0,6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal ${achClass(avgNonNull(achGr.slice(0,6)))}">${fmtPct(avgNonNull(achGr.slice(0,6)))}</td>${achGr.slice(6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}<td class="val-subtotal ${achClass(avgNonNull(achGr.slice(6)))}">${fmtPct(avgNonNull(achGr.slice(6)))}</td><td class="val-total ${achClass(atAchGr)}">${fmtPct(atAchGr)}</td></tr>
     </tbody>
   </table></div>`;
 
@@ -385,6 +385,7 @@ window.saveActual=async function(){
   btn.textContent='💾 実績を保存';btn.disabled=false;
 };
 
+function avgNonNull(arr){const v=arr.filter(x=>x!==null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
 function getFY(y){return[[y,4],[y,5],[y,6],[y,7],[y,8],[y,9],[y,10],[y,11],[y,12],[y+1,1],[y+1,2],[y+1,3]];}
 function sum(arr){return arr.reduce((a,b)=>a+(b||0),0);}
 function avg(arr){return arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;}
