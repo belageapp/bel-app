@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>貢献実績表 | ベルアージュ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f0f2f5;color:#333;font-size:13px}
+.top-bar{background:#1D9E75;color:#fff;padding:12px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.top-bar-title{font-size:16px;font-weight:600}
+.top-bar select{padding:6px 10px;border-radius:6px;border:none;font-size:13px;font-family:inherit}
+.top-bar button{padding:6px 14px;border-radius:6px;border:none;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-white{background:#fff;color:#1D9E75}
+.btn-gray{background:rgba(255,255,255,0.2);color:#fff}
+.content{padding:20px 24px}
+.office-info{background:#fff;border-radius:8px;padding:12px 20px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);display:flex;gap:24px;align-items:center}
+.office-name{font-size:18px;font-weight:700;color:#185FA5}
+.office-meta{font-size:12px;color:#888;display:flex;gap:16px}
+.office-meta span{display:flex;align-items:center;gap:4px}
+.office-meta strong{color:#333}
+/* テーブル */
+.table-wrap{overflow-x:auto;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
+th,td{border:1px solid #e0e0e0;padding:5px 8px;text-align:right;white-space:nowrap}
+th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
+/* ヘッダー行 */
+.th-section{background:#185FA5;color:#fff;text-align:center;font-weight:600}
+.th-half{background:#1D9E75;color:#fff;text-align:center;font-weight:500}
+.th-month{background:#EBF3FB;color:#185FA5;text-align:center}
+.th-total{background:#E0F5ED;color:#0F6E56;text-align:center;font-weight:600}
+/* 行カテゴリ */
+.row-cat{background:#F0F7FF;color:#185FA5;font-weight:600;text-align:center;font-size:11px;width:60px}
+.row-label{background:#fafafa;color:#555;text-align:right;width:110px;padding-right:8px}
+/* 目標行 */
+.row-target td{background:#fff}
+.row-target .val{color:#185FA5}
+/* 損益分岐行 */
+.row-break td{background:#FFF8F0}
+.row-break .val{color:#CC6600}
+/* 小計・合計 */
+.val-subtotal{background:#E0F5ED !important;color:#0F6E56;font-weight:600}
+.val-total{background:#d4f4e8 !important;color:#0F6E56;font-weight:700}
+/* 固定値 */
+.val-fixed{color:#888}
+/* ローディング */
+.loading{text-align:center;padding:60px;color:#aaa;font-size:14px}
+.error{text-align:center;padding:40px;color:#E24B4A;font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="top-bar-title">貢献実績表</span>
+  <select id="sel-year">
+    <option value="2025">2025年度</option>
+    <option value="2026" selected>2026年度</option>
+    <option value="2027">2027年度</option>
+  </select>
+  <select id="sel-office" style="width:180px"></select>
+  <button class="btn-white" onclick="loadReport()">表示</button>
+  <button class="btn-gray" onclick="location.href='settings.html'">← 設定画面</button>
+  <button class="btn-gray" onclick="location.href='index.html'">← アプリ</button>
+</div>
+
+<div class="content">
+  <div id="report-area"><div class="loading">年度と事業所を選択して「表示」を押してください</div></div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
+  authDomain: "daily-report-b90e8.firebaseapp.com",
+  projectId: "daily-report-b90e8",
+  storageBucket: "daily-report-b90e8.firebasestorage.app",
+  messagingSenderId: "16569831525",
+  appId: "1:16569831525:web:aa250f2061f762dfe1768c"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const MONTHS = [4,5,6,7,8,9,10,11,12,1,2,3];
+const MONTH_LABELS = ["4月","5月","6月","7月","8月","9月","10月","11月","12月","1月","2月","3月"];
+const BREAK_RATE = 0.93;
+const SALARY_RATE = 0.44;
+
+let offices = [];
+let prices = [];
+
+async function init(){
+  // 事業所一覧取得
+  const oSnap = await getDocs(collection(db,'offices'));
+  offices = [];
+  oSnap.forEach(d=>offices.push({id:d.id,...d.data()}));
+  offices.sort((a,b)=>(a.order||99)-(b.order||99));
+
+  // 単価一覧取得
+  const pSnap = await getDocs(collection(db,'prices'));
+  prices = [];
+  pSnap.forEach(d=>prices.push({id:d.id,...d.data()}));
+
+  // 事業所プルダウン
+  const sel = document.getElementById('sel-office');
+  sel.innerHTML = offices.map(o=>`<option value="${o.id}">${o.name}</option>`).join('');
+}
+
+window.loadReport = async function(){
+  const year = parseInt(document.getElementById('sel-year').value);
+  const officeId = document.getElementById('sel-office').value;
+  const office = offices.find(o=>o.id===officeId);
+  if(!office){return;}
+
+  document.getElementById('report-area').innerHTML = '<div class="loading">読み込み中...</div>';
+
+  // 単価情報取得
+  const price = prices.find(p=>p.id===office.priceId);
+  const unitPrice = price?.price || 0;
+  const capacity = price?.capacity || 0;
+  const priceLabel = price ? `${price.type}　定員${capacity > 0 ? capacity : '－'}` : '未設定';
+
+  // 稼働日数取得
+  const wdDocId = `${year}_${office.name}`;
+  const wdSnap = await getDoc(doc(db,'workdays',wdDocId));
+  const wdDays = wdSnap.exists() ? wdSnap.data().days || {} : {};
+
+  // 月別稼働日数を集計
+  const fiscalYear = getFiscalYear(year);
+  const workdaysPerMonth = fiscalYear.map(([y,m])=>{
+    const monthKey = `${y}-${String(m).padStart(2,'0')}`;
+    return Object.entries(wdDays).filter(([k,v])=>k.startsWith(monthKey)&&v===1).length;
+  });
+
+  // 計算
+  const targetPerMonth = workdaysPerMonth.map(wd => wd * capacity); // 貢献人数/月
+  const targetPerDay = capacity; // 貢献人数/日（定員数）
+  const targetRevenue = targetPerMonth.map(t => t * unitPrice); // 貢献報酬
+
+  const breakPerMonth = targetPerMonth.map(t => Math.ceil(t * BREAK_RATE));
+  const breakPerDay = Math.ceil(targetPerDay * BREAK_RATE * 10) / 10;
+  const breakRevenue = targetRevenue.map(r => Math.ceil(r * BREAK_RATE));
+
+  // 上半期(0-5)・下半期(6-11)小計
+  const h1wd = sum(workdaysPerMonth.slice(0,6));
+  const h2wd = sum(workdaysPerMonth.slice(6,12));
+  const totalWd = h1wd + h2wd;
+
+  // 通期合計
+  const totalTargetMonth = sum(targetPerMonth);
+  const totalTargetRevenue = sum(targetRevenue);
+  const totalBreakMonth = sum(breakPerMonth);
+  const totalBreakRevenue = sum(breakRevenue);
+
+  // 年度表示
+  const yearLabel = `${year}年度（${year}/4/1〜${year+1}/3/31）`;
+
+  const html = `
+    <div class="office-info">
+      <div class="office-name">${office.name}</div>
+      <div class="office-meta">
+        <span><strong>種別／定員：</strong>${priceLabel}</span>
+        <span><strong>単価：</strong>${unitPrice ? unitPrice.toLocaleString()+'円' : '未設定'}</span>
+        <span><strong>給与比率：</strong>${(SALARY_RATE*100).toFixed(1)}%</span>
+        <span><strong>損益分岐率：</strong>${(BREAK_RATE*100).toFixed(0)}%</span>
+        <span style="margin-left:auto;color:#185FA5;font-weight:500">${yearLabel}</span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th colspan="2" class="th-section" style="text-align:left;padding-left:12px">項目</th>
+            <th colspan="6" class="th-half">上半期（4〜9月）</th>
+            <th class="th-total">小計</th>
+            <th colspan="6" class="th-half">下半期（10〜3月）</th>
+            <th class="th-total">小計</th>
+            <th class="th-total" style="background:#0F6E56">通期</th>
+          </tr>
+          <tr>
+            <th colspan="2" style="background:#f5f5f5"></th>
+            ${MONTH_LABELS.slice(0,6).map(m=>`<th class="th-month">${m}</th>`).join('')}
+            <th class="th-total">合計</th>
+            ${MONTH_LABELS.slice(6,12).map(m=>`<th class="th-month">${m}</th>`).join('')}
+            <th class="th-total">合計</th>
+            <th class="th-total" style="background:#0F6E56;color:#fff">合計</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 目標 -->
+          <tr class="row-target">
+            <td class="row-cat" rowspan="5">目標</td>
+            <td class="row-label">稼働日数</td>
+            ${workdaysPerMonth.slice(0,6).map(v=>`<td class="val">${v||'－'}</td>`).join('')}
+            <td class="val-subtotal">${h1wd||'－'}</td>
+            ${workdaysPerMonth.slice(6,12).map(v=>`<td class="val">${v||'－'}</td>`).join('')}
+            <td class="val-subtotal">${h2wd||'－'}</td>
+            <td class="val-total">${totalWd||'－'}</td>
+          </tr>
+          <tr class="row-target">
+            <td class="row-label">貢献人数／月</td>
+            ${targetPerMonth.slice(0,6).map(v=>`<td class="val">${v?v.toLocaleString():'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            ${targetPerMonth.slice(6,12).map(v=>`<td class="val">${v?v.toLocaleString():'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            <td class="val-total">${totalTargetMonth?totalTargetMonth.toLocaleString():'－'}</td>
+          </tr>
+          <tr class="row-target">
+            <td class="row-label">貢献人数／日</td>
+            ${Array(6).fill(`<td class="val val-fixed">${targetPerDay||'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            ${Array(6).fill(`<td class="val val-fixed">${targetPerDay||'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            <td class="val-total">－</td>
+          </tr>
+          <tr class="row-target">
+            <td class="row-label">貢献報酬</td>
+            ${targetRevenue.slice(0,6).map(v=>`<td class="val">${v?v.toLocaleString():'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            ${targetRevenue.slice(6,12).map(v=>`<td class="val">${v?v.toLocaleString():'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            <td class="val-total">${totalTargetRevenue?totalTargetRevenue.toLocaleString():'－'}</td>
+          </tr>
+          <tr class="row-target">
+            <td class="row-label">単価</td>
+            ${Array(6).fill(`<td class="val val-fixed">${unitPrice?unitPrice.toLocaleString():'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            ${Array(6).fill(`<td class="val val-fixed">${unitPrice?unitPrice.toLocaleString():'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            <td class="val-total">－</td>
+          </tr>
+          <tr class="row-target">
+            <td class="row-cat" style="background:#F0F7FF"></td>
+            <td class="row-label">給与比率</td>
+            ${Array(6).fill(`<td class="val val-fixed">${(SALARY_RATE*100).toFixed(1)}%</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            ${Array(6).fill(`<td class="val val-fixed">${(SALARY_RATE*100).toFixed(1)}%</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            <td class="val-total">－</td>
+          </tr>
+          <!-- 損益分岐 -->
+          <tr class="row-break">
+            <td class="row-cat" rowspan="3" style="background:#FFF3E0;color:#CC6600">損益分岐</td>
+            <td class="row-label">貢献人数／月</td>
+            ${breakPerMonth.slice(0,6).map(v=>`<td class="val">${v?v.toLocaleString():'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            ${breakPerMonth.slice(6,12).map(v=>`<td class="val">${v?v.toLocaleString():'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            <td class="val-total">${totalBreakMonth?totalBreakMonth.toLocaleString():'－'}</td>
+          </tr>
+          <tr class="row-break">
+            <td class="row-label">貢献人数／日</td>
+            ${Array(6).fill(`<td class="val">${breakPerDay||'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            ${Array(6).fill(`<td class="val">${breakPerDay||'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            <td class="val-total">－</td>
+          </tr>
+          <tr class="row-break">
+            <td class="row-label">貢献報酬</td>
+            ${breakRevenue.slice(0,6).map(v=>`<td class="val">${v?v.toLocaleString():'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            ${breakRevenue.slice(6,12).map(v=>`<td class="val">${v?v.toLocaleString():'－'}</td>`).join('')}
+            <td class="val-subtotal">－</td>
+            <td class="val-total">${totalBreakRevenue?totalBreakRevenue.toLocaleString():'－'}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+
+  document.getElementById('report-area').innerHTML = html;
+};
+
+function getFiscalYear(year){
+  return [
+    [year,4],[year,5],[year,6],[year,7],[year,8],[year,9],
+    [year,10],[year,11],[year,12],[year+1,1],[year+1,2],[year+1,3]
+  ];
+}
+
+function sum(arr){ return arr.reduce((a,b)=>a+b,0); }
+
+init();
+</script>
+</body>
+</html>
