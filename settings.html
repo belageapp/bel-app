@@ -70,7 +70,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .cal-month{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden;min-width:0;display:flex;flex-direction:column}
 .cal-month-title{background:#185FA5;color:#fff;font-size:12px;font-weight:600;padding:7px 12px;display:flex;justify-content:space-between;align-items:center}
 .cal-month-count{font-size:11px;opacity:0.85}
-.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(7,28px);gap:2px;padding:8px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:28px;gap:2px;padding:8px}
 .cal-dow{font-size:10px;color:#aaa;text-align:center;padding:2px 0;font-weight:500;min-width:0}
 .cal-dow.sun{color:#E24B4A}
 .cal-dow.sat{color:#185FA5}
@@ -79,7 +79,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .cal-day.off{background:#f0f0f0;color:#bbb;border-color:#e0e0e0}
 .cal-day.off.sun{background:#FFF0E0;color:#CC6600;border-color:#FFDBB0}
 .cal-day.off.sat{background:#EBF3FB;color:#185FA5;border-color:#B5D4F4}
-.cal-day.empty{background:transparent;cursor:default;border:none;height:28px}
+.cal-day.empty{background:transparent;cursor:default;border:none;height:28px;min-height:28px;max-height:28px;overflow:hidden}
 .cal-day:not(.empty):hover{opacity:0.8;transform:scale(0.93)}
 </style>
 </head>
