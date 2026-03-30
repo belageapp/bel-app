@@ -199,7 +199,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
           </div>
           <div class="data-table-wrap"><table class="data-table">
             <thead><tr><th>部署名</th><th>事業所数</th><th>登録日</th><th>操作</th></tr></thead>
-            <tbody id="dept-tbody"><tr><td colspan="4" class="empty">読み込み中...</td></tr></tbody>
+            <tbody id="dept-tbody"><tr><td colspan="5" class="empty">読み込み中...</td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -223,7 +223,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
           </div>
           <div class="data-table-wrap"><table class="data-table">
             <thead><tr><th>エリア名</th><th>事業所数</th><th>登録日</th><th>操作</th></tr></thead>
-            <tbody id="area-tbody"><tr><td colspan="4" class="empty">読み込み中...</td></tr></tbody>
+            <tbody id="area-tbody"><tr><td colspan="5" class="empty">読み込み中...</td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -274,8 +274,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
         </div>
         <div class="card-body">
           <div class="data-table-wrap"><table class="data-table">
-            <thead><tr><th>事業所名</th><th>部署</th><th>エリア</th><th>種別／定員</th><th>単価</th></tr></thead>
-            <tbody id="office-tbody"><tr><td colspan="4" class="empty">読み込み中...</td></tr></tbody>
+            <thead><tr><th>事業所名</th><th>事業者番号</th><th>部署</th><th>エリア</th><th>種別／定員</th><th>単価</th></tr></thead>
+            <tbody id="office-tbody"><tr><td colspan="5" class="empty">読み込み中...</td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -483,7 +483,7 @@ async function loadDepts(){
 }
 function renderDepts(){
   const tb = document.getElementById('dept-tbody');
-  if(!cache.depts.length){tb.innerHTML='<tr><td colspan="4" class="empty">まだ登録がありません</td></tr>';return;}
+  if(!cache.depts.length){tb.innerHTML='<tr><td colspan="5" class="empty">まだ登録がありません</td></tr>';return;}
   tb.innerHTML = cache.depts.map(d=>{
     const cnt = cache.offices.filter(o=>o.dept===d.name).length;
     return`<tr>
@@ -519,7 +519,7 @@ async function loadAreas(){
 }
 function renderAreas(){
   const tb = document.getElementById('area-tbody');
-  if(!cache.areas.length){tb.innerHTML='<tr><td colspan="4" class="empty">まだ登録がありません</td></tr>';return;}
+  if(!cache.areas.length){tb.innerHTML='<tr><td colspan="5" class="empty">まだ登録がありません</td></tr>';return;}
   tb.innerHTML = cache.areas.map(a=>{
     const cnt = cache.offices.filter(o=>o.area===a.name).length;
     return`<tr>
@@ -555,7 +555,7 @@ async function loadOffices(){
 }
 function renderOfficeTable(){
   const tb = document.getElementById('office-tbody');
-  if(!cache.offices.length){tb.innerHTML='<tr><td colspan="4" class="empty">まだ登録がありません</td></tr>';return;}
+  if(!cache.offices.length){tb.innerHTML='<tr><td colspan="5" class="empty">まだ登録がありません</td></tr>';return;}
   const deptOpts = cache.depts.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
   const priceOpts = ['<option value="">未設定</option>',
     ...cache.prices.map(p=>`<option value="${p.id}">${p.type}${p.capacity>0?' 定員'+p.capacity:''}${p.price?' ('+p.price.toLocaleString()+'円)':''}</option>`)
@@ -563,6 +563,7 @@ function renderOfficeTable(){
   tb.innerHTML = cache.offices.map(o=>`
     <tr>
       <td style="font-weight:500">${o.name}</td>
+      <td><input type="text" value="${o.providerNumber||''}" onchange="updateOfficeProviderNumber('${o.id}',this.value)" style="width:110px;padding:5px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit" placeholder="10桁番号"></td>
       <td>
         <select class="office-price-select" id="dept-${o.id}" onchange="updateOfficeDept('${o.id}',this.value)">
           ${cache.depts.map(d=>`<option value="${d.name}"${o.dept===d.name?' selected':''}>${d.name}</option>`).join('')}
@@ -598,7 +599,7 @@ window.updateOfficePrice = function(id, priceId){
 };
 window.saveOffices = async function(){
   for(const o of cache.offices){
-    await setDoc(doc(db,'offices',o.id),{name:o.name,dept:o.dept||'',area:o.area||'',priceId:o.priceId||'',price:o.price||null,order:o.order||99,createdAt:o.createdAt||''});
+    await setDoc(doc(db,'offices',o.id),{name:o.name,providerNumber:o.providerNumber||'',dept:o.dept||'',area:o.area||'',priceId:o.priceId||'',price:o.price||null,order:o.order||99,createdAt:o.createdAt||''});
   }
   await loadOffices();
   renderAreas();
@@ -759,6 +760,23 @@ window.saveWorkdays = async function(){
     showStatus('保存エラー: '+e.message,true);
   }
   btn.textContent='保存する';btn.disabled=false;
+};
+
+// 事業所番号デフォルト値
+const OFFICE_NUMBERS = {
+  'HUGくみのいえ':'345010745',
+  'ここいろのいえ':'345011371',
+  'ReadyGO井口':'345020922',
+  'ReadyGO八木':'345021818',
+  'ReadyGO川内':'345021988',
+  'まなびあいのいえ':'345250021',
+  'ぐらっちぇ黒瀬':'345250033',
+  'ReadyGO黒瀬':'345250067',
+  'ReadyGO高屋':'345250068',
+  'にじのいえ':'345310001',
+  'はれのいえ':'345310002',
+  'ラフォーレ高陽':'341011837',
+  'レポ白木':'341012105',
 };
 
 async function init(){
