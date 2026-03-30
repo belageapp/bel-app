@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="貢献人数速報">
@@ -15,7 +16,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .header{background:#1D9E75;color:#fff;padding:16px;padding-top:calc(16px + env(safe-area-inset-top));position:sticky;top:0;z-index:100}
 .header h1{font-size:17px;font-weight:600;text-align:center}
 .header .date{font-size:12px;text-align:center;opacity:0.85;margin-top:2px}
-.tab-bar{display:flex;background:#fff;border-bottom:1px solid #e5e5e5;position:sticky;top:calc(56px + env(safe-area-inset-top));z-index:99}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.portal-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;padding:4px 10px;border-radius:12px}
+.tab-bar{display:flex;background:#fff;border-bottom:1px solid #e5e5e5;position:sticky;top:calc(72px + env(safe-area-inset-top));z-index:99}
 .tab{flex:1;padding:12px;font-size:13px;border:none;background:none;cursor:pointer;color:#888;border-bottom:2px solid transparent;font-family:inherit}
 .tab.active{color:#1D9E75;border-bottom-color:#1D9E75;font-weight:500}
 .section{display:none;padding:16px}.section.active{display:block}
@@ -37,10 +40,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .date-select-label{font-size:13px;color:#888;white-space:nowrap}
 .date-input{flex:1;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;color:#333;background:#fff;outline:none}
 .date-input:focus{border-color:#1D9E75}
-.service-tabs{display:flex;gap:6px;margin:10px 0}
-.service-tab{flex:1;padding:8px;font-size:13px;border:1px solid #e0e0e0;background:#f5f5f5;border-radius:8px;cursor:pointer;font-family:inherit;color:#888;text-align:center}
-.service-tab.active{background:#1D9E75;color:#fff;border-color:#1D9E75;font-weight:500}
-.service-panel{display:none}.service-panel.active{display:block}
 .count-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f0f0}
 .count-label{font-size:15px;color:#333}
 .count-ctrl{display:flex;align-items:center;gap:12px}
@@ -62,6 +61,20 @@ textarea:focus{border-color:#1D9E75}
 .input-progress-bar{height:100%;border-radius:3px;background:#1D9E75;transition:width 0.3s}
 .input-progress-bar.over{background:#E24B4A}
 .input-progress-pct{font-size:11px;color:#0F6E56;margin-top:4px;text-align:right}
+/* 月次履歴 */
+.history-card{background:#fff;border-radius:12px;padding:14px;margin-top:10px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+.history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.history-title{font-size:13px;font-weight:600;color:#333}
+.month-sel{padding:5px 8px;border:1px solid #e0e0e0;border-radius:6px;font-size:12px;font-family:inherit;color:#333;background:#fff;outline:none}
+.month-sel:focus{border-color:#1D9E75}
+.history-table{width:100%;border-collapse:collapse;font-size:12px}
+.history-table th{text-align:center;padding:5px 4px;background:#f5f5f5;color:#888;font-weight:500;border-bottom:1px solid #e0e0e0}
+.history-table td{text-align:center;padding:5px 4px;border-bottom:1px solid #f5f5f5;color:#333}
+.history-table tr:last-child td{border-bottom:none}
+.history-table .wd{background:#E0F5ED;color:#0F6E56;font-weight:500}
+.history-table .hol{background:#f5f5f5;color:#aaa}
+.history-summary{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0;font-size:12px;color:#666}
+.history-summary strong{color:#1D9E75;font-size:14px}
 .csv-btn{width:100%;padding:12px;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;color:#333;margin-bottom:14px}
 .csv-btn:active{background:#eee}
 .toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap}
@@ -120,24 +133,6 @@ textarea:focus{border-color:#1D9E75}
 .monthly-cat-summary-lbl{font-size:12px;color:#185FA5;font-weight:600}
 .monthly-cat-summary-num{font-size:15px;font-weight:700;color:#185FA5}
 .loading{text-align:center;padding:20px;color:#888;font-size:13px}
-.admin-lock{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:16px}
-.admin-lock-icon{font-size:40px}
-.admin-lock h2{font-size:18px;font-weight:600;color:#333}
-.admin-lock p{font-size:13px;color:#888;text-align:center}
-.pw-input{width:100%;padding:12px;border:1px solid #e0e0e0;border-radius:8px;font-size:16px;text-align:center;font-family:inherit;outline:none}
-.pw-input:focus{border-color:#1D9E75}
-.pw-btn{width:100%;padding:14px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit}
-.pw-error{color:#E24B4A;font-size:13px}
-.goal-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #f5f5f5}
-.goal-row:last-child{border-bottom:none}
-.goal-name{font-size:13px;color:#444;flex:1}
-.goal-input{width:72px;padding:6px 8px;border:1px solid #e0e0e0;border-radius:6px;font-size:14px;text-align:center;font-family:inherit;outline:none}
-.goal-input:focus{border-color:#1D9E75}
-.save-btn{width:100%;padding:14px;background:#185FA5;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;margin-top:14px;font-family:inherit}
-.save-btn:active{background:#0C447C}
-.admin-title{font-size:15px;font-weight:600;margin-bottom:4px;color:#333}
-.admin-subtitle{font-size:12px;color:#888;margin-bottom:12px}
-.logout-btn{width:100%;padding:12px;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;color:#888;margin-top:8px}
 .conn-status{font-size:11px;text-align:center;padding:4px;margin-bottom:8px;border-radius:6px}
 .conn-ok{background:#d4f4e8;color:#0F6E56}
 .conn-ng{background:#fdecea;color:#A32D2D}
@@ -146,6 +141,10 @@ textarea:focus{border-color:#1D9E75}
 <body>
 <div class="app">
   <div class="header">
+    <div class="header-top">
+      <button class="portal-btn" onclick="location.href='index.html'">← ポータル</button>
+      <span style="opacity:0"></span>
+    </div>
     <div id="header-back" style="display:none;margin-bottom:4px">
       <button class="back-btn" onclick="backToSelector()">← 事業所一覧</button>
     </div>
@@ -155,7 +154,6 @@ textarea:focus{border-color:#1D9E75}
   <div class="tab-bar">
     <button class="tab active" onclick="switchTab('input')">事業所入力</button>
     <button class="tab" onclick="switchTab('hq')">全社一覧</button>
-    <button class="tab" onclick="switchTab('admin')">管理者</button>
   </div>
 
   <!-- 事業所入力 -->
@@ -201,6 +199,14 @@ textarea:focus{border-color:#1D9E75}
             <textarea id="comment-in" rows="3" placeholder="体調不良の児童あり、行事など…"></textarea>
           </div>
           <button class="submit-btn" onclick="submitReport()">報告する</button>
+          <!-- 月次履歴 -->
+          <div class="history-card" id="history-area" style="display:none">
+            <div class="history-header">
+              <span class="history-title">稼働日・入力履歴</span>
+              <select class="month-sel" id="history-month-sel" onchange="loadHistory()"></select>
+            </div>
+            <div id="history-body"></div>
+          </div>
         </div>
 
         <!-- ラフォーレ用の入力（2行表示） -->
@@ -243,6 +249,14 @@ textarea:focus{border-color:#1D9E75}
             </div>
           </div>
           <button class="submit-btn" onclick="submitLafore()">報告する</button>
+          <!-- ラフォーレ月次履歴 -->
+          <div class="history-card" id="lafore-history-area" style="display:none">
+            <div class="history-header">
+              <span class="history-title">稼働日・入力履歴</span>
+              <select class="month-sel" id="lafore-history-month-sel" onchange="loadHistory()"></select>
+            </div>
+            <div id="lafore-history-body"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -272,31 +286,6 @@ textarea:focus{border-color:#1D9E75}
       <div id="monthly-body"><div class="loading">読み込み中...</div></div>
     </div>
   </div>
-
-  <!-- 管理者 -->
-  <div id="sec-admin" class="section">
-    <div id="admin-lock-screen">
-      <div class="admin-lock">
-        <div class="admin-lock-icon">🔒</div>
-        <h2>管理者ページ</h2>
-        <p>パスワードを入力してください</p>
-        <input type="password" class="pw-input" id="pw-input" placeholder="パスワード" onkeydown="if(event.key==='Enter')checkPw()">
-        <div class="pw-error" id="pw-error" style="display:none">パスワードが違います</div>
-        <button class="pw-btn" onclick="checkPw()">ログイン</button>
-      </div>
-    </div>
-    <div id="admin-main" style="display:none;padding:16px">
-      <div id="admin-conn-status" class="conn-status" style="display:none"></div>
-      <div class="card">
-        <div class="admin-title">事業所ごとの月次目標人数</div>
-        <div class="admin-subtitle">月間の合計貢献人数の目標を入力してください</div>
-        <div id="goal-list"></div>
-        <button class="save-btn" id="save-btn" onclick="saveGoals()">保存する</button>
-      </div>
-      <button class="logout-btn" onclick="adminLogout()">ログアウト</button>
-      <button style="width:100%;padding:12px;background:#185FA5;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;margin-top:8px" onclick="location.href='settings.html'">初期設定画面を開く（PC推奨）</button>
-    </div>
-  </div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -315,9 +304,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const ADMIN_PASSWORD = "bel";
-
-// ラフォーレはcare/workで2レコード保存、集計は合算
 const LAFORE_OFFICES = ["ラフォーレ高陽","ラフォーレ亀山"];
 const OFFICES = [
   "HUGくみのいえ","ReadyGO井口","ReadyGO八木","ReadyGO川内","ここいろのいえ",
@@ -325,7 +311,6 @@ const OFFICES = [
   "にじのいえ","はれのいえ",
   "ラフォーレ高陽","ラフォーレ亀山","レポ白木"
 ];
-// 集計用定員（ラフォーレは生活介護10+就労B10=20）
 const CAPACITY = {
   "HUGくみのいえ":10,"ReadyGO井口":10,"ReadyGO八木":10,"ReadyGO川内":10,"ここいろのいえ":10,
   "まなびあいのいえ":10,"ReadyGO高屋":10,"ReadyGO黒瀬":10,"ぐらっちぇ黒瀬":10,
@@ -345,14 +330,14 @@ const now = new Date();
 const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 const monthStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 
-// reports: {office: {kids, care, work, comment, time, docId, careDocId, workDocId}}
 const state = {
   reports:{}, goals:{}, monthlyTotals:{},
   cur:null, kids:0, kidsCare:0, kidsWork:0,
-  hqDate:todayStr, viewMonth:monthStr
+  hqDate:todayStr, viewMonth:monthStr,
+  workdays:{}, historyMonth:monthStr
 };
 
-function getToday(){const d=new Date();return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+['日','月','火','水','木','金','土'][d.getDay()]+'）';}
+function getToday(){const d=new Date();return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+['日','月','火','水','木','金','土'][d.getDay()]+"）";}
 function getTime(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
 function dateToMonth(s){return s.substring(0,7);}
 function monthLabel(m){const[y,mo]=m.split('-');return `${y}年${parseInt(mo)}月`;}
@@ -362,6 +347,102 @@ function showConn(id,ok,msg){
   const el=document.getElementById(id);if(!el)return;
   el.style.display='block';el.className='conn-status '+(ok?'conn-ok':'conn-ng');el.textContent=msg;
 }
+
+// 月選択のoptions生成（現在月から12ヶ月前まで）
+function buildMonthOptions(selId){
+  const sel=document.getElementById(selId);if(!sel)return;
+  sel.innerHTML='';
+  const now=new Date();
+  for(let i=0;i<13;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const val=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const lbl=`${d.getFullYear()}年${d.getMonth()+1}月`;
+    const opt=document.createElement('option');
+    opt.value=val;opt.textContent=lbl;
+    if(i===0)opt.selected=true;
+    sel.appendChild(opt);
+  }
+}
+
+// 稼働日をFirestoreから取得
+async function loadWorkdays(officeName, month){
+  const year=parseInt(month.split('-')[0]);
+  // 月が4-9は当年度、10-3は前年度
+  const mo=parseInt(month.split('-')[1]);
+  const fiscalYear=mo>=4?year:year-1;
+  const docId=`${fiscalYear}_${officeName}`;
+  try{
+    const snap=await getDoc(doc(db,'workdays',docId));
+    if(snap.exists()) return snap.data().days||{};
+  }catch(e){}
+  return {};
+}
+
+// 月の入力履歴を表示
+window.loadHistory=async function(){
+  const isLaf=isLafore(state.cur);
+  const selId=isLaf?'lafore-history-month-sel':'history-month-sel';
+  const bodyId=isLaf?'lafore-history-body':'history-body';
+  const sel=document.getElementById(selId);
+  if(!sel)return;
+  const month=sel.value;
+  state.historyMonth=month;
+  const body=document.getElementById(bodyId);
+  body.innerHTML='<div class="loading">読み込み中...</div>';
+
+  // 稼働日取得
+  const wdays=await loadWorkdays(state.cur, month);
+  // その月の報告データ取得
+  const q=query(collection(db,'reports'),where('office','==',state.cur),where('month','==',month));
+  const snap=await getDocs(q);
+  const reports={};
+  snap.forEach(d=>{
+    const r=d.data();
+    if(!reports[r.date])reports[r.date]={kids:0,care:null,work:null};
+    if(r.serviceType==='care')reports[r.date].care=r.kids;
+    else if(r.serviceType==='work')reports[r.date].work=r.kids;
+    else reports[r.date].kids=r.kids;
+    if(r.care!=null&&r.work!=null)reports[r.date].kids=r.care+r.work;
+  });
+
+  // 月の日付一覧生成
+  const [y,m]=month.split('-').map(Number);
+  const daysInMonth=new Date(y,m,0).getDate();
+  const DOW=['日','月','火','水','木','金','土'];
+
+  let rows='';
+  let totalWd=0,totalReported=0,totalKids=0;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow=new Date(y,m-1,d).getDay();
+    const isWd=wdays[dateStr]===1;
+    const rep=reports[dateStr];
+    if(isWd)totalWd++;
+    if(rep){totalReported++;totalKids+=isLaf?(rep.care||0)+(rep.work||0):rep.kids;}
+    const trCls=isWd?'wd':'hol';
+    let kidsCell='';
+    if(rep){
+      if(isLaf) kidsCell=`<span style="color:#1D9E75;font-weight:600">${(rep.care||0)+(rep.work||0)}</span><span style="font-size:10px;color:#888"> (介護${rep.care??'-'}/就労${rep.work??'-'})</span>`;
+      else kidsCell=`<span style="color:#1D9E75;font-weight:600">${rep.kids}</span>`;
+    }else if(isWd){
+      kidsCell='<span style="color:#bbb;font-size:11px">未入力</span>';
+    }else{
+      kidsCell='<span style="color:#ddd;font-size:11px">休</span>';
+    }
+    rows+=`<tr><td class="${trCls}">${d}(${DOW[dow]})</td><td>${isWd?'●':''}</td><td>${kidsCell}</td></tr>`;
+  }
+
+  body.innerHTML=`
+    <table class="history-table">
+      <thead><tr><th>日付</th><th>稼働</th><th>貢献人数</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="history-summary">
+      <span>稼働日数: <strong>${totalWd}日</strong></span>
+      <span>入力済: <strong>${totalReported}日</strong></span>
+      <span>合計: <strong>${totalKids}名</strong></span>
+    </div>`;
+};
 
 function calcKouken(offices, reps){
   const rep=offices.filter(o=>reps[o]);
@@ -417,7 +498,6 @@ function monthlyProgressHTML(current,goal){
   return `<div class="monthly-progress-wrap"><div class="monthly-progress-bar${over?' over':''}" style="width:${pct}%"></div></div><span class="monthly-achieve">${Math.round(current/goal*100)}%（目標${goal}名）</span>`;
 }
 
-// Firestoreからレポートを集約（ラフォーレはcare+workを合算）
 function aggregateReports(rows){
   const reps={};
   rows.forEach(r=>{
@@ -428,18 +508,86 @@ function aggregateReports(rows){
       if(r.serviceType==='work'){reps[o].work=r.kids;reps[o].kids+=r.kids;reps[o].workDocId=r._id;}
       if(r.comment)reps[o].comment+=r.comment;
     }else{
-      reps[o]={kids:r.kids,comment:r.comment||'',time:r.time,docId:r._id};
+      reps[o]={kids:r.kids,comment:r.comment||'  ',time:r.time,docId:r._id};
     }
   });
   return reps;
 }
 
 async function loadGoals(){
+  // actualsコレクションから目標を参照（report.htmlと共通）
   try{
-    const snap=await getDoc(doc(db,'settings','goals'));
-    if(snap.exists()){const d=snap.data();OFFICES.forEach(o=>{if(d[o])state.goals[o]=d[o];});}
+    // officesから全事業所の目標を取得
+    const offSnap=await getDocs(collection(db,'offices'));
+    const offices={};
+    offSnap.forEach(d=>offices[d.id]={...d.data()});
+    // actualsから当月の目標人数を参照
+    const year=parseInt(monthStr.split('-')[0]);
+    const mo=parseInt(monthStr.split('-')[1]);
+    const fiscalYear=mo>=4?year:year-1;
+    for(const office of OFFICES){
+      const docId=`${fiscalYear}_${office}`;
+      const snap=await getDoc(doc(db,'actuals',docId));
+      if(snap.exists()){
+        const data=snap.data().months||{};
+        // 当月の目標貢献人数/月を取得
+        // actualsにはtpmが保存されていないので、workdaysとcapacityから計算
+        // workdaysから当月稼働日数を取得
+        const wdSnap=await getDoc(doc(db,'workdays',docId));
+        const wdays=wdSnap.exists()?wdSnap.data().days||{}:{};
+        const wdCount=Object.entries(wdays).filter(([k,v])=>k.startsWith(monthStr)&&v===1).length;
+        // officesからcapacityを取得
+        const offList=Object.values(offices).find(o=>o.name===office);
+        const priceId=offList?.priceId;
+        if(priceId){
+          const prSnap=await getDoc(doc(db,'prices',priceId));
+          if(prSnap.exists()){
+            const cap=prSnap.data().capacity||0;
+            const goal=wdCount*cap;
+            if(goal>0)state.goals[office]=goal;
+          }
+        }
+      }
+    }
     showConn('conn-banner',true,'Firebaseに接続済み');
-  }catch(e){showConn('conn-banner',false,'オフライン（目標未読込）');}
+  }catch(e){
+    // フォールバック：settingsから取得
+    try{
+      const snap=await getDoc(doc(db,'settings','goals'));
+      if(snap.exists()){const d=snap.data();OFFICES.forEach(o=>{if(d[o])state.goals[o]=d[o];});}
+      showConn('conn-banner',true,'Firebaseに接続済み');
+    }catch(e2){showConn('conn-banner',false,'オフライン（目標未読込）');}
+  }
+}
+
+async function loadGoalsSimple(){
+  // シンプルバージョン：workdays+pricesから目標を計算
+  try{
+    const year=parseInt(monthStr.split('-')[0]);
+    const mo=parseInt(monthStr.split('-')[1]);
+    const fiscalYear=mo>=4?year:year-1;
+    // officesとprices一括取得
+    const [offSnap,prSnap]=await Promise.all([
+      getDocs(collection(db,'offices')),
+      getDocs(collection(db,'prices'))
+    ]);
+    const prices={};prSnap.forEach(d=>prices[d.id]={...d.data()});
+    const offMap={};offSnap.forEach(d=>offMap[d.data().name]={...d.data(),id:d.id});
+    // 各事業所の目標計算
+    for(const office of OFFICES){
+      const off=offMap[office];if(!off)continue;
+      const price=prices[off.priceId];if(!price||!price.capacity)continue;
+      const wdDocId=`${fiscalYear}_${office}`;
+      const wdSnap=await getDoc(doc(db,'workdays',wdDocId));
+      const wdays=wdSnap.exists()?wdSnap.data().days||{}:{};
+      const wdCount=Object.entries(wdays).filter(([k,v])=>k.startsWith(monthStr)&&v===1).length;
+      const goal=wdCount*price.capacity;
+      if(goal>0)state.goals[office]=goal;
+    }
+    showConn('conn-banner',true,'Firebaseに接続済み');
+  }catch(e){
+    showConn('conn-banner',false,'目標読込エラー');
+  }
 }
 
 async function loadMonthlyTotals(){
@@ -495,7 +643,6 @@ async function loadMonthly(){
     const q=query(collection(db,'reports'),where('month','==',m));
     const snap=await getDocs(q);
     const raw=[];snap.forEach(d=>{raw.push({...d.data(),_id:d.id});});
-    // 月次は日ごとに集約してから合計
     const dayReps={};
     raw.forEach(r=>{
       const key=`${r.office}__${r.date}`;
@@ -555,8 +702,6 @@ window.shiftMonth=function(dir){
   loadMonthly();
 };
 
-
-
 function renderBtns(){
   document.getElementById('office-btns').innerHTML=OFFICES.map(o=>{
     const r=state.reports[o];
@@ -572,7 +717,7 @@ function renderBtns(){
   }).join('');
 }
 
-window.selectOffice=function(name){
+window.selectOffice=async function(name){
   state.cur=name;
   const r=state.reports[name];
   document.getElementById('form-name').textContent=name;
@@ -584,7 +729,7 @@ window.selectOffice=function(name){
     state.kidsWork=r&&r.work!=null?r.work:0;
     document.getElementById('kids-care').textContent=state.kidsCare;
     document.getElementById('kids-work').textContent=state.kidsWork;
-    document.getElementById('comment-care').value=r&&r.commentCare||r&&r.commentWork||'';
+    document.getElementById('comment-care').value=r&&r.commentCare||r&&r.commentWork||'  ';
     const done=r&&r.care!=null&&r.work!=null;
     const partial=r&&(r.care!=null||r.work!=null)&&!done;
     const b=document.getElementById('form-badge');
@@ -600,6 +745,10 @@ window.selectOffice=function(name){
       bar.className='input-progress-bar'+(mt>=goal?' over':'');
       document.getElementById('lp-pct').textContent=`${Math.round(mt/goal*100)}%`;
     }else document.getElementById('lafore-progress-area').style.display='none';
+    // 履歴表示
+    buildMonthOptions('lafore-history-month-sel');
+    document.getElementById('lafore-history-area').style.display='block';
+    await window.loadHistory();
   }else{
     document.getElementById('normal-input').style.display='block';
     document.getElementById('lafore-input').style.display='none';
@@ -618,6 +767,10 @@ window.selectOffice=function(name){
       bar.className='input-progress-bar'+(mt>=goal?' over':'');
       document.getElementById('ip-pct').textContent=`${Math.round(mt/goal*100)}%`;
     }else document.getElementById('input-progress-area').style.display='none';
+    // 履歴表示
+    buildMonthOptions('history-month-sel');
+    document.getElementById('history-area').style.display='block';
+    await window.loadHistory();
   }
   document.getElementById('office-selector').style.display='none';
   document.getElementById('input-form').style.display='block';
@@ -655,6 +808,8 @@ window.submitReport=async function(){
     }
     showToast('報告しました ✓');
     await loadMonthlyTotals();await loadToday();
+    // 履歴を更新
+    await window.loadHistory();
     setTimeout(window.backToSelector,700);
   }catch(e){showToast('エラー: '+e.message);}
 };
@@ -664,9 +819,7 @@ window.submitLafore=async function(){
   const selectedMonth=dateToMonth(selectedDate);
   const time=getTime();
   const commentCare=document.getElementById('comment-care').value.trim();
-  const commentWork=commentCare;
   try{
-    // 生活介護
     const dataCare={office:state.cur,kids:state.kidsCare,comment:commentCare,time,date:selectedDate,month:selectedMonth,serviceType:'care'};
     const r=state.reports[state.cur];
     if(r&&r.careDocId&&selectedDate===todayStr){await setDoc(doc(db,'reports',r.careDocId),dataCare);}
@@ -676,8 +829,7 @@ window.submitLafore=async function(){
       if(!sc.empty)await setDoc(doc(db,'reports',sc.docs[0].id),dataCare);
       else await addDoc(collection(db,'reports'),dataCare);
     }
-    // 就労B
-    const dataWork={office:state.cur,kids:state.kidsWork,comment:commentWork,time,date:selectedDate,month:selectedMonth,serviceType:'work'};
+    const dataWork={office:state.cur,kids:state.kidsWork,comment:commentCare,time,date:selectedDate,month:selectedMonth,serviceType:'work'};
     if(r&&r.workDocId&&selectedDate===todayStr){await setDoc(doc(db,'reports',r.workDocId),dataWork);}
     else{
       const qw=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate),where('serviceType','==','work'));
@@ -687,40 +839,10 @@ window.submitLafore=async function(){
     }
     showToast('報告しました ✓');
     await loadMonthlyTotals();await loadToday();
+    await window.loadHistory();
     setTimeout(window.backToSelector,700);
   }catch(e){showToast('エラー: '+e.message);}
 };
-
-function renderGoalList(){
-  document.getElementById('goal-list').innerHTML=OFFICES.map((o,i)=>`
-    <div class="goal-row"><span class="goal-name">${o}${isLafore(o)?'<span style="font-size:10px;color:#888"> (合算)</span>':''}</span>
-    <input type="number" class="goal-input" id="g_${i}" value="${state.goals[o]||''}" min="0" max="9999" placeholder="—"></div>`).join('');
-}
-
-async function saveGoals(){
-  const btn=document.getElementById('save-btn');btn.textContent='保存中...';btn.disabled=true;
-  const newGoals={};
-  OFFICES.forEach((o,i)=>{const v=parseInt(document.getElementById(`g_${i}`).value);if(!isNaN(v)&&v>0)newGoals[o]=v;});
-  try{
-    await setDoc(doc(db,'settings','goals'),newGoals);
-    state.goals={...newGoals};
-    showConn('admin-conn-status',true,'保存しました ✓');showToast('目標を保存しました ✓');
-  }catch(e){showConn('admin-conn-status',false,'保存エラー: '+e.message);showToast('保存に失敗しました');}
-  btn.textContent='保存する';btn.disabled=false;
-}
-
-window.checkPw=function(){
-  if(document.getElementById('pw-input').value===ADMIN_PASSWORD){
-    document.getElementById('admin-lock-screen').style.display='none';
-    document.getElementById('admin-main').style.display='block';renderGoalList();
-  }else{document.getElementById('pw-error').style.display='block';document.getElementById('pw-input').value='';}
-};
-window.adminLogout=function(){
-  document.getElementById('admin-lock-screen').style.display='block';
-  document.getElementById('admin-main').style.display='none';
-  document.getElementById('pw-input').value='';document.getElementById('pw-error').style.display='none';
-};
-window.saveGoals=saveGoals;
 
 window.switchHqTab=function(tab){
   document.querySelectorAll('.tab-sub-btn').forEach((b,i)=>b.classList.toggle('active',['today','monthly'][i]===tab));
@@ -731,8 +853,8 @@ window.switchHqTab=function(tab){
 };
 
 window.switchTab=function(tab){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['input','hq','admin'][i]===tab));
-  ['sec-input','sec-hq','sec-admin'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',['input','hq','admin'][i]===tab));
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['input','hq'][i]===tab));
+  ['sec-input','sec-hq'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',['input','hq'][i]===tab));
   if(tab==='hq')renderHQ(state.reports);
 };
 
@@ -747,7 +869,7 @@ window.downloadCSV=async function(){
     const r=reps[o],cap=CAPACITY[o]||10;
     const rate=r?(r.kids/cap*100).toFixed(1)+'%':'';
     let comment=r?r.comment:'';
-    if(isLafore(o)&&r){comment=`介護:${r.care??'-'} 就労:${r.work??'-'}`;}
+    if(isLafore(o)&&r){comment=`介護:${r.care??'—'} 就労:${r.work??'—'}`;}
     csv+=`${o},${r?r.kids:''},${cap},${rate},${r?r.time:'未報告'},"${comment}"\n`;
   });
   const a=document.createElement('a');
@@ -757,13 +879,12 @@ window.downloadCSV=async function(){
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-// 初期化
 document.getElementById('today-lbl').textContent=getToday();
 document.getElementById('report-date').value=todayStr;
 document.getElementById('report-date').max=todayStr;
 document.getElementById('hq-date-input').value=todayStr;
 document.getElementById('month-nav-label').textContent=monthLabel(monthStr);
-await loadGoals();
+await loadGoalsSimple();
 await loadMonthlyTotals();
 await loadToday();
 setInterval(async()=>{await loadMonthlyTotals();await loadToday();},30000);
