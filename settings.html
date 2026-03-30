@@ -2,24 +2,36 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>マスタ設定 | ベルアージュ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f0f2f5;min-height:100vh;color:#333}
-.layout{display:flex;min-height:100vh}
+.layout{display:flex;min-height:100vh;flex-direction:column}
+@media(min-width:600px){.layout{flex-direction:row}}
 /* サイドバー */
-.sidebar{width:200px;background:#1D9E75;flex-shrink:0;padding:0}
+.sidebar{background:#1D9E75;flex-shrink:0;padding:0;width:100%}
+@media(min-width:600px){.sidebar{width:200px;min-height:100vh}}
 .sidebar-title{padding:20px 16px 16px;color:#fff;font-size:15px;font-weight:600;border-bottom:1px solid rgba(255,255,255,0.2)}
 .sidebar-subtitle{font-size:11px;opacity:0.7;font-weight:400;display:block;margin-top:2px}
 .nav-item{display:block;padding:12px 16px;color:rgba(255,255,255,0.85);font-size:13px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-left:3px solid transparent;transition:all 0.15s}
 .nav-item:hover{background:rgba(255,255,255,0.1);color:#fff}
 .nav-item.active{background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;font-weight:500}
-.nav-section{padding:12px 16px 4px;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.5px;text-transform:uppercase}
-.back-link{display:block;padding:12px 16px;color:rgba(255,255,255,0.6);font-size:12px;cursor:pointer;border:none;background:none;width:100%;text-align:left;margin-top:auto;border-top:1px solid rgba(255,255,255,0.15);position:absolute;bottom:0;width:200px}
+.nav-section{padding:8px 16px 4px;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.5px;text-transform:uppercase}
+@media(max-width:599px){
+  .sidebar-title{padding:12px 16px 8px}
+  .nav-section{display:none}
+  .sidebar nav,.sidebar-nav{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:4px 8px 8px;gap:6px}
+  .nav-item{white-space:nowrap;padding:8px 14px;border-radius:20px;border-left:none;border:1px solid rgba(255,255,255,0.3);flex-shrink:0;width:auto}
+  .nav-item.active{background:rgba(255,255,255,0.2);border-color:#fff}
+  .back-link{display:none}
+}
+.back-link{display:block;padding:12px 16px;color:rgba(255,255,255,0.6);font-size:12px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-top:1px solid rgba(255,255,255,0.15)}
+@media(min-width:600px){.back-link{position:absolute;bottom:0;width:200px}}
 .back-link:hover{color:#fff}
 /* メインコンテンツ */
-.main{flex:1;padding:28px 32px;overflow-y:auto}
+.main{flex:1;padding:16px;overflow-y:auto}
+@media(min-width:600px){.main{padding:28px 32px}}
 .page{display:none}.page.active{display:block}
 .page-header{margin-bottom:24px}
 .page-title{font-size:20px;font-weight:600;color:#1D9E75;margin-bottom:4px}
@@ -41,7 +53,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .form-group label{font-size:12px;color:#666;font-weight:500}
 .form-group input,.form-group select{padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;outline:none;background:#fff;color:#333}
 .form-group input:focus,.form-group select:focus{border-color:#1D9E75}
-.form-group input[type="number"]{width:100px}
+.form-group input[type="number"]{width:80px}
 /* ボタン */
 .btn{padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;border:none;font-family:inherit;font-weight:500}
 .btn-primary{background:#1D9E75;color:#fff}.btn-primary:hover{background:#0F6E56}
@@ -64,7 +76,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .price-input:focus{outline:none;border-color:#1D9E75}
 .capacity-badge{display:inline-block;background:#EBF3FB;color:#185FA5;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
 /* 事業所テーブル */
-.office-price-select{padding:6px 8px;border:1px solid #ddd;border-radius:5px;font-size:12px;font-family:inherit;max-width:180px}
+.office-price-select{padding:6px 8px;border:1px solid #ddd;border-radius:5px;font-size:12px;font-family:inherit;max-width:100%;width:100%}
 .office-price-select:focus{outline:none;border-color:#1D9E75}
 .derived-price{font-size:12px;color:#1D9E75;font-weight:500;min-width:80px;display:inline-block}
 .cal-month{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden;min-width:0}
@@ -88,14 +100,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 <div class="layout">
   <div class="sidebar">
     <div class="sidebar-title">マスタ設定</div>
-    <div class="nav-section">マスタ設定</div>
+    <div class="sidebar-nav">
     <button class="nav-item active" onclick="showPage('service-types',this)">施設種別</button>
     <button class="nav-item" onclick="showPage('prices',this)">単価設定</button>
     <button class="nav-item" onclick="showPage('departments',this)">部署</button>
     <button class="nav-item" onclick="showPage('areas',this)">エリア</button>
     <button class="nav-item" onclick="showPage('offices',this)">事業所登録</button>
-    <div class="nav-section">年度設定</div>
     <button class="nav-item" onclick="showPage('workdays',this)">稼働日設定</button>
+    </div>
     <button class="back-link" onclick="location.href='index.html'">← ポータルに戻る</button>
   </div>
 
@@ -244,7 +256,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
           <span id="wd-total" style="font-size:13px;font-weight:600;color:#185FA5;margin-left:8px"></span>
         </div>
       </div>
-      <div id="wd-calendar" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:4px"></div>
+      <div id="wd-calendar" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:4px"></div>
     </div>
 
 
