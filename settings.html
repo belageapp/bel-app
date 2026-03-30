@@ -42,7 +42,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .card-title{font-size:14px;font-weight:600;color:#333}
 .card-body{padding:20px}
 /* テーブル */
-.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;min-width:400px}
 .data-table th{text-align:left;padding:9px 14px;background:#f8f8f8;color:#666;font-weight:500;border-bottom:1px solid #e8e8e8;white-space:nowrap}
 .data-table td{padding:10px 14px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
 .data-table tr:last-child td{border-bottom:none}
@@ -134,10 +135,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
             </div>
             <button class="btn btn-primary" onclick="addServiceType()">追加</button>
           </div>
-          <table class="data-table">
+          <div class="data-table-wrap"><table class="data-table">
             <thead><tr><th>種別名</th><th>登録日</th><th>操作</th></tr></thead>
             <tbody id="type-tbody"><tr><td colspan="3" class="empty">読み込み中...</td></tr></tbody>
-          </table>
+          </table></div>
         </div>
       </div>
     </div>
@@ -153,10 +154,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
           <span class="card-title">単価一覧</span>
         </div>
         <div class="card-body">
-          <table class="data-table">
+          <div class="data-table-wrap"><table class="data-table">
             <thead><tr><th>施設種別</th><th>定員</th><th>単価（円）</th><th></th><th>操作</th></tr></thead>
             <tbody id="price-tbody"><tr><td colspan="5" class="empty">読み込み中...</td></tr></tbody>
-          </table>
+          </table></div>
           <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f0f0">
             <div style="font-size:13px;font-weight:500;margin-bottom:10px;color:#555">新しい単価を追加</div>
             <div class="form-row">
@@ -196,10 +197,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
             </div>
             <button class="btn btn-primary" onclick="addDepartment()">追加</button>
           </div>
-          <table class="data-table">
+          <div class="data-table-wrap"><table class="data-table">
             <thead><tr><th>部署名</th><th>事業所数</th><th>登録日</th><th>操作</th></tr></thead>
             <tbody id="dept-tbody"><tr><td colspan="4" class="empty">読み込み中...</td></tr></tbody>
-          </table>
+          </table></div>
         </div>
       </div>
     </div>
@@ -220,10 +221,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
             </div>
             <button class="btn btn-primary" onclick="addArea()">追加</button>
           </div>
-          <table class="data-table">
+          <div class="data-table-wrap"><table class="data-table">
             <thead><tr><th>エリア名</th><th>事業所数</th><th>登録日</th><th>操作</th></tr></thead>
             <tbody id="area-tbody"><tr><td colspan="4" class="empty">読み込み中...</td></tr></tbody>
-          </table>
+          </table></div>
         </div>
       </div>
     </div>
@@ -272,10 +273,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
           <button class="btn btn-primary btn-sm" onclick="saveOffices()">変更を保存</button>
         </div>
         <div class="card-body">
-          <table class="data-table">
+          <div class="data-table-wrap"><table class="data-table">
             <thead><tr><th>事業所名</th><th>部署</th><th>エリア</th><th>種別／定員</th><th>単価</th></tr></thead>
             <tbody id="office-tbody"><tr><td colspan="4" class="empty">読み込み中...</td></tr></tbody>
-          </table>
+          </table></div>
         </div>
       </div>
     </div>
