@@ -2,771 +2,156 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="貢献人数速報">
-<meta name="theme-color" content="#1D9E75">
-<title>貢献人数速報</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>業務支援システム | 株式会社ベルアージュ</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f5f5f5;min-height:100dvh}
-.app{max-width:480px;margin:0 auto;padding:0 0 80px}
-.header{background:#1D9E75;color:#fff;padding:16px;padding-top:calc(16px + env(safe-area-inset-top));position:sticky;top:0;z-index:100}
-.header h1{font-size:17px;font-weight:600;text-align:center}
-.header .date{font-size:12px;text-align:center;opacity:0.85;margin-top:2px}
-.tab-bar{display:flex;background:#fff;border-bottom:1px solid #e5e5e5;position:sticky;top:calc(56px + env(safe-area-inset-top));z-index:99}
-.tab{flex:1;padding:12px;font-size:13px;border:none;background:none;cursor:pointer;color:#888;border-bottom:2px solid transparent;font-family:inherit}
-.tab.active{color:#1D9E75;border-bottom-color:#1D9E75;font-weight:500}
-.section{display:none;padding:16px}.section.active{display:block}
-.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
-.office-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.office-btn{padding:14px 10px;border:1px solid #e0e0e0;background:#fff;border-radius:10px;cursor:pointer;font-size:13px;font-family:inherit;text-align:left;display:flex;justify-content:space-between;align-items:center;color:#333}
-.office-btn.done{border-color:#1D9E75;background:#f0faf6}
-.office-btn.partial{border-color:#EF9F27;background:#FAEEDA}
-.office-btn .dot{width:8px;height:8px;border-radius:50%;background:#e0e0e0;flex-shrink:0}
-.office-btn.done .dot{background:#1D9E75}
-.office-btn.partial .dot{background:#EF9F27}
-.back-btn{background:none;border:none;color:#fff;font-size:14px;cursor:pointer;font-family:inherit;padding:0;opacity:0.9}
-.form-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-.form-title{font-size:16px;font-weight:600}
-.status-pill{font-size:11px;padding:3px 10px;border-radius:20px;background:#FEF3CD;color:#854F0B}
-.status-pill.done{background:#d4f4e8;color:#0F6E56}
-.status-pill.partial{background:#FAEEDA;color:#854F0B}
-.date-select-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #f0f0f0;margin-bottom:4px}
-.date-select-label{font-size:13px;color:#888;white-space:nowrap}
-.date-input{flex:1;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;color:#333;background:#fff;outline:none}
-.date-input:focus{border-color:#1D9E75}
-.service-tabs{display:flex;gap:6px;margin:10px 0}
-.service-tab{flex:1;padding:8px;font-size:13px;border:1px solid #e0e0e0;background:#f5f5f5;border-radius:8px;cursor:pointer;font-family:inherit;color:#888;text-align:center}
-.service-tab.active{background:#1D9E75;color:#fff;border-color:#1D9E75;font-weight:500}
-.service-panel{display:none}.service-panel.active{display:block}
-.count-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f0f0}
-.count-label{font-size:15px;color:#333}
-.count-ctrl{display:flex;align-items:center;gap:12px}
-.cnt-btn{width:36px;height:36px;border-radius:50%;border:1px solid #d0d0d0;background:#f5f5f5;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#333;line-height:1}
-.cnt-btn:active{background:#e0e0e0}
-.cnt-num{font-size:22px;font-weight:600;min-width:36px;text-align:center;color:#1D9E75}
-.comment-field{margin-top:14px}
-.comment-field label{font-size:13px;color:#888;display:block;margin-bottom:6px}
-textarea{width:100%;font-size:15px;padding:10px 12px;border:1px solid #e0e0e0;border-radius:8px;font-family:inherit;color:#333;background:#fff;resize:none;outline:none}
-textarea:focus{border-color:#1D9E75}
-.submit-btn{width:100%;padding:14px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;margin-top:14px;font-family:inherit}
-.submit-btn:active{background:#0F6E56}
-.input-progress-card{background:#f0faf6;border:1px solid #d4f4e8;border-radius:10px;padding:12px;margin-top:10px}
-.input-progress-title{font-size:12px;color:#0F6E56;margin-bottom:8px;font-weight:500}
-.input-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.input-progress-num{font-size:18px;font-weight:700;color:#0F6E56}
-.input-progress-goal{font-size:12px;color:#888}
-.input-progress-wrap{height:6px;background:#d4f4e8;border-radius:3px;overflow:hidden;margin-top:4px}
-.input-progress-bar{height:100%;border-radius:3px;background:#1D9E75;transition:width 0.3s}
-.input-progress-bar.over{background:#E24B4A}
-.input-progress-pct{font-size:11px;color:#0F6E56;margin-top:4px;text-align:right}
-.csv-btn{width:100%;padding:12px;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;color:#333;margin-bottom:14px}
-.csv-btn:active{background:#eee}
-.toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap}
-.toast.show{opacity:1}
-.date-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;background:#fff;border-radius:10px;padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-.date-nav-btn{width:32px;height:32px;border:1px solid #e0e0e0;background:#f5f5f5;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.date-nav-btn:active{background:#e0e0e0}
-.date-nav-input{flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;color:#333;background:#fff;outline:none;text-align:center}
-.date-nav-input:focus{border-color:#1D9E75}
-.month-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;background:#fff;border-radius:10px;padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-.month-nav-btn{width:32px;height:32px;border:1px solid #e0e0e0;background:#f5f5f5;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.month-nav-btn:active{background:#e0e0e0}
-.month-nav-label{flex:1;text-align:center;font-size:15px;font-weight:500;color:#333}
-.cat-block{margin-bottom:14px}
-.cat-header{background:#1D9E75;color:#fff;font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px 8px 0 0}
-.cat-body{background:#fff;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px;overflow:hidden}
-.area-label{font-size:11px;color:#888;padding:6px 12px 2px;background:#fafafa;border-bottom:1px solid #f0f0f0}
-.office-row{display:flex;justify-content:space-between;align-items:center;padding:7px 12px 7px 20px;border-bottom:1px solid #f5f5f5;gap:8px}
-.office-row-name{font-size:13px;color:#444;flex:1}
-.office-row-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-.office-row-num{font-size:13px;font-weight:600;color:#1D9E75}
-.office-row-num.pending{color:#bbb;font-weight:400;font-size:12px}
-.area-avg{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:#f0faf6;border-bottom:1px solid #d4f4e8}
-.area-avg-lbl{font-size:12px;color:#0F6E56}
-.area-avg-num{font-size:13px;font-weight:700;color:#0F6E56}
-.cat-summary{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#e0f5ed;border-top:2px solid #1D9E75}
-.cat-summary-lbl{font-size:12px;color:#0F6E56;font-weight:600}
-.cat-summary-num{font-size:15px;font-weight:700;color:#0F6E56}
-.single-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid #f5f5f5;gap:8px}
-.single-row:last-child{border-bottom:none}
-.single-name{font-size:13px;color:#444;flex:1}
-.single-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-.single-num{font-size:13px;font-weight:600;color:#1D9E75}
-.single-num.pending{color:#bbb;font-weight:400;font-size:12px}
-.single-sub{font-size:11px;color:#888}
-.tab-sub{display:flex;gap:6px;margin-bottom:14px}
-.tab-sub-btn{flex:1;padding:8px;font-size:13px;border:1px solid #e0e0e0;background:#fff;border-radius:8px;cursor:pointer;font-family:inherit;color:#888}
-.tab-sub-btn.active{background:#1D9E75;color:#fff;border-color:#1D9E75;font-weight:500}
-.monthly-cat-header{background:#185FA5;color:#fff;font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px 8px 0 0;margin-top:12px}
-.monthly-cat-body{background:#fff;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px;overflow:hidden;margin-bottom:4px}
-.monthly-area-label{font-size:11px;color:#888;padding:6px 12px 2px;background:#fafafa;border-bottom:1px solid #f0f0f0}
-.monthly-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px 8px 20px;border-bottom:1px solid #f5f5f5;font-size:13px;gap:8px}
-.monthly-row:last-child{border-bottom:none}
-.monthly-office{color:#444;flex:1}
-.monthly-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
-.monthly-total{font-weight:600;color:#185FA5;font-size:13px}
-.monthly-sub{font-size:11px;color:#888}
-.monthly-progress-wrap{width:80px;height:5px;background:#e0e0e0;border-radius:3px;overflow:hidden}
-.monthly-progress-bar{height:100%;border-radius:3px;background:#185FA5}
-.monthly-progress-bar.over{background:#E24B4A}
-.monthly-achieve{font-size:10px;color:#888}
-.monthly-area-summary{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:#EBF3FB;border-bottom:1px solid #B5D4F4}
-.monthly-area-summary-lbl{font-size:12px;color:#185FA5}
-.monthly-area-summary-num{font-size:13px;font-weight:700;color:#185FA5}
-.monthly-cat-summary{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#ddeef9;border-top:2px solid #185FA5}
-.monthly-cat-summary-lbl{font-size:12px;color:#185FA5;font-weight:600}
-.monthly-cat-summary-num{font-size:15px;font-weight:700;color:#185FA5}
-.loading{text-align:center;padding:20px;color:#888;font-size:13px}
-.admin-lock{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:16px}
-.admin-lock-icon{font-size:40px}
-.admin-lock h2{font-size:18px;font-weight:600;color:#333}
-.admin-lock p{font-size:13px;color:#888;text-align:center}
-.pw-input{width:100%;padding:12px;border:1px solid #e0e0e0;border-radius:8px;font-size:16px;text-align:center;font-family:inherit;outline:none}
-.pw-input:focus{border-color:#1D9E75}
-.pw-btn{width:100%;padding:14px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit}
-.pw-error{color:#E24B4A;font-size:13px}
-.goal-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #f5f5f5}
-.goal-row:last-child{border-bottom:none}
-.goal-name{font-size:13px;color:#444;flex:1}
-.goal-input{width:72px;padding:6px 8px;border:1px solid #e0e0e0;border-radius:6px;font-size:14px;text-align:center;font-family:inherit;outline:none}
-.goal-input:focus{border-color:#1D9E75}
-.save-btn{width:100%;padding:14px;background:#185FA5;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;margin-top:14px;font-family:inherit}
-.save-btn:active{background:#0C447C}
-.admin-title{font-size:15px;font-weight:600;margin-bottom:4px;color:#333}
-.admin-subtitle{font-size:12px;color:#888;margin-bottom:12px}
-.logout-btn{width:100%;padding:12px;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;color:#888;margin-top:8px}
-.conn-status{font-size:11px;text-align:center;padding:4px;margin-bottom:8px;border-radius:6px}
-.conn-ok{background:#d4f4e8;color:#0F6E56}
-.conn-ng{background:#fdecea;color:#A32D2D}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f0f2f5;min-height:100vh;color:#333}
+.top-bar{background:#1D9E75;padding:12px 20px;display:flex;align-items:center;gap:12px}
+.top-bar img{height:36px;object-fit:contain}
+.top-bar-text{color:#fff}
+.top-bar-title{font-size:15px;font-weight:600}
+.top-bar-sub{font-size:11px;opacity:0.8}
+.content{max-width:720px;margin:0 auto;padding:20px 16px}
+/* お知らせ */
+.notice-card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:14px 18px;margin-bottom:16px}
+.notice-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.notice-title{font-size:13px;font-weight:600;color:#333}
+.notice-manage{font-size:11px;color:#185FA5;cursor:pointer;display:none}
+.notice-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f5f5f5;font-size:12px}
+.notice-item:last-child{border-bottom:none}
+.badge-new{background:#fdecea;color:#A32D2D;padding:1px 7px;border-radius:20px;font-size:10px;white-space:nowrap;font-weight:500}
+.badge-read{background:#f5f5f5;color:#aaa;padding:1px 7px;border-radius:20px;font-size:10px;white-space:nowrap}
+.notice-date{color:#aaa;white-space:nowrap;min-width:40px}
+.notice-text{color:#333;flex:1}
+.notice-empty{text-align:center;padding:16px;color:#aaa;font-size:12px}
+/* メニューグリッド */
+.section-label{font-size:11px;color:#888;font-weight:500;margin-bottom:8px;padding-left:2px;letter-spacing:0.5px;text-transform:uppercase}
+.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px}
+.menu-card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:14px 16px;cursor:pointer;text-decoration:none;display:block;transition:transform 0.1s,box-shadow 0.1s}
+.menu-card:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,0.12)}
+.menu-card:active{transform:scale(0.98)}
+.menu-card-inner{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.menu-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-green{background:#d4f4e8}
+.icon-blue{background:#ddeef9}
+.icon-amber{background:#FEF3C7}
+.menu-name{font-size:13px;font-weight:600;color:#333}
+.menu-desc{font-size:11px;color:#888;padding-left:44px}
+/* 準備中 */
+.menu-grid-small{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+.menu-card-small{background:#fff;border-radius:8px;padding:10px 12px;text-align:center;opacity:0.55;cursor:default}
+.menu-card-small-name{font-size:12px;color:#888;font-weight:500}
+.menu-card-small-badge{font-size:10px;color:#bbb;margin-top:2px}
+/* 管理者リンク */
+.admin-link{text-align:center;padding:8px;font-size:11px;color:#bbb;cursor:pointer}
+.admin-link:hover{color:#888}
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="header">
-    <div id="header-back" style="display:none;margin-bottom:4px">
-      <button class="back-btn" onclick="backToSelector()">← 事業所一覧</button>
-    </div>
-    <h1 id="header-title">貢献人数速報</h1>
-    <div class="date" id="today-lbl"></div>
-  </div>
-  <div class="tab-bar">
-    <button class="tab active" onclick="switchTab('input')">事業所入力</button>
-    <button class="tab" onclick="switchTab('hq')">全社一覧</button>
-    <button class="tab" onclick="switchTab('admin')">管理者</button>
-  </div>
 
-  <!-- 事業所入力 -->
-  <div id="sec-input" class="section active">
-    <div id="office-selector">
-      <div id="conn-banner" class="conn-status" style="display:none"></div>
-      <div class="office-grid" id="office-btns"></div>
-    </div>
-    <div id="input-form" style="display:none">
-      <div class="card">
-        <div class="form-header">
-          <span class="form-title" id="form-name"></span>
-          <span class="status-pill" id="form-badge">未報告</span>
-        </div>
-        <div class="date-select-row">
-          <span class="date-select-label">日付</span>
-          <input type="date" class="date-input" id="report-date">
-        </div>
-
-        <!-- 通常事業所の入力 -->
-        <div id="normal-input">
-          <div class="count-row">
-            <span class="count-label">貢献人数</span>
-            <div class="count-ctrl">
-              <button class="cnt-btn" onclick="adj('normal',-1)">−</button>
-              <span class="cnt-num" id="kids-num">0</span>
-              <button class="cnt-btn" onclick="adj('normal',1)">＋</button>
-            </div>
-          </div>
-          <div id="input-progress-area" style="display:none">
-            <div class="input-progress-card">
-              <div class="input-progress-title">今月の貢献人数</div>
-              <div class="input-progress-row">
-                <span class="input-progress-num" id="ip-current">0</span>
-                <span class="input-progress-goal" id="ip-goal"></span>
-              </div>
-              <div class="input-progress-wrap"><div class="input-progress-bar" id="ip-bar" style="width:0%"></div></div>
-              <div class="input-progress-pct" id="ip-pct"></div>
-            </div>
-          </div>
-          <div class="comment-field">
-            <label>特記事項・コメント（任意）</label>
-            <textarea id="comment-in" rows="3" placeholder="体調不良の児童あり、行事など…"></textarea>
-          </div>
-          <button class="submit-btn" onclick="submitReport()">報告する</button>
-        </div>
-
-        <!-- ラフォーレ用の入力（2行表示） -->
-        <div id="lafore-input" style="display:none">
-          <div style="border-bottom:1px solid #f0f0f0;padding-bottom:12px;margin-bottom:12px">
-            <div style="font-size:12px;font-weight:500;color:#185FA5;margin-bottom:6px">生活介護　<span style="font-size:11px;font-weight:400;color:#888">定員10名</span></div>
-            <div class="count-row" style="border-bottom:none;padding:0">
-              <span class="count-label">貢献人数</span>
-              <div class="count-ctrl">
-                <button class="cnt-btn" onclick="adj('care',-1)">−</button>
-                <span class="cnt-num" id="kids-care">0</span>
-                <button class="cnt-btn" onclick="adj('care',1)">＋</button>
-              </div>
-            </div>
-          </div>
-          <div style="padding-bottom:4px">
-            <div style="font-size:12px;font-weight:500;color:#185FA5;margin-bottom:6px">就労B　<span style="font-size:11px;font-weight:400;color:#888">定員10名</span></div>
-            <div class="count-row" style="border-bottom:none;padding:0 0 8px">
-              <span class="count-label">貢献人数</span>
-              <div class="count-ctrl">
-                <button class="cnt-btn" onclick="adj('work',-1)">−</button>
-                <span class="cnt-num" id="kids-work">0</span>
-                <button class="cnt-btn" onclick="adj('work',1)">＋</button>
-              </div>
-            </div>
-          </div>
-          <div class="comment-field" style="margin-top:4px">
-            <label>特記事項・コメント（任意）</label>
-            <textarea id="comment-care" rows="3" placeholder="体調不良の児童あり、行事など…"></textarea>
-          </div>
-          <div id="lafore-progress-area" style="display:none">
-            <div class="input-progress-card">
-              <div class="input-progress-title">今月の合計貢献人数</div>
-              <div class="input-progress-row">
-                <span class="input-progress-num" id="lp-current">0</span>
-                <span class="input-progress-goal" id="lp-goal"></span>
-              </div>
-              <div class="input-progress-wrap"><div class="input-progress-bar" id="lp-bar" style="width:0%"></div></div>
-              <div class="input-progress-pct" id="lp-pct"></div>
-            </div>
-          </div>
-          <button class="submit-btn" onclick="submitLafore()">報告する</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 全社一覧 -->
-  <div id="sec-hq" class="section">
-    <div class="tab-sub">
-      <button class="tab-sub-btn active" onclick="switchHqTab('today')">当日</button>
-      <button class="tab-sub-btn" onclick="switchHqTab('monthly')">月次合計</button>
-    </div>
-    <div id="hq-today">
-      <div class="date-nav">
-        <button class="date-nav-btn" onclick="shiftDate(-1)">‹</button>
-        <input type="date" class="date-nav-input" id="hq-date-input" onchange="loadHqDate()">
-        <button class="date-nav-btn" onclick="shiftDate(1)">›</button>
-      </div>
-      <button class="csv-btn" onclick="downloadCSV()">CSVダウンロード（Excel用）</button>
-      <div id="hq-body"></div>
-    </div>
-    <div id="hq-monthly" style="display:none">
-      <div class="month-nav">
-        <button class="month-nav-btn" onclick="shiftMonth(-1)">‹</button>
-        <span class="month-nav-label" id="month-nav-label"></span>
-        <button class="month-nav-btn" onclick="shiftMonth(1)">›</button>
-      </div>
-      <div id="monthly-body"><div class="loading">読み込み中...</div></div>
-    </div>
-  </div>
-
-  <!-- 管理者 -->
-  <div id="sec-admin" class="section">
-    <div id="admin-lock-screen">
-      <div class="admin-lock">
-        <div class="admin-lock-icon">🔒</div>
-        <h2>管理者ページ</h2>
-        <p>パスワードを入力してください</p>
-        <input type="password" class="pw-input" id="pw-input" placeholder="パスワード" onkeydown="if(event.key==='Enter')checkPw()">
-        <div class="pw-error" id="pw-error" style="display:none">パスワードが違います</div>
-        <button class="pw-btn" onclick="checkPw()">ログイン</button>
-      </div>
-    </div>
-    <div id="admin-main" style="display:none;padding:16px">
-      <div id="admin-conn-status" class="conn-status" style="display:none"></div>
-      <div class="card">
-        <div class="admin-title">事業所ごとの月次目標人数</div>
-        <div class="admin-subtitle">月間の合計貢献人数の目標を入力してください</div>
-        <div id="goal-list"></div>
-        <button class="save-btn" id="save-btn" onclick="saveGoals()">保存する</button>
-      </div>
-      <button class="logout-btn" onclick="adminLogout()">ログアウト</button>
-      <button style="width:100%;padding:12px;background:#185FA5;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;margin-top:8px" onclick="location.href='settings.html'">初期設定画面を開く（PC推奨）</button>
-    </div>
+<div class="top-bar">
+  <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
+  <div class="top-bar-text">
+    <div class="top-bar-title">業務支援システム</div>
+    <div class="top-bar-sub">株式会社ベルアージュ</div>
   </div>
 </div>
-<div class="toast" id="toast"></div>
+
+<div class="content">
+
+  <!-- お知らせ -->
+  <div class="notice-card">
+    <div class="notice-header">
+      <div class="notice-title">お知らせ</div>
+    </div>
+    <div id="notice-list"><div class="notice-empty">お知らせはありません</div></div>
+  </div>
+
+  <!-- 稼働中メニュー -->
+  <div class="section-label">メニュー</div>
+  <div class="menu-grid">
+
+    <a href="daily.html" class="menu-card">
+      <div class="menu-card-inner">
+        <div class="menu-icon icon-green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="menu-name">貢献人数報告</div>
+      </div>
+      <div class="menu-desc">日次報告　スマホ対応</div>
+    </a>
+
+    <a href="report.html" class="menu-card">
+      <div class="menu-card-inner">
+        <div class="menu-icon icon-blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <div class="menu-name">貢献実績表</div>
+      </div>
+      <div class="menu-desc">目標・実績・達成率</div>
+    </a>
+
+    <a href="#" class="menu-card" style="opacity:0.5;pointer-events:none;cursor:default">
+      <div class="menu-card-inner">
+        <div class="menu-icon icon-amber">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="menu-name">中期経営計画</div>
+      </div>
+      <div class="menu-desc">準備中</div>
+    </a>
+
+  </div>
+
+  <!-- 準備中メニュー -->
+  <div class="section-label">準備中</div>
+  <div class="menu-grid-small">
+    <div class="menu-card-small"><div class="menu-card-small-name">報酬内容明細</div><div class="menu-card-small-badge">準備中</div></div>
+    <div class="menu-card-small"><div class="menu-card-small-name">シフト管理</div><div class="menu-card-small-badge">準備中</div></div>
+    <div class="menu-card-small"><div class="menu-card-small-name">採用管理</div><div class="menu-card-small-badge">準備中</div></div>
+    <div class="menu-card-small"><div class="menu-card-small-name">社内規程</div><div class="menu-card-small-badge">準備中</div></div>
+    <div class="menu-card-small"><div class="menu-card-small-name">各種マニュアル</div><div class="menu-card-small-badge">準備中</div></div>
+  </div>
+
+  <div class="admin-link" onclick="location.href='settings.html'">⚙ 管理者設定</div>
+
+</div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, doc, getDoc, setDoc, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
-  authDomain: "daily-report-b90e8.firebaseapp.com",
-  projectId: "daily-report-b90e8",
-  storageBucket: "daily-report-b90e8.firebasestorage.app",
-  messagingSenderId: "16569831525",
-  appId: "1:16569831525:web:aa250f2061f762dfe1768c"
+  apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
+  authDomain:"daily-report-b90e8.firebaseapp.com",
+  projectId:"daily-report-b90e8",
+  storageBucket:"daily-report-b90e8.firebasestorage.app",
+  messagingSenderId:"16569831525",
+  appId:"1:16569831525:web:aa250f2061f762dfe1768c"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const ADMIN_PASSWORD = "bel";
-
-// ラフォーレはcare/workで2レコード保存、集計は合算
-const LAFORE_OFFICES = ["ラフォーレ高陽","ラフォーレ亀山"];
-const OFFICES = [
-  "HUGくみのいえ","ReadyGO井口","ReadyGO八木","ReadyGO川内","ここいろのいえ",
-  "まなびあいのいえ","ReadyGO高屋","ReadyGO黒瀬","ぐらっちぇ黒瀬",
-  "にじのいえ","はれのいえ",
-  "ラフォーレ高陽","ラフォーレ亀山","レポ白木"
-];
-// 集計用定員（ラフォーレは生活介護10+就労B10=20）
-const CAPACITY = {
-  "HUGくみのいえ":10,"ReadyGO井口":10,"ReadyGO八木":10,"ReadyGO川内":10,"ここいろのいえ":10,
-  "まなびあいのいえ":10,"ReadyGO高屋":10,"ReadyGO黒瀬":10,"ぐらっちぇ黒瀬":10,
-  "にじのいえ":10,"はれのいえ":10,
-  "ラフォーレ高陽":20,"ラフォーレ亀山":20,"レポ白木":4
-};
-const STRUCTURE = [
-  {cat:"発達支援事業部", summaryLabel:"発達支援事業部　貢献率", areas:[
-    {label:"広島エリア", offices:["HUGくみのいえ","ReadyGO井口","ReadyGO八木","ReadyGO川内","ここいろのいえ"]},
-    {label:"東広島エリア", offices:["まなびあいのいえ","ReadyGO高屋","ReadyGO黒瀬","ぐらっちぇ黒瀬"]},
-    {label:"安芸エリア", offices:["にじのいえ","はれのいえ"]}
-  ]},
-  {cat:"就労生活支援事業部", summaryLabel:"就労生活支援事業部　貢献率", single:["ラフォーレ高陽","ラフォーレ亀山","レポ白木"]}
-];
-
-const now = new Date();
-const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-const monthStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-
-// reports: {office: {kids, care, work, comment, time, docId, careDocId, workDocId}}
-const state = {
-  reports:{}, goals:{}, monthlyTotals:{},
-  cur:null, kids:0, kidsCare:0, kidsWork:0,
-  hqDate:todayStr, viewMonth:monthStr
-};
-
-function getToday(){const d=new Date();return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+['日','月','火','水','木','金','土'][d.getDay()]+'）';}
-function getTime(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
-function dateToMonth(s){return s.substring(0,7);}
-function monthLabel(m){const[y,mo]=m.split('-');return `${y}年${parseInt(mo)}月`;}
-function isLafore(name){return LAFORE_OFFICES.includes(name);}
-
-function showConn(id,ok,msg){
-  const el=document.getElementById(id);if(!el)return;
-  el.style.display='block';el.className='conn-status '+(ok?'conn-ok':'conn-ng');el.textContent=msg;
-}
-
-function calcKouken(offices, reps){
-  const rep=offices.filter(o=>reps[o]);
-  if(!rep.length)return null;
-  const sumK=rep.reduce((s,o)=>s+reps[o].kids,0);
-  const sumC=rep.reduce((s,o)=>s+(CAPACITY[o]||10),0);
-  return (sumK/sumC*100).toFixed(1);
-}
-
-function officeNumHTML(o, reps){
-  const r=reps[o];
-  if(!r)return`<span class="office-row-num pending">未報告</span>`;
-  const pct=(r.kids/(CAPACITY[o]||10)*100).toFixed(1);
-  if(isLafore(o)&&r.care!=null&&r.work!=null){
-    return`<span class="office-row-num">${r.kids}名 <span style="font-size:11px;color:#888">(${pct}%)</span></span>
-    <span class="single-sub">介護${r.care} / 就労${r.work}</span>`;
-  }
-  return`<span class="office-row-num">${r.kids}名 <span style="font-size:11px;color:#888">(${pct}%)</span></span>`;
-}
-
-function renderHQ(reps){
-  let html='';
-  STRUCTURE.forEach(cat=>{
-    html+=`<div class="cat-block"><div class="cat-header">${cat.cat}</div><div class="cat-body">`;
-    if(cat.areas){
-      const allO=cat.areas.flatMap(a=>a.offices);
-      cat.areas.forEach(area=>{
-        html+=`<div class="area-label">${area.label}</div>`;
-        area.offices.forEach(o=>{
-          html+=`<div class="office-row"><span class="office-row-name">${o}</span><div class="office-row-right">${officeNumHTML(o,reps)}</div></div>`;
-        });
-        const kr=calcKouken(area.offices,reps);
-        html+=`<div class="area-avg"><span class="area-avg-lbl">${area.label}　貢献率</span><span class="area-avg-num">${kr!==null?kr+'%':'—'}</span></div>`;
-      });
-      const kr=calcKouken(allO,reps);
-      html+=`<div class="cat-summary"><span class="cat-summary-lbl">${cat.summaryLabel}</span><span class="cat-summary-num">${kr!==null?kr+'%':'—'}</span></div>`;
-    }else{
-      cat.single.forEach(o=>{
-        html+=`<div class="single-row"><span class="single-name">${o}</span><div class="single-right">${officeNumHTML(o,reps)}</div></div>`;
-      });
-      const kr=calcKouken(cat.single,reps);
-      html+=`<div class="cat-summary"><span class="cat-summary-lbl">${cat.summaryLabel}</span><span class="cat-summary-num">${kr!==null?kr+'%':'—'}</span></div>`;
-    }
-    html+=`</div></div>`;
-  });
-  document.getElementById('hq-body').innerHTML=html;
-}
-
-function monthlyProgressHTML(current,goal){
-  if(!goal||goal<=0)return '';
-  const pct=Math.min(Math.round(current/goal*100),100);
-  const over=current>=goal;
-  return `<div class="monthly-progress-wrap"><div class="monthly-progress-bar${over?' over':''}" style="width:${pct}%"></div></div><span class="monthly-achieve">${Math.round(current/goal*100)}%（目標${goal}名）</span>`;
-}
-
-// Firestoreからレポートを集約（ラフォーレはcare+workを合算）
-function aggregateReports(rows){
-  const reps={};
-  rows.forEach(r=>{
-    const o=r.office;
-    if(r.serviceType==='care'||r.serviceType==='work'){
-      if(!reps[o])reps[o]={kids:0,care:null,work:null,comment:'',time:r.time};
-      if(r.serviceType==='care'){reps[o].care=r.kids;reps[o].kids+=r.kids;reps[o].careDocId=r._id;}
-      if(r.serviceType==='work'){reps[o].work=r.kids;reps[o].kids+=r.kids;reps[o].workDocId=r._id;}
-      if(r.comment)reps[o].comment+=r.comment;
-    }else{
-      reps[o]={kids:r.kids,comment:r.comment||'',time:r.time,docId:r._id};
-    }
-  });
-  return reps;
-}
-
-async function loadGoals(){
+async function loadNotices(){
   try{
-    const snap=await getDoc(doc(db,'settings','goals'));
-    if(snap.exists()){const d=snap.data();OFFICES.forEach(o=>{if(d[o])state.goals[o]=d[o];});}
-    showConn('conn-banner',true,'Firebaseに接続済み');
-  }catch(e){showConn('conn-banner',false,'オフライン（目標未読込）');}
-}
-
-async function loadMonthlyTotals(){
-  try{
-    const q=query(collection(db,'reports'),where('month','==',monthStr));
-    const snap=await getDocs(q);
-    const raw=[];snap.forEach(d=>{raw.push({...d.data(),_id:d.id});});
-    const reps=aggregateReports(raw);
-    state.monthlyTotals={};
-    OFFICES.forEach(o=>{if(reps[o])state.monthlyTotals[o]=reps[o].kids;});
+    const snap = await getDocs(query(collection(db,'notices'), orderBy('createdAt','desc'), limit(5)));
+    if(snap.empty) return;
+    const list = document.getElementById('notice-list');
+    list.innerHTML = '';
+    snap.forEach(d=>{
+      const n = d.data();
+      const date = n.createdAt?.substring(5,10).replace('-','/') || '';
+      const isNew = n.isNew || false;
+      list.innerHTML += `<div class="notice-item">
+        <span class="${isNew?'badge-new':'badge-read'}">${isNew?'新着':'既読'}</span>
+        <span class="notice-date">${date}</span>
+        <span class="notice-text">${n.title||''}</span>
+      </div>`;
+    });
   }catch(e){}
 }
-
-async function loadToday(){
-  try{
-    const q=query(collection(db,'reports'),where('date','==',todayStr));
-    const snap=await getDocs(q);
-    const raw=[];snap.forEach(d=>{raw.push({...d.data(),_id:d.id});});
-    state.reports=aggregateReports(raw);
-    renderBtns();
-    if(state.hqDate===todayStr)renderHQ(state.reports);
-    showConn('conn-banner',true,'Firebaseに接続済み');
-  }catch(e){showConn('conn-banner',false,'データ取得エラー: '+e.message);}
-}
-
-window.loadHqDate=async function(){
-  const dateVal=document.getElementById('hq-date-input').value;
-  if(!dateVal)return;
-  state.hqDate=dateVal;
-  document.getElementById('hq-body').innerHTML='<div class="loading">読み込み中...</div>';
-  try{
-    const q=query(collection(db,'reports'),where('date','==',dateVal));
-    const snap=await getDocs(q);
-    const raw=[];snap.forEach(d=>{raw.push({...d.data(),_id:d.id});});
-    const reps=aggregateReports(raw);
-    if(dateVal===todayStr)state.reports=reps;
-    renderHQ(reps);
-  }catch(e){document.getElementById('hq-body').innerHTML=`<div class="loading">読み込みエラー</div>`;}
-};
-
-window.shiftDate=function(dir){
-  const d=new Date(state.hqDate);d.setDate(d.getDate()+dir);
-  const s=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  document.getElementById('hq-date-input').value=s;
-  window.loadHqDate();
-};
-
-async function loadMonthly(){
-  const m=state.viewMonth;
-  document.getElementById('month-nav-label').textContent=monthLabel(m);
-  document.getElementById('monthly-body').innerHTML='<div class="loading">読み込み中...</div>';
-  try{
-    const q=query(collection(db,'reports'),where('month','==',m));
-    const snap=await getDocs(q);
-    const raw=[];snap.forEach(d=>{raw.push({...d.data(),_id:d.id});});
-    // 月次は日ごとに集約してから合計
-    const dayReps={};
-    raw.forEach(r=>{
-      const key=`${r.office}__${r.date}`;
-      if(!dayReps[key])dayReps[key]={office:r.office,date:r.date,kids:0};
-      dayReps[key].kids+=r.kids;
-    });
-    const totals={},days={};
-    Object.values(dayReps).forEach(dr=>{
-      if(!totals[dr.office])totals[dr.office]=0;
-      if(!days[dr.office])days[dr.office]=new Set();
-      totals[dr.office]+=dr.kids;days[dr.office].add(dr.date);
-    });
-    if(!Object.keys(totals).length){
-      document.getElementById('monthly-body').innerHTML='<div class="loading">まだデータがありません</div>';return;
-    }
-    let html='';
-    STRUCTURE.forEach(cat=>{
-      html+=`<div class="monthly-cat-header">${cat.cat}</div><div class="monthly-cat-body">`;
-      const catO=cat.areas?cat.areas.flatMap(a=>a.offices):(cat.single||[]);
-      if(cat.areas){
-        cat.areas.forEach(area=>{
-          html+=`<div class="monthly-area-label">${area.label}</div>`;
-          area.offices.forEach(o=>{
-            const t=totals[o]||0,d=days[o]?days[o].size:0,goal=state.goals[o]||0;
-            html+=`<div class="monthly-row"><span class="monthly-office">${o}</span>
-              <div class="monthly-right"><span class="monthly-total">${t}名<span class="monthly-sub"> (${d}日)</span></span>
-              ${goal>0?monthlyProgressHTML(t,goal):''}</div></div>`;
-          });
-          const aT=area.offices.reduce((s,o)=>s+(totals[o]||0),0);
-          const aC=area.offices.reduce((s,o)=>s+(CAPACITY[o]||10),0);
-          const aD=area.offices.reduce((max,o)=>Math.max(max,days[o]?days[o].size:0),0);
-          const aRate=aD>0?(aT/(aC*aD)*100).toFixed(1)+'%':'—';
-          html+=`<div class="monthly-area-summary"><span class="monthly-area-summary-lbl">${area.label}　貢献率</span><span class="monthly-area-summary-num">${aRate}</span></div>`;
-        });
-      }else{
-        cat.single.forEach(o=>{
-          const t=totals[o]||0,d=days[o]?days[o].size:0,goal=state.goals[o]||0;
-          html+=`<div class="monthly-row"><span class="monthly-office">${o}</span>
-            <div class="monthly-right"><span class="monthly-total">${t}名<span class="monthly-sub"> (${d}日)</span></span>
-            ${goal>0?monthlyProgressHTML(t,goal):''}</div></div>`;
-        });
-      }
-      const cT=catO.reduce((s,o)=>s+(totals[o]||0),0);
-      const cC=catO.reduce((s,o)=>s+(CAPACITY[o]||10),0);
-      const cD=catO.reduce((max,o)=>Math.max(max,days[o]?days[o].size:0),0);
-      const cRate=cD>0?(cT/(cC*cD)*100).toFixed(1)+'%':'—';
-      html+=`<div class="monthly-cat-summary"><span class="monthly-cat-summary-lbl">${cat.cat}　月次貢献率</span><span class="monthly-cat-summary-num">${cRate}</span></div></div>`;
-    });
-    document.getElementById('monthly-body').innerHTML=html;
-  }catch(e){document.getElementById('monthly-body').innerHTML=`<div class="loading">読み込みエラー: ${e.message}</div>`;}
-}
-
-window.shiftMonth=function(dir){
-  const[y,mo]=state.viewMonth.split('-').map(Number);
-  const d=new Date(y,mo-1+dir,1);
-  state.viewMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-  loadMonthly();
-};
-
-
-
-function renderBtns(){
-  document.getElementById('office-btns').innerHTML=OFFICES.map(o=>{
-    const r=state.reports[o];
-    let cls='office-btn';
-    if(isLafore(o)){
-      const hasCare=r&&r.care!=null,hasWork=r&&r.work!=null;
-      if(hasCare&&hasWork)cls+=' done';
-      else if(hasCare||hasWork)cls+=' partial';
-    }else{
-      if(r)cls+=' done';
-    }
-    return`<button class="${cls}" onclick="selectOffice('${o}')"><span style="font-size:13px">${o}</span><span class="dot"></span></button>`;
-  }).join('');
-}
-
-window.selectOffice=function(name){
-  state.cur=name;
-  const r=state.reports[name];
-  document.getElementById('form-name').textContent=name;
-
-  if(isLafore(name)){
-    document.getElementById('normal-input').style.display='none';
-    document.getElementById('lafore-input').style.display='block';
-    state.kidsCare=r&&r.care!=null?r.care:0;
-    state.kidsWork=r&&r.work!=null?r.work:0;
-    document.getElementById('kids-care').textContent=state.kidsCare;
-    document.getElementById('kids-work').textContent=state.kidsWork;
-    document.getElementById('comment-care').value=r&&r.commentCare||r&&r.commentWork||'';
-    const done=r&&r.care!=null&&r.work!=null;
-    const partial=r&&(r.care!=null||r.work!=null)&&!done;
-    const b=document.getElementById('form-badge');
-    b.textContent=done?'報告済':partial?'一部報告':'未報告';
-    b.className='status-pill'+(done?' done':partial?' partial':'');
-    const goal=state.goals[name],mt=state.monthlyTotals[name]||0;
-    if(goal){
-      document.getElementById('lafore-progress-area').style.display='block';
-      document.getElementById('lp-current').textContent=mt;
-      document.getElementById('lp-goal').textContent=`目標 ${goal}名`;
-      const pct=Math.min(Math.round(mt/goal*100),100);
-      const bar=document.getElementById('lp-bar');bar.style.width=pct+'%';
-      bar.className='input-progress-bar'+(mt>=goal?' over':'');
-      document.getElementById('lp-pct').textContent=`${Math.round(mt/goal*100)}%`;
-    }else document.getElementById('lafore-progress-area').style.display='none';
-  }else{
-    document.getElementById('normal-input').style.display='block';
-    document.getElementById('lafore-input').style.display='none';
-    state.kids=r?r.kids:0;
-    document.getElementById('kids-num').textContent=state.kids;
-    document.getElementById('comment-in').value=r?r.comment:'';
-    const done=!!r;
-    const b=document.getElementById('form-badge');b.textContent=done?'報告済':'未報告';b.className='status-pill'+(done?' done':'');
-    const goal=state.goals[name],mt=state.monthlyTotals[name]||0;
-    if(goal){
-      document.getElementById('input-progress-area').style.display='block';
-      document.getElementById('ip-current').textContent=mt;
-      document.getElementById('ip-goal').textContent=`目標 ${goal}名`;
-      const pct=Math.min(Math.round(mt/goal*100),100);
-      const bar=document.getElementById('ip-bar');bar.style.width=pct+'%';
-      bar.className='input-progress-bar'+(mt>=goal?' over':'');
-      document.getElementById('ip-pct').textContent=`${Math.round(mt/goal*100)}%`;
-    }else document.getElementById('input-progress-area').style.display='none';
-  }
-  document.getElementById('office-selector').style.display='none';
-  document.getElementById('input-form').style.display='block';
-  document.getElementById('header-back').style.display='block';
-  document.getElementById('header-title').textContent=name;
-};
-
-window.backToSelector=function(){
-  document.getElementById('office-selector').style.display='block';
-  document.getElementById('input-form').style.display='none';
-  document.getElementById('header-back').style.display='none';
-  document.getElementById('header-title').textContent='貢献人数速報';
-};
-
-window.adj=function(type,d){
-  if(type==='normal'){state.kids=Math.max(0,state.kids+d);document.getElementById('kids-num').textContent=state.kids;}
-  else if(type==='care'){state.kidsCare=Math.max(0,state.kidsCare+d);document.getElementById('kids-care').textContent=state.kidsCare;}
-  else if(type==='work'){state.kidsWork=Math.max(0,state.kidsWork+d);document.getElementById('kids-work').textContent=state.kidsWork;}
-};
-
-window.submitReport=async function(){
-  const selectedDate=document.getElementById('report-date').value||todayStr;
-  const selectedMonth=dateToMonth(selectedDate);
-  const comment=document.getElementById('comment-in').value.trim();
-  const time=getTime();
-  const data={office:state.cur,kids:state.kids,comment,time,date:selectedDate,month:selectedMonth};
-  try{
-    const r=state.reports[state.cur];
-    if(r&&r.docId&&selectedDate===todayStr){await setDoc(doc(db,'reports',r.docId),data);}
-    else{
-      const q=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate));
-      const snap=await getDocs(q);
-      if(!snap.empty)await setDoc(doc(db,'reports',snap.docs[0].id),data);
-      else await addDoc(collection(db,'reports'),data);
-    }
-    showToast('報告しました ✓');
-    await loadMonthlyTotals();await loadToday();
-    setTimeout(window.backToSelector,700);
-  }catch(e){showToast('エラー: '+e.message);}
-};
-
-window.submitLafore=async function(){
-  const selectedDate=document.getElementById('report-date').value||todayStr;
-  const selectedMonth=dateToMonth(selectedDate);
-  const time=getTime();
-  const commentCare=document.getElementById('comment-care').value.trim();
-  const commentWork=commentCare;
-  try{
-    // 生活介護
-    const dataCare={office:state.cur,kids:state.kidsCare,comment:commentCare,time,date:selectedDate,month:selectedMonth,serviceType:'care'};
-    const r=state.reports[state.cur];
-    if(r&&r.careDocId&&selectedDate===todayStr){await setDoc(doc(db,'reports',r.careDocId),dataCare);}
-    else{
-      const qc=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate),where('serviceType','==','care'));
-      const sc=await getDocs(qc);
-      if(!sc.empty)await setDoc(doc(db,'reports',sc.docs[0].id),dataCare);
-      else await addDoc(collection(db,'reports'),dataCare);
-    }
-    // 就労B
-    const dataWork={office:state.cur,kids:state.kidsWork,comment:commentWork,time,date:selectedDate,month:selectedMonth,serviceType:'work'};
-    if(r&&r.workDocId&&selectedDate===todayStr){await setDoc(doc(db,'reports',r.workDocId),dataWork);}
-    else{
-      const qw=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate),where('serviceType','==','work'));
-      const sw=await getDocs(qw);
-      if(!sw.empty)await setDoc(doc(db,'reports',sw.docs[0].id),dataWork);
-      else await addDoc(collection(db,'reports'),dataWork);
-    }
-    showToast('報告しました ✓');
-    await loadMonthlyTotals();await loadToday();
-    setTimeout(window.backToSelector,700);
-  }catch(e){showToast('エラー: '+e.message);}
-};
-
-function renderGoalList(){
-  document.getElementById('goal-list').innerHTML=OFFICES.map((o,i)=>`
-    <div class="goal-row"><span class="goal-name">${o}${isLafore(o)?'<span style="font-size:10px;color:#888"> (合算)</span>':''}</span>
-    <input type="number" class="goal-input" id="g_${i}" value="${state.goals[o]||''}" min="0" max="9999" placeholder="—"></div>`).join('');
-}
-
-async function saveGoals(){
-  const btn=document.getElementById('save-btn');btn.textContent='保存中...';btn.disabled=true;
-  const newGoals={};
-  OFFICES.forEach((o,i)=>{const v=parseInt(document.getElementById(`g_${i}`).value);if(!isNaN(v)&&v>0)newGoals[o]=v;});
-  try{
-    await setDoc(doc(db,'settings','goals'),newGoals);
-    state.goals={...newGoals};
-    showConn('admin-conn-status',true,'保存しました ✓');showToast('目標を保存しました ✓');
-  }catch(e){showConn('admin-conn-status',false,'保存エラー: '+e.message);showToast('保存に失敗しました');}
-  btn.textContent='保存する';btn.disabled=false;
-}
-
-window.checkPw=function(){
-  if(document.getElementById('pw-input').value===ADMIN_PASSWORD){
-    document.getElementById('admin-lock-screen').style.display='none';
-    document.getElementById('admin-main').style.display='block';renderGoalList();
-  }else{document.getElementById('pw-error').style.display='block';document.getElementById('pw-input').value='';}
-};
-window.adminLogout=function(){
-  document.getElementById('admin-lock-screen').style.display='block';
-  document.getElementById('admin-main').style.display='none';
-  document.getElementById('pw-input').value='';document.getElementById('pw-error').style.display='none';
-};
-window.saveGoals=saveGoals;
-
-window.switchHqTab=function(tab){
-  document.querySelectorAll('.tab-sub-btn').forEach((b,i)=>b.classList.toggle('active',['today','monthly'][i]===tab));
-  document.getElementById('hq-today').style.display=tab==='today'?'block':'none';
-  document.getElementById('hq-monthly').style.display=tab==='monthly'?'block':'none';
-  if(tab==='monthly')loadMonthly();
-  if(tab==='today')window.loadHqDate();
-};
-
-window.switchTab=function(tab){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['input','hq','admin'][i]===tab));
-  ['sec-input','sec-hq','sec-admin'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',['input','hq','admin'][i]===tab));
-  if(tab==='hq')renderHQ(state.reports);
-};
-
-window.downloadCSV=async function(){
-  const dateVal=document.getElementById('hq-date-input').value||todayStr;
-  const q=query(collection(db,'reports'),where('date','==',dateVal));
-  const snap=await getDocs(q);
-  const raw=[];snap.forEach(d=>{raw.push({...d.data(),_id:d.id});});
-  const reps=aggregateReports(raw);
-  let csv='事業所名,貢献人数,定員,当日貢献率,報告時刻,コメント\n';
-  OFFICES.forEach(o=>{
-    const r=reps[o],cap=CAPACITY[o]||10;
-    const rate=r?(r.kids/cap*100).toFixed(1)+'%':'';
-    let comment=r?r.comment:'';
-    if(isLafore(o)&&r){comment=`介護:${r.care??'-'} 就労:${r.work??'-'}`;}
-    csv+=`${o},${r?r.kids:''},${cap},${rate},${r?r.time:'未報告'},"${comment}"\n`;
-  });
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download=`貢献人数速報_${dateVal.replace(/-/g,'')}.csv`;a.click();
-};
-
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-
-// 初期化
-document.getElementById('today-lbl').textContent=getToday();
-document.getElementById('report-date').value=todayStr;
-document.getElementById('report-date').max=todayStr;
-document.getElementById('hq-date-input').value=todayStr;
-document.getElementById('month-nav-label').textContent=monthLabel(monthStr);
-await loadGoals();
-await loadMonthlyTotals();
-await loadToday();
-setInterval(async()=>{await loadMonthlyTotals();await loadToday();},30000);
+loadNotices();
 </script>
 </body>
 </html>
