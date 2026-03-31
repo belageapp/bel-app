@@ -268,9 +268,12 @@ function parseCSV(text, filename) {
   let billingYM = null; // YYYYMM（請求月 = K112の提供月）
 
   for (const cols of lines) {
-    if (cols[0] === 'K112' && cols[1] === '01') {
-      officeNo = cols[6]?.trim();    // 事業者番号（10桁）
-      billingYM = cols[4]?.trim();   // 提供月 YYYYMM
+    // 実際のCSV構造: 列[2]="K112", 列[3]=subtype, 列[4]=提供月, 列[6]=事業者番号
+    const recType = cols[2]?.replace(/"/g, '').trim();
+    const subType = cols[3]?.replace(/"/g, '').trim();
+    if (recType === 'K112' && subType === '01') {
+      officeNo  = cols[6]?.replace(/"/g, '').trim();  // 事業者番号（10桁）
+      billingYM = cols[4]?.replace(/"/g, '').trim();  // 提供月 YYYYMM
       break;
     }
   }
@@ -305,9 +308,12 @@ function parseCSV(text, filename) {
   };
 
   for (const cols of lines) {
-    if (cols[0] !== 'K122' || cols[1] !== '03') continue;
+    // 実際のCSV構造: 列[2]="K122", 列[3]=subtype
+    const recType = cols[2]?.replace(/"/g, '').trim();
+    const subType = cols[3]?.replace(/"/g, '').trim();
+    if (recType !== 'K122' || subType !== '03') continue;
 
-    const code  = cols[8]?.trim();
+    const code  = cols[8]?.replace(/"/g, '').trim();
     const units = parseInt(cols[9]) || 0;
     const count = parseInt(cols[10]) || 0;
     const amt   = parseInt(cols[11]) || 0;
