@@ -262,10 +262,11 @@ function parseCSV(text, filename) {
   const lines = text.split(/\r?\n/).map(l => l.split(','));
   let officeNo = null, regionCode = null;
 
+  // K112（放デイ・児発）または J111（生活介護・就労B・短期入所）subtype=01 から事業者番号・地域区分コードを取得
   for (const cols of lines) {
     const rt = cols[2]?.replace(/"/g,'').trim();
     const st = cols[3]?.replace(/"/g,'').trim();
-    if (rt === 'K112' && st === '01') {
+    if ((rt === 'K112' || rt === 'J111') && st === '01') {
       if (!officeNo) {
         officeNo   = cols[6]?.replace(/"/g,'').trim();
         regionCode = cols[5]?.replace(/"/g,'').trim();
@@ -274,7 +275,7 @@ function parseCSV(text, filename) {
   }
 
   if (!officeNo) {
-    alert(`${filename}: K112レコードが見つかりません。国保連CSVファイルか確認してください。`);
+    alert(`${filename}: K112/J111レコードが見つかりません。国保連CSVファイルか確認してください。`);
     return null;
   }
 
@@ -290,7 +291,8 @@ function parseCSV(text, filename) {
   for (const cols of lines) {
     const rt = cols[2]?.replace(/"/g,'').trim();
     const st = cols[3]?.replace(/"/g,'').trim();
-    if (rt !== 'K122' || st !== '03') continue;
+    // K122（放デイ・児発）または J121（生活介護・就労B・短期入所）subtype=03 がサービス明細行
+    if ((rt !== 'K122' && rt !== 'J121') || st !== '03') continue;
 
     const ym    = cols[4]?.replace(/"/g,'').trim();
     const code  = cols[8]?.replace(/"/g,'').trim();
