@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSV取込 | ベルアージュ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f0f2f5;color:#333;font-size:13px}
+.top-bar{background:#1D9E75;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100}
+.top-bar-title{font-size:15px;font-weight:600}
+.top-bar button{padding:5px 12px;border-radius:5px;border:none;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-gray{background:rgba(255,255,255,0.2);color:#fff}
+.content{padding:20px;max-width:960px;margin:0 auto}
+.card{background:#fff;border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.card-title{font-size:14px;font-weight:700;color:#1D9E75;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #E0F5ED}
+
+/* ステップ */
+.steps{display:flex;gap:0;margin-bottom:20px}
+.step{flex:1;text-align:center;padding:10px 4px;background:#f5f5f5;color:#aaa;font-size:11px;font-weight:600;position:relative}
+.step::after{content:'';position:absolute;right:-12px;top:0;bottom:0;width:24px;background:#f5f5f5;clip-path:polygon(0 0,100% 50%,0 100%);z-index:1}
+.step:last-child::after{display:none}
+.step.active{background:#1D9E75;color:#fff}
+.step.active::after{background:#1D9E75}
+.step.done{background:#B2DFDB;color:#004D40}
+.step.done::after{background:#B2DFDB}
+.step-num{display:block;font-size:18px;font-weight:700}
+
+/* ドロップゾーン */
+.drop-zone{border:2px dashed #B2DFDB;border-radius:8px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;background:#F9FFFE}
+.drop-zone:hover,.drop-zone.over{border-color:#1D9E75;background:#E0F5ED}
+.drop-zone-icon{font-size:40px;margin-bottom:10px}
+.drop-zone-text{color:#555;font-size:14px;font-weight:500}
+.drop-zone-sub{color:#aaa;font-size:12px;margin-top:4px}
+
+/* 注意事項 */
+.notice{background:#FFF8E1;border:1px solid #FFD54F;border-radius:6px;padding:10px 14px;font-size:12px;color:#5D4037;line-height:1.6}
+.notice strong{color:#E65100}
+
+/* プレビュー */
+.preview-header{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px}
+.preview-tag{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.tag-blue{background:#EBF3FB;color:#185FA5}
+.tag-green{background:#E8F5EE;color:#1D6E3E}
+.tag-orange{background:#FFF3E0;color:#CC6600}
+
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px}
+.summary-item{background:#f8f9fa;border-radius:6px;padding:12px 14px;border-left:3px solid #1D9E75}
+.summary-label{font-size:11px;color:#888;margin-bottom:4px}
+.summary-value{font-size:18px;font-weight:700;color:#1D6E3E}
+.summary-unit{font-size:11px;color:#888;font-weight:400}
+.summary-item.warn{border-left-color:#FF9800}
+.summary-item.warn .summary-value{color:#CC6600}
+
+/* 分類テーブル */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{border:1px solid #e0e0e0;padding:6px 10px;text-align:right}
+th{background:#f5f5f5;text-align:center;font-weight:600;color:#555;font-size:11px}
+.td-label{text-align:left;color:#555}
+.td-basic{color:#185FA5;font-weight:600}
+.td-body{color:#1D6E3E;font-weight:600}
+.td-act{color:#6B3FA0;font-weight:600}
+.td-treat{color:#CC6600;font-weight:600}
+.td-total{background:#E0F5ED;color:#0F6E56;font-weight:700}
+.td-people{background:#EBF3FB;color:#185FA5;font-weight:700}
+
+/* 警告テーブル */
+.warn-table{width:100%;border-collapse:collapse;font-size:11px}
+.warn-table th,.warn-table td{border:1px solid #FFD54F;padding:5px 8px;text-align:left}
+.warn-table th{background:#FFF8E1;color:#5D4037;font-weight:600}
+.warn-table td{background:#FFFDE7}
+.warn-code{font-family:monospace;font-weight:600;color:#E65100}
+.warn-amt{text-align:right;color:#CC6600;font-weight:600}
+
+/* ボタン */
+.btn-primary{background:#1D9E75;color:#fff;padding:10px 24px;border-radius:6px;border:none;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600;transition:background .2s}
+.btn-primary:hover{background:#0F6E56}
+.btn-primary:disabled{background:#aaa;cursor:not-allowed}
+.btn-secondary{background:#fff;color:#555;padding:10px 24px;border-radius:6px;border:1px solid #ddd;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+
+/* 保存完了 */
+.save-complete{background:#E0F5ED;border:1px solid #1D9E75;border-radius:8px;padding:20px;text-align:center}
+.save-complete-icon{font-size:36px;margin-bottom:8px}
+.save-complete-title{font-size:16px;font-weight:700;color:#0F6E56;margin-bottom:6px}
+.save-complete-sub{font-size:12px;color:#555}
+
+.hidden{display:none}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.progress{font-size:12px;color:#888;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <span class="top-bar-title">📂 CSV取込</span>
+  <button class="btn-gray" onclick="location.href='report.html'">貢献実績表</button>
+  <button class="btn-gray" onclick="location.href='index.html'">ポータル</button>
+</div>
+
+<div class="content">
+
+  <!-- ステップ表示 -->
+  <div class="steps" id="steps">
+    <div class="step active" id="step1"><span class="step-num">1</span>ファイル選択</div>
+    <div class="step" id="step2"><span class="step-num">2</span>内容確認</div>
+    <div class="step" id="step3"><span class="step-num">3</span>保存完了</div>
+  </div>
+
+  <!-- STEP1: ファイル選択 -->
+  <div id="pane-step1">
+    <div class="card">
+      <div class="card-title">国保連CSVファイルを選択</div>
+
+      <div class="notice" style="margin-bottom:16px">
+        <strong>⚠️ 個人情報の取り扱いについて</strong><br>
+        国保連CSVには受給者証番号・保護者名・利用者名が含まれます。<br>
+        このページでの処理は<strong>すべてブラウザ内のみ</strong>で行われ、個人情報はサーバーに送信・保存されません。<br>
+        集計値（貢献人数・報酬額）のみがFirestoreに保存されます。
+      </div>
+
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <div class="drop-zone-icon">📄</div>
+        <div class="drop-zone-text">クリックまたはドラッグ&ドロップでCSVを選択</div>
+        <div class="drop-zone-sub">Shift-JIS（cp932）形式 / 国保連請求CSVのみ対応</div>
+      </div>
+      <input type="file" id="file-input" accept=".csv" class="hidden">
+      <div id="file-name" style="margin-top:8px;font-size:12px;color:#888"></div>
+      <div id="parse-progress" class="progress hidden"></div>
+    </div>
+  </div>
+
+  <!-- STEP2: プレビュー・確認 -->
+  <div id="pane-step2" class="hidden">
+    <div class="card">
+      <div class="card-title">取込内容の確認</div>
+      <div class="preview-header" id="preview-header"></div>
+      <div class="summary-grid" id="summary-grid"></div>
+
+      <table style="margin-bottom:16px">
+        <thead>
+          <tr>
+            <th style="text-align:left">分類</th>
+            <th>単位数</th>
+            <th>金額（円）</th>
+          </tr>
+        </thead>
+        <tbody id="breakdown-body"></tbody>
+        <tfoot id="breakdown-foot"></tfoot>
+      </table>
+
+      <div id="warn-section" class="hidden" style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;color:#CC6600;margin-bottom:6px">
+          ⚠️ 未登録コード（serviceCodesに存在しないコード）— 金額は取り込みません
+        </div>
+        <table class="warn-table">
+          <thead><tr><th>サービスコード</th><th>件数</th><th style="text-align:right">単位数合計</th><th style="text-align:right">金額合計（円）</th></tr></thead>
+          <tbody id="warn-body"></tbody>
+        </table>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="save-btn" onclick="saveToFirestore()">💾 実績表に保存する</button>
+        <button class="btn-secondary" onclick="reset()">やり直す</button>
+        <span id="save-msg" style="font-size:12px;color:#1D9E75"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP3: 保存完了 -->
+  <div id="pane-step3" class="hidden">
+    <div class="card">
+      <div class="save-complete">
+        <div class="save-complete-icon">✅</div>
+        <div class="save-complete-title">保存しました</div>
+        <div class="save-complete-sub" id="save-complete-sub"></div>
+      </div>
+      <div class="btn-row" style="margin-top:16px;justify-content:center">
+        <button class="btn-primary" onclick="location.href='report.html'">貢献実績表を開く</button>
+        <button class="btn-secondary" onclick="reset()">別のCSVを取り込む</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, doc, getDoc, setDoc, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
+  authDomain:"daily-report-b90e8.firebaseapp.com",
+  projectId:"daily-report-b90e8",
+  storageBucket:"daily-report-b90e8.firebasestorage.app",
+  messagingSenderId:"16569831525",
+  appId:"1:16569831525:web:aa250f2061f762dfe1768c"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// -------- 状態 --------
+let offices = [];
+let serviceCodesMap = {}; // code -> {category, name, serviceCategory}
+let parseResult = null;   // 解析結果
+
+// -------- 初期化 --------
+async function init() {
+  const oSnap = await getDocs(collection(db, 'offices'));
+  offices = [];
+  oSnap.forEach(d => offices.push({ id: d.id, ...d.data() }));
+
+  // serviceCodesは件数が多いためキャッシュ
+  const scSnap = await getDocs(collection(db, 'serviceCodes'));
+  scSnap.forEach(d => { serviceCodesMap[d.id] = d.data(); });
+}
+
+// -------- ファイル選択 --------
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) handleFile(file);
+});
+
+function handleFile(file) {
+  document.getElementById('file-name').textContent = `📄 ${file.name}`;
+  document.getElementById('parse-progress').textContent = '読み込み中...';
+  document.getElementById('parse-progress').classList.remove('hidden');
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const bytes = new Uint8Array(e.target.result);
+      const text = decodeShiftJIS(bytes);
+      parseResult = parseCSV(text, file.name);
+      document.getElementById('parse-progress').classList.add('hidden');
+      if (parseResult) showPreview(parseResult);
+    } catch (err) {
+      document.getElementById('parse-progress').textContent = `エラー: ${err.message}`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// -------- Shift-JIS デコード --------
+function decodeShiftJIS(bytes) {
+  // TextDecoderでShift-JIS(cp932)デコード
+  const decoder = new TextDecoder('shift-jis');
+  return decoder.decode(bytes);
+}
+
+// -------- CSV解析 --------
+function parseCSV(text, filename) {
+  const lines = text.split(/\r?\n/).map(l => l.split(','));
+
+  // K112 subtype=01 から事業者番号・提供月を取得
+  let officeNo = null;
+  let billingYM = null; // YYYYMM（請求月 = K112の提供月）
+
+  for (const cols of lines) {
+    if (cols[0] === 'K112' && cols[1] === '01') {
+      officeNo = cols[6]?.trim();    // 事業者番号（10桁）
+      billingYM = cols[4]?.trim();   // 提供月 YYYYMM
+      break;
+    }
+  }
+
+  if (!officeNo) {
+    alert('K112レコードが見つかりません。国保連CSVファイルか確認してください。');
+    return null;
+  }
+
+  // 事業所を特定（providerNumberフィールドで照合）
+  const office = offices.find(o => (o.providerNumber || '').trim() === officeNo);
+  if (!office) {
+    alert(`事業者番号 ${officeNo} に対応する事業所が見つかりません。\n設定画面で事業所に事業者番号を登録してください。`);
+    return null;
+  }
+
+  // 提供月 → 年度・月インデックス
+  const billingYear = parseInt(billingYM.slice(0, 4));
+  const billingMonth = parseInt(billingYM.slice(4, 6));
+  const fiscalYear = billingMonth >= 4 ? billingYear : billingYear - 1;
+  // MONTHS_ARR = [4,5,6,7,8,9,10,11,12,1,2,3] のインデックス
+  const MONTHS_ARR = [4,5,6,7,8,9,10,11,12,1,2,3];
+  const monthIndex = MONTHS_ARR.indexOf(billingMonth);
+
+  // K122 subtype=03 でサービス明細を集計
+  const basicUnits = 0, bodyUnits = 0, actUnits = 0, treatUnits = 0;
+  const result = {
+    basicUnits: 0, bodyUnits: 0, actUnits: 0, treatUnits: 0,
+    basicAmt: 0,   bodyAmt: 0,   actAmt: 0,   treatAmt: 0,
+    basicCount: 0, // 基本報酬の回数合計 = 貢献人数
+    unknownCodes: {} // code -> {count, units, amt}
+  };
+
+  for (const cols of lines) {
+    if (cols[0] !== 'K122' || cols[1] !== '03') continue;
+
+    const code  = cols[8]?.trim();
+    const units = parseInt(cols[9]) || 0;
+    const count = parseInt(cols[10]) || 0;
+    const amt   = parseInt(cols[11]) || 0;
+
+    if (!code) continue;
+
+    const sc = serviceCodesMap[code];
+    if (!sc) {
+      // 未登録コード
+      if (!result.unknownCodes[code]) result.unknownCodes[code] = { count: 0, units: 0, amt: 0 };
+      result.unknownCodes[code].count++;
+      result.unknownCodes[code].units += units * count;
+      result.unknownCodes[code].amt   += amt;
+      continue;
+    }
+
+    const cat = sc.category;
+    const totalUnits = units * count;
+
+    if (cat === '基本報酬') {
+      result.basicUnits += totalUnits;
+      result.basicAmt   += amt;
+      result.basicCount += count; // 貢献人数
+    } else if (cat === '体制加算') {
+      result.bodyUnits += totalUnits;
+      result.bodyAmt   += amt;
+    } else if (cat === '実績加算') {
+      result.actUnits += totalUnits;
+      result.actAmt   += amt;
+    } else if (cat === '処遇改善加算') {
+      result.treatUnits += totalUnits;
+      result.treatAmt   += amt;
+    }
+    // 減算はfirestoreに未登録なのでここには来ない
+  }
+
+  return {
+    ...result,
+    office,
+    officeNo,
+    billingYM,
+    billingYear,
+    billingMonth,
+    fiscalYear,
+    monthIndex,
+    filename
+  };
+}
+
+// -------- プレビュー表示 --------
+function showPreview(r) {
+  setStep(2);
+
+  const monthStr = `${r.billingYear}年${r.billingMonth}月`;
+  const totalUnits = r.basicUnits + r.bodyUnits + r.actUnits + r.treatUnits;
+  const totalAmt   = r.basicAmt   + r.bodyAmt   + r.actAmt   + r.treatAmt;
+  const unknownCount = Object.keys(r.unknownCodes).length;
+
+  document.getElementById('preview-header').innerHTML = `
+    <span class="preview-tag tag-blue">📅 提供月：${monthStr}</span>
+    <span class="preview-tag tag-green">🏢 事業所：${r.office.name}</span>
+    <span class="preview-tag tag-blue">事業者番号：${r.officeNo}</span>
+    ${unknownCount > 0 ? `<span class="preview-tag tag-orange">⚠️ 未登録コード：${unknownCount}件</span>` : ''}
+  `;
+
+  document.getElementById('summary-grid').innerHTML = `
+    <div class="summary-item">
+      <div class="summary-label">貢献人数（基本報酬・回数合計）</div>
+      <div class="summary-value">${r.basicCount.toLocaleString()}<span class="summary-unit"> 人</span></div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-label">貢献報酬合計</div>
+      <div class="summary-value">${totalAmt.toLocaleString()}<span class="summary-unit"> 円</span></div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-label">総単位数</div>
+      <div class="summary-value">${totalUnits.toLocaleString()}<span class="summary-unit"> 単位</span></div>
+    </div>
+    ${unknownCount > 0 ? `
+    <div class="summary-item warn">
+      <div class="summary-label">未登録コード（取込対象外）</div>
+      <div class="summary-value">${unknownCount}<span class="summary-unit"> 種類</span></div>
+    </div>` : ''}
+  `;
+
+  document.getElementById('breakdown-body').innerHTML = `
+    <tr>
+      <td class="td-label">基本報酬</td>
+      <td class="td-basic">${r.basicUnits.toLocaleString()}</td>
+      <td class="td-basic">${r.basicAmt.toLocaleString()}</td>
+    </tr>
+    <tr>
+      <td class="td-label">体制加算</td>
+      <td class="td-body">${r.bodyUnits.toLocaleString()}</td>
+      <td class="td-body">${r.bodyAmt.toLocaleString()}</td>
+    </tr>
+    <tr>
+      <td class="td-label">実績加算</td>
+      <td class="td-act">${r.actUnits.toLocaleString()}</td>
+      <td class="td-act">${r.actAmt.toLocaleString()}</td>
+    </tr>
+    <tr>
+      <td class="td-label">処遇改善加算</td>
+      <td class="td-treat">${r.treatUnits.toLocaleString()}</td>
+      <td class="td-treat">${r.treatAmt.toLocaleString()}</td>
+    </tr>
+  `;
+  document.getElementById('breakdown-foot').innerHTML = `
+    <tr>
+      <td class="td-label" style="font-weight:700">合計</td>
+      <td class="td-total">${totalUnits.toLocaleString()}</td>
+      <td class="td-total">${totalAmt.toLocaleString()}</td>
+    </tr>
+  `;
+
+  // 未登録コード
+  const warnSection = document.getElementById('warn-section');
+  const warnBody = document.getElementById('warn-body');
+  if (unknownCount > 0) {
+    warnSection.classList.remove('hidden');
+    warnBody.innerHTML = Object.entries(r.unknownCodes).map(([code, v]) => `
+      <tr>
+        <td class="warn-code">${code}</td>
+        <td>${v.count}</td>
+        <td class="warn-amt">${v.units.toLocaleString()}</td>
+        <td class="warn-amt">${v.amt.toLocaleString()}</td>
+      </tr>
+    `).join('');
+  } else {
+    warnSection.classList.add('hidden');
+  }
+}
+
+// -------- Firestoreへ保存 --------
+window.saveToFirestore = async function() {
+  if (!parseResult) return;
+  const r = parseResult;
+  const btn = document.getElementById('save-btn');
+  btn.innerHTML = '<span class="spinner"></span>保存中...';
+  btn.disabled = true;
+
+  const docKey = `${r.fiscalYear}_${r.office.name}`;
+  const actRef = doc(db, 'actuals', docKey);
+
+  // 既存データを取得してマージ（他の月を上書きしない）
+  const snap = await getDoc(actRef);
+  const existing = snap.exists() ? snap.data().months || {} : {};
+
+  // 今回の取込月データ
+  const monthData = {
+    people:    r.basicCount,
+    basicRev:  r.basicAmt,
+    bodyRev:   r.bodyAmt,
+    actualRev: r.actAmt,
+    treatRev:  r.treatAmt,
+    // wd・salaryStaff・salaryPart は手動入力のため上書きしない（既存値を維持）
+    wd:          existing[r.billingMonth]?.wd          ?? null,
+    salaryStaff: existing[r.billingMonth]?.salaryStaff ?? null,
+    salaryPart:  existing[r.billingMonth]?.salaryPart  ?? null,
+  };
+
+  const updatedMonths = { ...existing, [r.billingMonth]: monthData };
+
+  await setDoc(actRef, {
+    office: r.office.name,
+    fiscalYear: r.fiscalYear,
+    months: updatedMonths,
+    updatedAt: new Date().toISOString()
+  });
+
+  // 完了画面
+  setStep(3);
+  document.getElementById('save-complete-sub').textContent =
+    `${r.office.name}　${r.fiscalYear}年度　${r.billingMonth}月分の実績を保存しました。\n稼働日数・給与は実績表から手動入力してください。`;
+};
+
+// -------- リセット --------
+window.reset = function() {
+  parseResult = null;
+  document.getElementById('file-name').textContent = '';
+  document.getElementById('file-input').value = '';
+  document.getElementById('warn-section').classList.add('hidden');
+  setStep(1);
+};
+
+// -------- ステップ制御 --------
+function setStep(n) {
+  ['pane-step1','pane-step2','pane-step3'].forEach((id, i) => {
+    document.getElementById(id).classList.toggle('hidden', i + 1 !== n);
+  });
+  ['step1','step2','step3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.className = 'step' + (i + 1 < n ? ' done' : i + 1 === n ? ' active' : '');
+  });
+}
+
+init();
+</script>
+</body>
+</html>
