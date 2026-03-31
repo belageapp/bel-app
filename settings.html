@@ -581,7 +581,6 @@ function renderOfficeTable(){
     </tr>`).join('');
 }
 
-// ★ 追加：事業者番号をキャッシュに反映する関数
 window.updateOfficeProviderNumber = function(id, val){
   const o = cache.offices.find(x=>x.id===id);
   if(o) o.providerNumber = val.trim();
