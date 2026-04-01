@@ -409,7 +409,7 @@ window.loadReport = async function(){
         <td class="val-total">${totalBrev?totalBrev.toLocaleString():'－'}</td>
       </tr>
       <!-- 実績 -->
-      <tr><td class="row-cat-actual" rowspan="${14 + (multiSvc ? allSvcs.length * 2 : 0)}">実　績</td><td class="row-label">稼働日数</td>
+      <tr><td class="row-cat-actual" rowspan="${16 + (multiSvc ? allSvcs.length * 2 : 0)}">実　績</td><td class="row-label">稼働日数</td>
         ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td>${inp(i,'wd',actualData[MONTHS_ARR[i]]?.wd||'')}</td>`).join('')}
         <td class="val-subtotal" id="ah1wd">${ah1wd||'－'}</td>
         ${MONTHS_ARR.slice(6).map((_,i)=>`<td>${inp(i+6,'wd',actualData[MONTHS_ARR[i+6]]?.wd||'')}</td>`).join('')}
@@ -483,12 +483,12 @@ window.loadReport = async function(){
         ${MONTHS_ARR.slice(6).map((_,i)=>`<td>${inp(i+6,'salaryStaff',actualData[MONTHS_ARR[i+6]]?.salaryStaff||'')}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atsals">${atSalS?atSalS.toLocaleString():'－'}</td>
       </tr>
-      <tr><td class="row-cat-actual" style="background:#E8F5EE"></td><td class="row-label-sub">パート</td>
+      <tr><td class="row-label-sub">パート</td>
         ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td>${inp(i,'salaryPart',actualData[MONTHS_ARR[i]]?.salaryPart||'')}</td>`).join('')}<td class="val-subtotal">－</td>
         ${MONTHS_ARR.slice(6).map((_,i)=>`<td>${inp(i+6,'salaryPart',actualData[MONTHS_ARR[i+6]]?.salaryPart||'')}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atsalp">${atSalP?atSalP.toLocaleString():'－'}</td>
       </tr>
-      <tr><td class="row-cat-actual" style="background:#E8F5EE"></td><td class="row-label">給与比率</td>
+      <tr><td class="row-label">給与比率</td>
         ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual" id="agr-${i}">${aGr[i]?(aGr[i]*100).toFixed(1)+'%':'－'}</td>`).join('')}
         <td class="val-subtotal" id="ah1gr">${ah1gr?(ah1gr*100).toFixed(1)+'%':'－'}</td>
         ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual" id="agr-${i+6}">${aGr[i+6]?(aGr[i+6]*100).toFixed(1)+'%':'－'}</td>`).join('')}
