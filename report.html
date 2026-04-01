@@ -409,7 +409,7 @@ window.loadReport = async function(){
         <td class="val-total">${totalBrev?totalBrev.toLocaleString():'－'}</td>
       </tr>
       <!-- 実績 -->
-      <tr><td class="row-cat-actual" rowspan="${18 + (multiSvc ? allSvcs.length * 2 : 0)}">実　績</td><td class="row-label">稼働日数</td>
+      <tr><td class="row-cat-actual" rowspan="${14 + (multiSvc ? allSvcs.length * 2 : 0)}">実　績</td><td class="row-label">稼働日数</td>
         ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td>${inp(i,'wd',actualData[MONTHS_ARR[i]]?.wd||'')}</td>`).join('')}
         <td class="val-subtotal" id="ah1wd">${ah1wd||'－'}</td>
         ${MONTHS_ARR.slice(6).map((_,i)=>`<td>${inp(i+6,'wd',actualData[MONTHS_ARR[i+6]]?.wd||'')}</td>`).join('')}
