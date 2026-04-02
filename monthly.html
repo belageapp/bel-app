@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月次カレンダー | ベルアージュ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f0f2f5;color:#333;font-size:12px}
+.top-bar{background:#1D9E75;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:100;min-height:46px}
+.top-bar-title{font-size:15px;font-weight:600;white-space:nowrap}
+.month-nav{display:flex;align-items:center;gap:6px}
+.nav-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.nav-btn:hover{background:rgba(255,255,255,0.35)}
+.month-label{font-size:14px;font-weight:600;min-width:90px;text-align:center}
+.top-bar button.btn-gray{padding:5px 12px;border-radius:5px;border:none;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;background:rgba(255,255,255,0.2);color:#fff}
+.legend{display:flex;gap:10px;align-items:center;margin-left:auto;font-size:11px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:4px}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+
+.content{padding:10px;overflow-x:auto}
+
+/* カレンダーテーブル */
+.cal-wrap{min-width:max-content}
+table{border-collapse:collapse;font-size:11px}
+th,td{border:1px solid #ddd;padding:0;text-align:center;white-space:nowrap}
+
+/* ヘッダー行 */
+.th-office{background:#1D9E75;color:#fff;font-weight:600;font-size:11px;padding:5px 8px;min-width:130px;text-align:left;position:sticky;left:0;z-index:10}
+.th-date{background:#1D9E75;color:#fff;font-weight:500;font-size:10px;min-width:42px;padding:2px 2px;vertical-align:bottom}
+.th-date .d-num{font-size:13px;font-weight:700;display:block;line-height:1.2}
+.th-date .d-dow{font-size:9px;display:block;line-height:1.4}
+.th-date.sun{background:#C0392B}
+.th-date.sat{background:#1A5EA8}
+.th-date.hol{background:#C0392B}
+.th-summary{background:#0F6E56;color:#fff;font-weight:600;font-size:11px;padding:4px 6px;min-width:54px}
+
+/* カテゴリ・エリア行 */
+.tr-cat td{background:#185FA5;color:#fff;font-weight:700;font-size:11px;padding:5px 8px;text-align:left;position:sticky;left:0;z-index:5}
+.tr-cat .td-cat-spacer{background:#185FA5;border-color:#1A5EA8}
+.tr-area td{background:#EBF3FB;color:#185FA5;font-weight:600;font-size:10px;padding:4px 8px;text-align:left;position:sticky;left:0;z-index:5}
+.tr-area .td-area-spacer{background:#EBF3FB;border-color:#C5D9F0}
+
+/* 事業所行 */
+.td-office{background:#fafafa;color:#333;font-weight:500;font-size:11px;padding:3px 8px;text-align:left;position:sticky;left:0;z-index:5;min-width:130px}
+.td-office.row-actual{background:#FFFFF0;color:#555;font-size:10px}
+
+/* データセル */
+.td-data{padding:1px 2px;min-width:42px;line-height:1}
+/* 目標 */
+.td-goal{background:#F0F8FF;color:#185FA5}
+/* 実績 */
+.td-actual{background:#FFFFF0;color:#1D6E3E;font-weight:600}
+.td-actual.over{color:#1D9E75}
+.td-actual.under{color:#CC3333}
+.td-actual.empty{background:#fafafa;color:#ccc;font-weight:400}
+/* 閉所日 */
+.td-closed{background:#f5f5f5;color:#ccc}
+/* 日曜・祝日 */
+.td-sun{background:#FFF5F5}
+.td-sat{background:#F5F8FF}
+/* 合計列 */
+.td-sum-goal{background:#E0F0FF;color:#185FA5;font-weight:700}
+.td-sum-actual{background:#FFFFF0;color:#0F6E56;font-weight:700}
+.td-sum-actual.empty{background:#fafafa;color:#ccc;font-weight:400}
+.td-pct{font-size:9px;color:#888;display:block}
+
+/* エリア合計行 */
+.tr-area-sum .td-office{background:#EBF3FB;color:#185FA5;font-weight:600}
+.tr-area-sum .td-data{background:#EBF3FB}
+.tr-area-sum .td-sum-goal{background:#D4E9FF;color:#185FA5;font-weight:700}
+.tr-area-sum .td-sum-actual{background:#D4F0E0;color:#0A4D3A;font-weight:700}
+
+/* 事業部合計行 */
+.tr-cat-sum .td-office{background:#185FA5;color:#fff;font-weight:700}
+.tr-cat-sum .td-data{background:#1A5EA8;color:#fff;font-weight:600}
+.tr-cat-sum .td-sum-goal{background:#1A5EA8;color:#fff;font-weight:700}
+.tr-cat-sum .td-sum-actual{background:#0F6E56;color:#fff;font-weight:700}
+
+/* ローディング */
+.loading{text-align:center;padding:60px;color:#aaa;font-size:14px}
+
+/* ラベル内セル */
+.cell-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 1px;min-height:32px}
+.cell-goal{font-size:10px;color:#185FA5}
+.cell-actual{font-size:12px;font-weight:700}
+.cell-actual.over{color:#1D9E75}
+.cell-actual.under{color:#CC3333}
+.cell-actual.none{color:#ccc;font-weight:400;font-size:10px}
+.cell-closed{font-size:10px;color:#ccc}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <span class="top-bar-title">月次カレンダー</span>
+  <div class="month-nav">
+    <button class="nav-btn" onclick="shiftMonth(-1)">‹</button>
+    <span class="month-label" id="month-label">読込中...</span>
+    <button class="nav-btn" onclick="shiftMonth(1)">›</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#E0F0FF"></div><span>目標</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#FFFFF0;border:1px solid #ddd"></div><span>実績</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f5f5f5;border:1px solid #ddd"></div><span>閉所</span></div>
+  </div>
+  <button class="btn-gray" onclick="location.href='index.html'">ポータル</button>
+  <button class="btn-gray" onclick="location.href='report.html'">実績表</button>
+  <button class="btn-gray" onclick="location.href='daily.html'">速報入力</button>
+</div>
+<div class="content">
+  <div id="cal-area"><div class="loading">データを読み込み中...</div></div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
+  authDomain:"daily-report-b90e8.firebaseapp.com",
+  projectId:"daily-report-b90e8",
+  storageBucket:"daily-report-b90e8.firebasestorage.app",
+  messagingSenderId:"16569831525",
+  appId:"1:16569831525:web:aa250f2061f762dfe1768c"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+const OFFICES = [
+  "HUGくみのいえ","ReadyGO井口","ReadyGO八木","ReadyGO川内","ここいろのいえ",
+  "まなびあいのいえ","ReadyGO高屋","ReadyGO黒瀬","ぐらっちぇ黒瀬",
+  "にじのいえ","はれのいえ",
+  "ラフォーレ高陽","ラフォーレ亀山","レポ白木"
+];
+const LAFORE = ["ラフォーレ高陽","ラフォーレ亀山"];
+const STRUCTURE = [
+  { cat:"発達支援事業部", areas:[
+    { label:"広島エリア",     offices:["HUGくみのいえ","ReadyGO井口","ReadyGO八木","ReadyGO川内","ここいろのいえ"] },
+    { label:"東広島エリア",   offices:["まなびあいのいえ","ReadyGO高屋","ReadyGO黒瀬","ぐらっちぇ黒瀬"] },
+    { label:"安芸エリア",     offices:["にじのいえ","はれのいえ"] }
+  ]},
+  { cat:"就労生活支援事業部", single:["ラフォーレ高陽","ラフォーレ亀山","レポ白木"] }
+];
+
+const DOW_JP = ['日','月','火','水','木','金','土'];
+const now = new Date();
+let viewYear  = now.getFullYear();
+let viewMonth = now.getMonth() + 1; // 1-indexed
+
+// -------- データキャッシュ --------
+let capacities = {};   // office → capacity
+let workdays   = {};   // office → { "YYYY-MM-DD": 0|1 }
+let reports    = {};   // "YYYY-MM-DD" → { office → {kids, care, work} }
+
+// -------- 初期化 --------
+async function init() {
+  // offices + prices 一括取得
+  const [offSnap, prSnap] = await Promise.all([
+    getDocs(collection(db, 'offices')),
+    getDocs(collection(db, 'prices'))
+  ]);
+  const prices = {};
+  prSnap.forEach(d => prices[d.id] = d.data());
+  offSnap.forEach(d => {
+    const o = d.data();
+    const p = prices[o.priceId];
+    if (p && p.capacity) capacities[o.name] = p.capacity;
+  });
+  await loadMonth();
+}
+
+// -------- 月データ読み込み --------
+async function loadMonth() {
+  const monthStr = `${viewYear}-${String(viewMonth).padStart(2,'0')}`;
+  document.getElementById('month-label').textContent =
+    `${viewYear}年${viewMonth}月`;
+  document.getElementById('cal-area').innerHTML =
+    '<div class="loading">データを読み込み中...</div>';
+
+  const fiscalYear = viewMonth >= 4 ? viewYear : viewYear - 1;
+
+  // 全事業所の稼働日を並列取得
+  workdays = {};
+  await Promise.all(OFFICES.map(async o => {
+    try {
+      const snap = await getDoc(doc(db, 'workdays', `${fiscalYear}_${o}`));
+      workdays[o] = snap.exists() ? (snap.data().days || {}) : {};
+    } catch { workdays[o] = {}; }
+  }));
+
+  // 速報データ取得
+  reports = {};
+  try {
+    const q = query(collection(db, 'reports'), where('month', '==', monthStr));
+    const snap = await getDocs(q);
+    snap.forEach(d => {
+      const r = d.data();
+      const date = r.date;
+      if (!reports[date]) reports[date] = {};
+      if (!reports[date][r.office]) reports[date][r.office] = { kids: 0, care: null, work: null };
+      const entry = reports[date][r.office];
+      if (r.serviceType === 'care') { entry.care = r.kids; entry.kids += r.kids; }
+      else if (r.serviceType === 'work') { entry.work = r.kids; entry.kids += r.kids; }
+      else { entry.kids = r.kids; }
+    });
+  } catch (e) { console.error(e); }
+
+  render(fiscalYear, viewYear, viewMonth, monthStr);
+}
+
+// -------- レンダリング --------
+function render(fiscalYear, year, month, monthStr) {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
+
+  // 日付リスト
+  const dates = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = new Date(year, month-1, d).getDay();
+    dates.push({ d, dateStr, dow });
+  }
+
+  // 目標・実績を事業所×日付で計算
+  // goals[office][dateStr] = 定員（開所日のみ）
+  // actuals[office][dateStr] = kids
+  const goals   = {};
+  const actuals = {};
+  OFFICES.forEach(o => {
+    goals[o]   = {};
+    actuals[o] = {};
+    const cap = capacities[o] || 10;
+    const wd  = workdays[o] || {};
+    dates.forEach(({ dateStr }) => {
+      goals[o][dateStr]   = wd[dateStr] === 1 ? cap : null; // nullは閉所
+      actuals[o][dateStr] = reports[dateStr]?.[o]?.kids ?? null;
+    });
+  });
+
+  // HTML構築
+  let html = '<div class="cal-wrap"><table>';
+
+  // ===== ヘッダー行 =====
+  html += '<thead><tr>';
+  html += `<th class="th-office">事業所</th>`;
+  dates.forEach(({ d, dateStr, dow }) => {
+    const isToday = dateStr === todayStr;
+    const dowCls = dow === 0 ? 'sun' : dow === 6 ? 'sat' : '';
+    const todayStyle = isToday ? 'outline:2px solid #FFD700;outline-offset:-2px;' : '';
+    html += `<th class="th-date ${dowCls}" style="${todayStyle}">
+      <span class="d-num">${d}</span>
+      <span class="d-dow">${DOW_JP[dow]}</span>
+    </th>`;
+  });
+  html += `<th class="th-summary">月計<br><span style="font-size:9px;font-weight:400">目標/実績</span></th>`;
+  html += '</tr></thead>';
+
+  // ===== ボディ =====
+  html += '<tbody>';
+
+  STRUCTURE.forEach(cat => {
+    const catOffices = cat.areas
+      ? cat.areas.flatMap(a => a.offices)
+      : (cat.single || []);
+
+    // カテゴリ行
+    html += `<tr class="tr-cat"><td class="td-office" colspan="1">${cat.cat}</td>`;
+    dates.forEach(() => { html += `<td class="td-cat-spacer" style="background:#185FA5;border-color:#1A5EA8"></td>`; });
+    html += `<td style="background:#185FA5;border-color:#1A5EA8"></td></tr>`;
+
+    // エリア or single
+    if (cat.areas) {
+      cat.areas.forEach(area => {
+        // エリアラベル行
+        html += `<tr class="tr-area"><td class="td-office">${area.label}</td>`;
+        dates.forEach(() => { html += `<td class="td-area-spacer" style="background:#EBF3FB;border-color:#C5D9F0"></td>`; });
+        html += `<td style="background:#EBF3FB;border-color:#C5D9F0"></td></tr>`;
+
+        // 各事業所（目標行）
+        area.offices.forEach(o => {
+          html += officeRows(o, dates, goals, actuals);
+        });
+
+        // エリア合計行
+        html += areaSum(area.offices, dates, goals, actuals, area.label);
+      });
+    } else {
+      cat.single.forEach(o => {
+        html += officeRows(o, dates, goals, actuals);
+      });
+    }
+
+    // 事業部合計行
+    html += catSum(catOffices, dates, goals, actuals, cat.cat);
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('cal-area').innerHTML = html;
+}
+
+// -------- 事業所行（目標・実績2行）--------
+function officeRows(o, dates, goals, actuals) {
+  const isLaf = LAFORE.includes(o);
+  let html = '';
+
+  // === 目標行 ===
+  html += `<tr>`;
+  html += `<td class="td-office" rowspan="2" style="vertical-align:middle">${o}</td>`;
+
+  let monthGoal = 0;
+  dates.forEach(({ dateStr, dow }) => {
+    const g = goals[o][dateStr];
+    const isClosed = g === null;
+    const isSun = dow === 0;
+    const isSat = dow === 6;
+    let bg = isSun ? '#FFF5F5' : isSat ? '#F5F8FF' : '';
+    if (isClosed) {
+      html += `<td class="td-data td-closed" style="${bg?'background:'+bg:''}" rowspan="2">閉</td>`;
+      return;
+    }
+    monthGoal += g;
+    html += `<td class="td-data td-goal" style="${bg?'background:linear-gradient('+bg+',#F0F8FF)':''}">
+      <div class="cell-inner" style="min-height:16px;padding:1px">
+        <span class="cell-goal">${g}</span>
+      </div>
+    </td>`;
+  });
+
+  // 月計目標
+  html += `<td class="td-sum-goal" rowspan="2" style="vertical-align:middle">
+    <div style="padding:2px 4px">
+      <div style="font-size:10px;color:#888;margin-bottom:2px">目標</div>
+      <div style="font-size:13px;font-weight:700;color:#185FA5">${monthGoal || '—'}</div>
+    </div>
+  </td>`;
+  html += `</tr>`;
+
+  // === 実績行 ===
+  html += `<tr>`;
+  let monthActual = 0;
+  let hasAny = false;
+  dates.forEach(({ dateStr, dow }) => {
+    const g = goals[o][dateStr];
+    if (g === null) return; // 閉所はrowspan済みでスキップ
+    const a = actuals[o][dateStr];
+    const isSun = dow === 0;
+    const isSat = dow === 6;
+    let bg = isSun ? 'background:#FFF5F5' : isSat ? 'background:#F5F8FF' : 'background:#FFFFF0';
+    if (a !== null) {
+      monthActual += a;
+      hasAny = true;
+      const cls = a >= g ? 'over' : a < g ? 'under' : '';
+      html += `<td class="td-data" style="${bg}">
+        <div class="cell-inner" style="min-height:16px;padding:1px">
+          <span class="cell-actual ${cls}">${a}</span>
+        </div>
+      </td>`;
+    } else {
+      // 未入力（今日以前の開所日は薄くダッシュ、未来は空白）
+      const today = new Date();
+      const d = new Date(dateStr);
+      const isPast = d < today && dateStr !== `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+      html += `<td class="td-data" style="${bg}">
+        <div class="cell-inner" style="min-height:16px;padding:1px">
+          <span class="cell-actual none">${isPast ? '—' : ''}</span>
+        </div>
+      </td>`;
+    }
+  });
+
+  html += `</tr>`;
+  return html;
+}
+
+// -------- エリア合計行 --------
+function areaSum(offices, dates, goals, actuals, label) {
+  let html = `<tr class="tr-area-sum">`;
+  html += `<td class="td-office" style="background:#EBF3FB;color:#185FA5;font-weight:600;padding:3px 8px">${label}　合計</td>`;
+
+  let mGoal = 0, mActual = 0;
+  dates.forEach(({ dateStr, dow }) => {
+    const dayGoal   = offices.reduce((s, o) => s + (goals[o][dateStr] ?? 0), 0);
+    const dayActual = offices.reduce((s, o) => s + (actuals[o][dateStr] ?? 0), 0);
+    const anyOpen = offices.some(o => goals[o][dateStr] !== null);
+    const anyActual = offices.some(o => actuals[o][dateStr] !== null);
+    const isSun = dow === 0, isSat = dow === 6;
+    const bgCell = isSun ? '#FFE8E8' : isSat ? '#E8EEFF' : '#EBF3FB';
+
+    if (!anyOpen) {
+      html += `<td style="background:#f0f0f0;border-color:#ddd;font-size:9px;color:#ccc;text-align:center">閉</td>`;
+      return;
+    }
+    mGoal   += dayGoal;
+    mActual += dayActual;
+    const pct = dayGoal > 0 ? Math.round(dayActual / dayGoal * 100) : null;
+    const cls = pct !== null ? (pct >= 100 ? 'color:#1D9E75' : pct >= 80 ? 'color:#185FA5' : 'color:#CC3333') : '';
+    html += `<td style="background:${bgCell};text-align:center;padding:1px 2px;vertical-align:middle">
+      <span style="font-size:11px;font-weight:600;color:#185FA5;display:block">${dayGoal}</span>
+      <span style="font-size:11px;font-weight:600;display:block;${cls}">${anyActual ? dayActual : '—'}</span>
+    </td>`;
+  });
+
+  html += `<td style="background:#D4E9FF;text-align:center;padding:2px 4px">
+    <div style="font-size:10px;color:#888">目標</div>
+    <div style="font-size:12px;font-weight:700;color:#185FA5">${mGoal}</div>
+    <div style="font-size:10px;color:#888;margin-top:1px">実績</div>
+    <div style="font-size:12px;font-weight:700;color:#0F6E56">${mActual || '—'}</div>
+  </td>`;
+  html += `</tr>`;
+  return html;
+}
+
+// -------- 事業部合計行 --------
+function catSum(offices, dates, goals, actuals, label) {
+  let html = `<tr class="tr-cat-sum">`;
+  html += `<td class="td-office" style="background:#185FA5;color:#fff;font-weight:700;padding:4px 8px">${label}　計</td>`;
+
+  let mGoal = 0, mActual = 0;
+  dates.forEach(({ dateStr, dow }) => {
+    const dayGoal   = offices.reduce((s, o) => s + (goals[o][dateStr] ?? 0), 0);
+    const dayActual = offices.reduce((s, o) => s + (actuals[o][dateStr] ?? 0), 0);
+    const anyOpen   = offices.some(o => goals[o][dateStr] !== null);
+    const anyActual = offices.some(o => actuals[o][dateStr] !== null);
+
+    if (!anyOpen) {
+      html += `<td style="background:#1A5EA8;border-color:#1A5EA8"></td>`;
+      return;
+    }
+    mGoal   += dayGoal;
+    mActual += dayActual;
+    const pct = dayGoal > 0 && anyActual ? Math.round(dayActual / dayGoal * 100) : null;
+    html += `<td style="background:#1A5EA8;text-align:center;padding:1px 2px;vertical-align:middle;color:#fff">
+      <span style="font-size:10px;opacity:0.8;display:block">${dayGoal}</span>
+      <span style="font-size:12px;font-weight:700;display:block">${anyActual ? dayActual : '—'}</span>
+      ${pct !== null ? `<span style="font-size:9px;opacity:0.8">${pct}%</span>` : ''}
+    </td>`;
+  });
+
+  html += `<td style="background:#0F6E56;color:#fff;text-align:center;padding:2px 4px">
+    <div style="font-size:10px;opacity:0.8">目標</div>
+    <div style="font-size:13px;font-weight:700">${mGoal}</div>
+    <div style="font-size:10px;opacity:0.8;margin-top:1px">実績</div>
+    <div style="font-size:13px;font-weight:700">${mActual || '—'}</div>
+  </td>`;
+  html += `</tr>`;
+  return html;
+}
+
+// -------- 月移動 --------
+window.shiftMonth = function(dir) {
+  viewMonth += dir;
+  if (viewMonth > 12) { viewMonth = 1;  viewYear++; }
+  if (viewMonth < 1)  { viewMonth = 12; viewYear--; }
+  loadMonth();
+};
+
+// 起動
+init();
+</script>
+</body>
+</html>
