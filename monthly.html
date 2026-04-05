@@ -6,106 +6,200 @@
 <title>月次カレンダー | ベルアージュ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f0f2f5;color:#333;font-size:12px}
-.top-bar{background:#1D9E75;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:100;min-height:46px}
-.top-bar-title{font-size:15px;font-weight:600;white-space:nowrap}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333;font-size:12px}
+
+/* ===== トップバー ===== */
+.top-bar{
+  background:#fff;
+  border-bottom:1px solid #E8EAED;
+  padding:0 20px;
+  height:52px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+.top-bar-logo{
+  display:flex;align-items:center;gap:8px;
+  font-size:16px;font-weight:700;color:#1D9E75;
+  white-space:nowrap;margin-right:4px;
+}
+.top-bar-logo svg{flex-shrink:0}
+.top-bar-divider{width:1px;height:24px;background:#E8EAED}
+
+/* 月ナビ */
 .month-nav{display:flex;align-items:center;gap:6px}
-.nav-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
-.nav-btn:hover{background:rgba(255,255,255,0.35)}
-.month-label{font-size:14px;font-weight:600;min-width:90px;text-align:center}
-.top-bar button.btn-gray{padding:5px 12px;border-radius:5px;border:none;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;background:rgba(255,255,255,0.2);color:#fff}
-.legend{display:flex;gap:10px;align-items:center;margin-left:auto;font-size:11px;flex-wrap:wrap}
-.legend-item{display:flex;align-items:center;gap:4px}
-.legend-dot{width:10px;height:10px;border-radius:2px}
+.nav-btn{
+  width:28px;height:28px;border-radius:6px;
+  border:1px solid #E8EAED;background:#fff;
+  color:#555;cursor:pointer;font-size:15px;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s,border-color .15s;
+}
+.nav-btn:hover{background:#F4F6F8;border-color:#d0d3d8}
+.month-label{font-size:14px;font-weight:600;color:#222;min-width:90px;text-align:center}
 
-.content{padding:10px;overflow-x:auto}
+/* 凡例 */
+.legend{display:flex;gap:12px;align-items:center;margin-left:auto;font-size:11px;color:#666}
+.legend-item{display:flex;align-items:center;gap:5px}
+.legend-dot{width:10px;height:10px;border-radius:3px;border:1px solid #E8EAED}
 
-/* カレンダーテーブル */
-.cal-wrap{min-width:max-content}
-table{border-collapse:collapse;font-size:11px}
-th,td{border:1px solid #ddd;padding:0;text-align:center;white-space:nowrap}
+/* ナビボタン */
+.nav-link{
+  padding:5px 12px;border-radius:6px;
+  border:1px solid #E8EAED;background:#fff;
+  color:#555;font-size:12px;cursor:pointer;
+  font-family:inherit;font-weight:500;
+  transition:background .15s,border-color .15s,color .15s;
+  white-space:nowrap;
+}
+.nav-link:hover{background:#F4F6F8;border-color:#d0d3d8;color:#333}
 
-/* ヘッダー行 */
-.th-office{background:#1D9E75;color:#fff;font-weight:600;font-size:11px;padding:5px 8px;min-width:130px;text-align:left;position:sticky;left:0;z-index:10}
-.th-date{background:#1D9E75;color:#fff;font-weight:500;font-size:10px;min-width:42px;padding:2px 2px;vertical-align:bottom}
-.th-date .d-num{font-size:13px;font-weight:700;display:block;line-height:1.2}
-.th-date .d-dow{font-size:9px;display:block;line-height:1.4}
-.th-date.sun{background:#C0392B}
-.th-date.sat{background:#1A5EA8}
-.th-date.hol{background:#C0392B}
-.th-summary{background:#0F6E56;color:#fff;font-weight:600;font-size:11px;padding:4px 6px;min-width:54px}
+/* ===== コンテンツエリア ===== */
+.content{padding:14px 16px;overflow-x:auto}
 
-/* カテゴリ・エリア行 */
-.tr-cat td{background:#185FA5;color:#fff;font-weight:700;font-size:11px;padding:5px 8px;text-align:left;position:sticky;left:0;z-index:5}
-.tr-cat .td-cat-spacer{background:#185FA5;border-color:#1A5EA8}
-.tr-area td{background:#EBF3FB;color:#185FA5;font-weight:600;font-size:10px;padding:4px 8px;text-align:left;position:sticky;left:0;z-index:5}
-.tr-area .td-area-spacer{background:#EBF3FB;border-color:#C5D9F0}
+/* ===== カレンダーテーブル ===== */
+.cal-wrap{min-width:max-content;background:#fff;border-radius:10px;border:1px solid #E8EAED;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+table{border-collapse:collapse;font-size:11px;width:100%}
+th,td{border-right:1px solid #E8EAED;border-bottom:1px solid #E8EAED;padding:0;text-align:center;white-space:nowrap}
+th:last-child,td:last-child{border-right:none}
 
-/* 事業所行 */
-.td-office{background:#fafafa;color:#333;font-weight:500;font-size:11px;padding:3px 8px;text-align:left;position:sticky;left:0;z-index:5;min-width:130px}
-.td-office.row-actual{background:#FFFFF0;color:#555;font-size:10px}
+/* ===== テーブルヘッダー ===== */
+.th-office{
+  background:#F8F9FA;color:#444;font-weight:600;font-size:11px;
+  padding:8px 12px;min-width:132px;text-align:left;
+  position:sticky;left:0;z-index:10;
+  border-right:2px solid #E8EAED;
+}
+.th-date{
+  background:#F8F9FA;color:#555;font-weight:500;font-size:10px;
+  min-width:40px;padding:4px 2px;vertical-align:bottom;
+}
+.th-date .d-num{font-size:13px;font-weight:700;display:block;line-height:1.3;color:#333}
+.th-date .d-dow{font-size:9px;display:block;line-height:1.5;color:#888}
+.th-date.sun .d-num{color:#C0392B}
+.th-date.sun .d-dow{color:#C0392B}
+.th-date.sat .d-num{color:#2471A3}
+.th-date.sat .d-dow{color:#2471A3}
+.th-date.today{background:#F0FAF6}
+.th-date.today .d-num{color:#1D9E75}
+.th-summary{
+  background:#F8F9FA;color:#444;font-weight:600;font-size:10px;
+  padding:4px 6px;min-width:58px;
+  border-left:2px solid #E8EAED;
+}
 
-/* データセル */
-.td-data{padding:1px 2px;min-width:42px;line-height:1}
-/* 目標 */
-.td-goal{background:#F0F8FF;color:#185FA5}
-/* 実績 */
-.td-actual{background:#FFFFF0;color:#1D6E3E;font-weight:600}
-.td-actual.over{color:#1D9E75}
-.td-actual.under{color:#CC3333}
-.td-actual.empty{background:#fafafa;color:#ccc;font-weight:400}
-/* 閉所日 */
-.td-closed{background:#f5f5f5;color:#ccc}
-/* 日曜・祝日 */
-.td-sun{background:#FFF5F5}
-.td-sat{background:#F5F8FF}
-/* 合計列 */
-.td-sum-goal{background:#E0F0FF;color:#185FA5;font-weight:700}
-.td-sum-actual{background:#FFFFF0;color:#0F6E56;font-weight:700}
-.td-sum-actual.empty{background:#fafafa;color:#ccc;font-weight:400}
-.td-pct{font-size:9px;color:#888;display:block}
+/* ===== カテゴリ行 ===== */
+.tr-cat td{
+  background:#F0FAF6;
+  color:#1D9E75;font-weight:700;font-size:11px;
+  padding:5px 12px;text-align:left;
+  border-bottom:1px solid #d4f4e8;
+}
+.tr-cat td.td-spacer{background:#F0FAF6;border-color:#d4f4e8}
+.tr-cat td.td-sticky{position:sticky;left:0;z-index:5;border-right:2px solid #d4f4e8}
 
-/* エリア合計行 */
-.tr-area-sum .td-office{background:#EBF3FB;color:#185FA5;font-weight:600}
-.tr-area-sum .td-data{background:#EBF3FB}
-.tr-area-sum .td-sum-goal{background:#D4E9FF;color:#185FA5;font-weight:700}
-.tr-area-sum .td-sum-actual{background:#D4F0E0;color:#0A4D3A;font-weight:700}
+/* ===== エリア行 ===== */
+.tr-area td{
+  background:#FAFBFC;
+  color:#888;font-weight:500;font-size:10px;
+  padding:3px 12px 3px 20px;text-align:left;
+  border-bottom:1px solid #EEEFF1;
+}
+.tr-area td.td-spacer{background:#FAFBFC;border-color:#EEEFF1}
+.tr-area td.td-sticky{position:sticky;left:0;z-index:5;border-right:2px solid #EEEFF1}
 
-/* 事業部合計行 */
-.tr-cat-sum .td-office{background:#185FA5;color:#fff;font-weight:700}
-.tr-cat-sum .td-data{background:#1A5EA8;color:#fff;font-weight:600}
-.tr-cat-sum .td-sum-goal{background:#1A5EA8;color:#fff;font-weight:700}
-.tr-cat-sum .td-sum-actual{background:#0F6E56;color:#fff;font-weight:700}
+/* ===== 事業所名セル ===== */
+.td-office{
+  background:#fff;color:#333;font-weight:500;font-size:11px;
+  padding:3px 10px 3px 16px;text-align:left;
+  position:sticky;left:0;z-index:5;
+  min-width:132px;border-right:2px solid #E8EAED;
+}
 
-/* ローディング */
+/* ===== データセル ===== */
+.td-data{padding:0;min-width:40px;line-height:1}
+.cell-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 1px;min-height:15px}
+
+/* 目標セル */
+.td-goal{background:#F8FBFF}
+.cell-goal{font-size:10px;color:#5B9BD5;font-weight:500}
+
+/* 実績セル */
+.td-actual{background:#FAFFFE}
+.cell-actual{font-size:12px;font-weight:700;color:#1D9E75}
+.cell-actual.under{color:#C0392B}
+.cell-actual.none{color:#CCC;font-weight:400;font-size:10px}
+
+/* 閉所セル */
+.td-closed{background:#F8F9FA}
+.cell-closed{font-size:9px;color:#CCC;letter-spacing:0}
+
+/* 土日カラム */
+.col-sun .td-goal{background:#FDF8F8}
+.col-sun .td-actual{background:#FDF8F8}
+.col-sat .td-goal{background:#F8FAFD}
+.col-sat .td-actual{background:#F8FAFD}
+.col-today .td-goal{background:#F5FDF9}
+.col-today .td-actual{background:#F5FDF9}
+
+/* ===== 合計列 ===== */
+.td-sum{
+  border-left:2px solid #E8EAED;
+  background:#F8F9FA;
+}
+.td-sum-inner{padding:3px 6px;text-align:center}
+.sum-label{font-size:9px;color:#999;display:block;line-height:1.4}
+.sum-goal{font-size:11px;font-weight:600;color:#5B9BD5;display:block}
+.sum-actual{font-size:12px;font-weight:700;color:#1D9E75;display:block}
+.sum-actual.under{color:#C0392B}
+
+/* ===== エリア合計行 ===== */
+.tr-area-sum td{background:#F0F8FF;border-bottom:2px solid #D6E8F8}
+.tr-area-sum .td-office{background:#F0F8FF;color:#2471A3;font-weight:600;border-right:2px solid #D6E8F8}
+.tr-area-sum .td-sum{background:#E8F4FF;border-left:2px solid #D6E8F8}
+.tr-area-sum .sum-goal{color:#2471A3}
+.tr-area-sum .sum-actual{color:#1D6E3E}
+
+/* ===== 事業部合計行 ===== */
+.tr-cat-sum td{background:#F0FAF6;border-bottom:2px solid #B2DFDB}
+.tr-cat-sum .td-office{background:#F0FAF6;color:#1D9E75;font-weight:700;border-right:2px solid #B2DFDB}
+.tr-cat-sum .td-sum{background:#E0F5ED;border-left:2px solid #B2DFDB}
+.tr-cat-sum .sum-goal{color:#1D9E75}
+.tr-cat-sum .sum-actual{color:#0F6E56}
+
+/* ===== ローディング ===== */
 .loading{text-align:center;padding:60px;color:#aaa;font-size:14px}
-
-/* ラベル内セル */
-.cell-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 1px;min-height:32px}
-.cell-goal{font-size:10px;color:#185FA5}
-.cell-actual{font-size:12px;font-weight:700}
-.cell-actual.over{color:#1D9E75}
-.cell-actual.under{color:#CC3333}
-.cell-actual.none{color:#ccc;font-weight:400;font-size:10px}
-.cell-closed{font-size:10px;color:#ccc}
 </style>
 </head>
 <body>
 <div class="top-bar">
-  <span class="top-bar-title">月次カレンダー</span>
+  <div class="top-bar-logo">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect width="22" height="22" rx="6" fill="#1D9E75"/>
+      <path d="M6 14l4-5 3 3 3-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Belage
+  </div>
+  <div class="top-bar-divider"></div>
   <div class="month-nav">
     <button class="nav-btn" onclick="shiftMonth(-1)">‹</button>
     <span class="month-label" id="month-label">読込中...</span>
     <button class="nav-btn" onclick="shiftMonth(1)">›</button>
   </div>
   <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#E0F0FF"></div><span>目標</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:#FFFFF0;border:1px solid #ddd"></div><span>実績</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:#f5f5f5;border:1px solid #ddd"></div><span>閉所</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#F8FBFF"></div><span style="color:#5B9BD5">目標</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#FAFFFE"></div><span style="color:#1D9E75">実績</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#F8F9FA"></div><span>閉所</span></div>
   </div>
-  <button class="btn-gray" onclick="location.href='index.html'">ポータル</button>
-  <button class="btn-gray" onclick="location.href='report.html'">実績表</button>
-  <button class="btn-gray" onclick="location.href='daily.html'">速報入力</button>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="nav-link" onclick="location.href='index.html'">ポータル</button>
+    <button class="nav-link" onclick="location.href='report.html'">実績表</button>
+    <button class="nav-link" onclick="location.href='import.html'">CSV取込</button>
+    <button class="nav-link" onclick="location.href='daily.html'">速報入力</button>
+  </div>
 </div>
 <div class="content">
   <div id="cal-area"><div class="loading">データを読み込み中...</div></div>
@@ -245,14 +339,14 @@ function render(fiscalYear, year, month, monthStr) {
   html += `<th class="th-office">事業所</th>`;
   dates.forEach(({ d, dateStr, dow }) => {
     const isToday = dateStr === todayStr;
-    const dowCls = dow === 0 ? 'sun' : dow === 6 ? 'sat' : '';
-    const todayStyle = isToday ? 'outline:2px solid #FFD700;outline-offset:-2px;' : '';
-    html += `<th class="th-date ${dowCls}" style="${todayStyle}">
+    const dowCls  = dow === 0 ? 'sun' : dow === 6 ? 'sat' : '';
+    const todayCls = isToday ? ' today' : '';
+    html += `<th class="th-date ${dowCls}${todayCls}">
       <span class="d-num">${d}</span>
       <span class="d-dow">${DOW_JP[dow]}</span>
     </th>`;
   });
-  html += `<th class="th-summary">月計<br><span style="font-size:9px;font-weight:400">目標/実績</span></th>`;
+  html += `<th class="th-summary">月計<br><span style="font-size:9px;font-weight:400;color:#999">目標/実績</span></th>`;
   html += '</tr></thead>';
 
   // ===== ボディ =====
@@ -264,34 +358,36 @@ function render(fiscalYear, year, month, monthStr) {
       : (cat.single || []);
 
     // カテゴリ行
-    html += `<tr class="tr-cat"><td class="td-office" colspan="1">${cat.cat}</td>`;
-    dates.forEach(() => { html += `<td class="td-cat-spacer" style="background:#185FA5;border-color:#1A5EA8"></td>`; });
-    html += `<td style="background:#185FA5;border-color:#1A5EA8"></td></tr>`;
+    html += `<tr class="tr-cat">`;
+    html += `<td class="td-sticky" style="position:sticky;left:0;z-index:5;border-right:2px solid #d4f4e8;background:#F0FAF6;color:#1D9E75;font-weight:700;font-size:11px;padding:5px 12px;text-align:left">${cat.cat}</td>`;
+    dates.forEach(() => { html += `<td class="td-spacer"></td>`; });
+    html += `<td class="td-spacer" style="border-left:2px solid #d4f4e8"></td></tr>`;
 
     // エリア or single
     if (cat.areas) {
       cat.areas.forEach(area => {
         // エリアラベル行
-        html += `<tr class="tr-area"><td class="td-office">${area.label}</td>`;
-        dates.forEach(() => { html += `<td class="td-area-spacer" style="background:#EBF3FB;border-color:#C5D9F0"></td>`; });
-        html += `<td style="background:#EBF3FB;border-color:#C5D9F0"></td></tr>`;
+        html += `<tr class="tr-area">`;
+        html += `<td class="td-sticky" style="position:sticky;left:0;z-index:5;border-right:2px solid #EEEFF1;background:#FAFBFC;color:#999;font-weight:500;font-size:10px;padding:3px 12px 3px 20px;text-align:left">▸ ${area.label}</td>`;
+        dates.forEach(() => { html += `<td class="td-spacer"></td>`; });
+        html += `<td class="td-spacer" style="border-left:2px solid #EEEFF1"></td></tr>`;
 
-        // 各事業所（目標行）
+        // 各事業所
         area.offices.forEach(o => {
-          html += officeRows(o, dates, goals, actuals);
+          html += officeRows(o, dates, goals, actuals, todayStr);
         });
 
         // エリア合計行
-        html += areaSum(area.offices, dates, goals, actuals, area.label);
+        html += areaSum(area.offices, dates, goals, actuals, area.label, todayStr);
       });
     } else {
       cat.single.forEach(o => {
-        html += officeRows(o, dates, goals, actuals);
+        html += officeRows(o, dates, goals, actuals, todayStr);
       });
     }
 
     // 事業部合計行
-    html += catSum(catOffices, dates, goals, actuals, cat.cat);
+    html += catSum(catOffices, dates, goals, actuals, cat.cat, todayStr);
   });
 
   html += '</tbody></table></div>';
@@ -299,10 +395,8 @@ function render(fiscalYear, year, month, monthStr) {
 }
 
 // -------- 事業所行（目標・実績2行）--------
-function officeRows(o, dates, goals, actuals) {
-  const isLaf = LAFORE.includes(o);
+function officeRows(o, dates, goals, actuals, todayStr) {
   let html = '';
-
   // === 目標行 ===
   html += `<tr>`;
   html += `<td class="td-office" rowspan="2" style="vertical-align:middle">${o}</td>`;
@@ -310,27 +404,28 @@ function officeRows(o, dates, goals, actuals) {
   let monthGoal = 0;
   dates.forEach(({ dateStr, dow }) => {
     const g = goals[o][dateStr];
-    const isClosed = g === null;
-    const isSun = dow === 0;
-    const isSat = dow === 6;
-    let bg = isSun ? '#FFF5F5' : isSat ? '#F5F8FF' : '';
-    if (isClosed) {
-      html += `<td class="td-data td-closed" style="${bg?'background:'+bg:''}" rowspan="2">閉</td>`;
+    const isToday = dateStr === todayStr;
+    const isSun = dow === 0, isSat = dow === 6;
+    const colBg = isToday ? '#F0FDF8' : isSun ? '#FDF8F8' : isSat ? '#F8FAFD' : '';
+
+    if (g === null) {
+      // 閉所：2行まとめてrowspan
+      html += `<td class="td-data td-closed" rowspan="2" style="${colBg?'background:'+colBg:'background:#F8F9FA'}">
+        <div class="cell-inner"><span class="cell-closed">閉</span></div>
+      </td>`;
       return;
     }
     monthGoal += g;
-    html += `<td class="td-data td-goal" style="${bg?'background:linear-gradient('+bg+',#F0F8FF)':''}">
-      <div class="cell-inner" style="min-height:16px;padding:1px">
-        <span class="cell-goal">${g}</span>
-      </div>
+    html += `<td class="td-data td-goal" style="${colBg?'background:'+colBg:''}">
+      <div class="cell-inner"><span class="cell-goal">${g}</span></div>
     </td>`;
   });
 
-  // 月計目標
-  html += `<td class="td-sum-goal" rowspan="2" style="vertical-align:middle">
-    <div style="padding:2px 4px">
-      <div style="font-size:10px;color:#888;margin-bottom:2px">目標</div>
-      <div style="font-size:13px;font-weight:700;color:#185FA5">${monthGoal || '—'}</div>
+  // 月計セル（2行またぎ）
+  html += `<td class="td-sum" rowspan="2" style="vertical-align:middle">
+    <div class="td-sum-inner">
+      <span class="sum-label">目標</span>
+      <span class="sum-goal">${monthGoal || '—'}</span>
     </div>
   </td>`;
   html += `</tr>`;
@@ -338,109 +433,108 @@ function officeRows(o, dates, goals, actuals) {
   // === 実績行 ===
   html += `<tr>`;
   let monthActual = 0;
-  let hasAny = false;
   dates.forEach(({ dateStr, dow }) => {
     const g = goals[o][dateStr];
-    if (g === null) return; // 閉所はrowspan済みでスキップ
+    if (g === null) return; // 閉所はrowspan済みスキップ
     const a = actuals[o][dateStr];
-    const isSun = dow === 0;
-    const isSat = dow === 6;
-    let bg = isSun ? 'background:#FFF5F5' : isSat ? 'background:#F5F8FF' : 'background:#FFFFF0';
+    const isToday = dateStr === todayStr;
+    const isSun = dow === 0, isSat = dow === 6;
+    const colBg = isToday ? '#F0FDF8' : isSun ? '#FDF8F8' : isSat ? '#F8FAFD' : '#FAFFFE';
+
     if (a !== null) {
       monthActual += a;
-      hasAny = true;
-      const cls = a >= g ? 'over' : a < g ? 'under' : '';
-      html += `<td class="td-data" style="${bg}">
-        <div class="cell-inner" style="min-height:16px;padding:1px">
-          <span class="cell-actual ${cls}">${a}</span>
-        </div>
+      const cls = a < g ? 'under' : '';
+      html += `<td class="td-data td-actual" style="background:${colBg}">
+        <div class="cell-inner"><span class="cell-actual ${cls}">${a}</span></div>
       </td>`;
     } else {
-      // 未入力（今日以前の開所日は薄くダッシュ、未来は空白）
-      const today = new Date();
       const d = new Date(dateStr);
-      const isPast = d < today && dateStr !== `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-      html += `<td class="td-data" style="${bg}">
-        <div class="cell-inner" style="min-height:16px;padding:1px">
-          <span class="cell-actual none">${isPast ? '—' : ''}</span>
-        </div>
+      const today = new Date(todayStr);
+      const isPast = d < today;
+      html += `<td class="td-data td-actual" style="background:${colBg}">
+        <div class="cell-inner"><span class="cell-actual none">${isPast ? '—' : ''}</span></div>
       </td>`;
     }
   });
-
   html += `</tr>`;
+
+  // 月計実績を月計セルに埋め込む（rowspan後なのでDOMで更新が難しいため月計行を別に追加する必要なし）
   return html;
 }
 
 // -------- エリア合計行 --------
-function areaSum(offices, dates, goals, actuals, label) {
+function areaSum(offices, dates, goals, actuals, label, todayStr) {
   let html = `<tr class="tr-area-sum">`;
-  html += `<td class="td-office" style="background:#EBF3FB;color:#185FA5;font-weight:600;padding:3px 8px">${label}　合計</td>`;
+  html += `<td class="td-office" style="color:#2471A3;font-weight:600;padding-left:12px;border-right:2px solid #D6E8F8">▸ ${label}　合計</td>`;
 
-  let mGoal = 0, mActual = 0;
+  let mGoal = 0, mActual = 0, hasActual = false;
   dates.forEach(({ dateStr, dow }) => {
     const dayGoal   = offices.reduce((s, o) => s + (goals[o][dateStr] ?? 0), 0);
     const dayActual = offices.reduce((s, o) => s + (actuals[o][dateStr] ?? 0), 0);
-    const anyOpen = offices.some(o => goals[o][dateStr] !== null);
+    const anyOpen   = offices.some(o => goals[o][dateStr] !== null);
     const anyActual = offices.some(o => actuals[o][dateStr] !== null);
+    const isToday = dateStr === todayStr;
     const isSun = dow === 0, isSat = dow === 6;
-    const bgCell = isSun ? '#FFE8E8' : isSat ? '#E8EEFF' : '#EBF3FB';
+    const colBg = isToday ? '#E8F8F2' : isSun ? '#F5ECEC' : isSat ? '#EEF2F8' : '';
 
     if (!anyOpen) {
-      html += `<td style="background:#f0f0f0;border-color:#ddd;font-size:9px;color:#ccc;text-align:center">閉</td>`;
+      html += `<td style="background:#F0F0F2;border-right:1px solid #E8EAED"><div class="cell-inner"><span style="font-size:9px;color:#CCC">閉</span></div></td>`;
       return;
     }
-    mGoal   += dayGoal;
-    mActual += dayActual;
-    const pct = dayGoal > 0 ? Math.round(dayActual / dayGoal * 100) : null;
-    const cls = pct !== null ? (pct >= 100 ? 'color:#1D9E75' : pct >= 80 ? 'color:#185FA5' : 'color:#CC3333') : '';
-    html += `<td style="background:${bgCell};text-align:center;padding:1px 2px;vertical-align:middle">
-      <span style="font-size:11px;font-weight:600;color:#185FA5;display:block">${dayGoal}</span>
-      <span style="font-size:11px;font-weight:600;display:block;${cls}">${anyActual ? dayActual : '—'}</span>
+    mGoal += dayGoal;
+    if (anyActual) { mActual += dayActual; hasActual = true; }
+    const pctCls = anyActual && dayGoal > 0 && dayActual < dayGoal ? 'color:#C0392B' : 'color:#1D6E3E';
+    html += `<td style="${colBg?'background:'+colBg+';':''}border-right:1px solid #E8EAED;text-align:center;padding:1px 2px">
+      <span style="font-size:10px;color:#5B9BD5;font-weight:500;display:block">${dayGoal}</span>
+      <span style="font-size:11px;font-weight:700;display:block;${anyActual?pctCls:'color:#CCC'}">${anyActual ? dayActual : '—'}</span>
     </td>`;
   });
 
-  html += `<td style="background:#D4E9FF;text-align:center;padding:2px 4px">
-    <div style="font-size:10px;color:#888">目標</div>
-    <div style="font-size:12px;font-weight:700;color:#185FA5">${mGoal}</div>
-    <div style="font-size:10px;color:#888;margin-top:1px">実績</div>
-    <div style="font-size:12px;font-weight:700;color:#0F6E56">${mActual || '—'}</div>
+  html += `<td class="td-sum" style="border-left:2px solid #D6E8F8;background:#E8F4FF">
+    <div class="td-sum-inner">
+      <span class="sum-label">目標</span><span class="sum-goal" style="color:#2471A3">${mGoal}</span>
+      <span class="sum-label" style="margin-top:2px">実績</span>
+      <span class="sum-actual ${hasActual && mActual < mGoal ? 'under' : ''}">${hasActual ? mActual : '—'}</span>
+    </div>
   </td>`;
   html += `</tr>`;
   return html;
 }
 
 // -------- 事業部合計行 --------
-function catSum(offices, dates, goals, actuals, label) {
+function catSum(offices, dates, goals, actuals, label, todayStr) {
   let html = `<tr class="tr-cat-sum">`;
-  html += `<td class="td-office" style="background:#185FA5;color:#fff;font-weight:700;padding:4px 8px">${label}　計</td>`;
+  html += `<td class="td-office" style="color:#1D9E75;font-weight:700;border-right:2px solid #B2DFDB">${label}　計</td>`;
 
-  let mGoal = 0, mActual = 0;
+  let mGoal = 0, mActual = 0, hasActual = false;
   dates.forEach(({ dateStr, dow }) => {
     const dayGoal   = offices.reduce((s, o) => s + (goals[o][dateStr] ?? 0), 0);
     const dayActual = offices.reduce((s, o) => s + (actuals[o][dateStr] ?? 0), 0);
     const anyOpen   = offices.some(o => goals[o][dateStr] !== null);
     const anyActual = offices.some(o => actuals[o][dateStr] !== null);
+    const isToday = dateStr === todayStr;
+    const isSun = dow === 0, isSat = dow === 6;
+    const colBg = isToday ? '#E0F5EC' : isSun ? '#EFF6F0' : isSat ? '#EFF3F6' : '';
 
     if (!anyOpen) {
-      html += `<td style="background:#1A5EA8;border-color:#1A5EA8"></td>`;
+      html += `<td style="background:#F2F5F2;border-right:1px solid #d4f4e8"></td>`;
       return;
     }
-    mGoal   += dayGoal;
-    mActual += dayActual;
-    const pct = dayGoal > 0 && anyActual ? Math.round(dayActual / dayGoal * 100) : null;
-    html += `<td style="background:#1A5EA8;text-align:center;padding:1px 2px;vertical-align:middle;color:#fff">
-      <span style="font-size:10px;opacity:0.8;display:block">${dayGoal}</span>
-      <span style="font-size:12px;font-weight:700;display:block">${anyActual ? dayActual : '—'}</span>
-      ${pct !== null ? `<span style="font-size:9px;opacity:0.8">${pct}%</span>` : ''}
+    mGoal += dayGoal;
+    if (anyActual) { mActual += dayActual; hasActual = true; }
+    const pctCls = anyActual && dayGoal > 0 && dayActual < dayGoal ? 'color:#C0392B' : 'color:#0F6E56';
+    html += `<td style="${colBg?'background:'+colBg+';':''}border-right:1px solid #d4f4e8;text-align:center;padding:1px 2px">
+      <span style="font-size:10px;color:#1D9E75;font-weight:500;display:block">${dayGoal}</span>
+      <span style="font-size:11px;font-weight:700;display:block;${anyActual?pctCls:'color:#CCC'}">${anyActual ? dayActual : '—'}</span>
     </td>`;
   });
 
-  html += `<td style="background:#0F6E56;color:#fff;text-align:center;padding:2px 4px">
-    <div style="font-size:10px;opacity:0.8">目標</div>
-    <div style="font-size:13px;font-weight:700">${mGoal}</div>
-    <div style="font-size:10px;opacity:0.8;margin-top:1px">実績</div>
-    <div style="font-size:13px;font-weight:700">${mActual || '—'}</div>
+  html += `<td class="td-sum" style="border-left:2px solid #B2DFDB;background:#E0F5ED">
+    <div class="td-sum-inner">
+      <span class="sum-label">目標</span><span class="sum-goal" style="color:#1D9E75">${mGoal}</span>
+      <span class="sum-label" style="margin-top:2px">実績</span>
+      <span class="sum-actual ${hasActual && mActual < mGoal ? 'under' : ''}">${hasActual ? mActual : '—'}</span>
+    </div>
   </td>`;
   html += `</tr>`;
   return html;
