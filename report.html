@@ -79,7 +79,7 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 .th-area-half{background:#F4F6F8;color:#555;font-weight:600;text-align:center}
 .th-area-total{background:#E0F5ED;color:#0F6E56;font-weight:700;text-align:center}
 .th-area-cat{font-weight:600;font-size:11px;text-align:center}
-.td-rowlabel{background:#FAFAFA;color:#333;font-weight:600;text-align:left;padding:4px 10px;min-width:120px;position:sticky;left:0;z-index:3;border-right:2px solid #E8EAED}
+.td-rowlabel{background:#FAFAFA;color:#333;font-weight:600;text-align:left;padding:4px 10px;min-width:120px;position:sticky;left:0;z-index:3;border-right:1px solid #e8e8e8}
 .td-rowlabel.sub{font-weight:400;color:#888;padding-left:18px}
 .td-area-h1{background:#F8FBFF;color:#2471A3;font-weight:600}
 .td-area-h2{background:#F5FFF8;color:#1D7A50;font-weight:600}
@@ -452,15 +452,18 @@ window.loadAreaReport = async function() {
   let html = `<div style="padding:14px 0 6px;font-size:13px;font-weight:600;color:#555">${year}年度　${areaVal.includes(':') ? areaVal.split(':')[1] : areaVal}　集計</div>`;
 
   const groupMerged = []; // 全社集計用
+  const isZensha = areaVal === 'group:全社';
 
   for (const group of targetGroups) {
     const groupData = group.officeNames.map(n=>dataMap[n]).filter(Boolean);
     if (!groupData.length) continue;
 
-    // 各事業所の抜粋表
-    for (const name of group.officeNames) {
-      if (dataMap[name]) {
-        html += renderAreaTable(dataMap[name], name, false);
+    // 各事業所の抜粋表（全社選択時はスキップ）
+    if (!isZensha) {
+      for (const name of group.officeNames) {
+        if (dataMap[name]) {
+          html += renderAreaTable(dataMap[name], name, false);
+        }
       }
     }
 
@@ -473,7 +476,7 @@ window.loadAreaReport = async function() {
   }
 
   // 全社の場合は最後に全社集計を追加
-  if (areaVal === 'group:全社' && groupMerged.length > 1) {
+  if (isZensha && groupMerged.length > 0) {
     const total = mergeOfficeData(groupMerged);
     if (total) {
       html += `<div style="height:4px;background:#E8EAED;border-radius:2px;margin:8px 0"></div>`;
