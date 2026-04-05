@@ -335,11 +335,11 @@ function renderAreaTable(data, title, isSummary=false, officeCount=0) {
 
   const rows = [
     // 目標
-    `<tr class="${trCls} tr-target"><td class="td-rowlabel td-cat" rowspan="3" style="color:#5B9BD5;background:#F8FBFF">目　標</td>${lbl('稼働日数',!isSummary)}${cols(wdPerMonth,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-target"><td class="td-rowlabel td-cat" rowspan="3" style="color:#5B9BD5;background:#F8FBFF;vertical-align:middle">目　標</td>${lbl('稼働日数',!isSummary)}${cols(wdPerMonth,fmtN)}</tr>`,
     `<tr class="${trCls} tr-target">${lbl('貢献人数／月',!isSummary)}${cols(tpm,fmtN)}</tr>`,
     `<tr class="${trCls} tr-target">${lbl('貢献報酬',!isSummary)}${cols(tRev,fmtN)}</tr>`,
     // 実績
-    `<tr class="${trCls} tr-actual"><td class="td-rowlabel td-cat" rowspan="8" style="color:#1D9E75;background:#F5FFFB">実　績</td>${lbl('稼働日数',!isSummary)}${cols(aWd,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-actual"><td class="td-rowlabel td-cat" rowspan="8" style="color:#1D9E75;background:#F5FFFB;vertical-align:middle">実　績</td>${lbl('稼働日数',!isSummary)}${cols(aWd,fmtN)}</tr>`,
     `<tr class="${trCls} tr-actual">${lbl('貢献人数／月',!isSummary)}${cols(aPpl,fmtN)}</tr>`,
     `<tr class="${trCls} tr-actual">${lbl('貢献人数／定員',!isSummary)}${colsAvg(aPdef,fmtP)}</tr>`,
     `<tr class="${trCls} tr-actual">${lbl('貢献報酬',!isSummary)}${cols(aRev,fmtN)}</tr>`,
@@ -348,7 +348,7 @@ function renderAreaTable(data, title, isSummary=false, officeCount=0) {
     `<tr class="${trCls} tr-actual">${lbl('　実績加算',true)}${cols(aActR,fmtN)}</tr>`,
     `<tr class="${trCls} tr-actual">${lbl('　処遇改善加算',true)}${cols(aTreat,fmtN)}</tr>`,
     // 貢献度
-    `<tr class="${trCls} tr-achieve"><td class="td-rowlabel td-cat" rowspan="4" style="color:#7B5EA7;background:#F8F5FF">貢献度</td>${lbl('稼働日数',!isSummary)}${colsAch(achWd)}</tr>`,
+    `<tr class="${trCls} tr-achieve"><td class="td-rowlabel td-cat" rowspan="4" style="color:#7B5EA7;background:#F8F5FF;vertical-align:middle">貢献度</td>${lbl('稼働日数',!isSummary)}${colsAch(achWd)}</tr>`,
     `<tr class="${trCls} tr-achieve">${lbl('貢献人数／月',!isSummary)}${colsAch(achPpl)}</tr>`,
     `<tr class="${trCls} tr-achieve">${lbl('貢献報酬',!isSummary)}${colsAch(achRev)}</tr>`,
     `<tr class="${trCls} tr-achieve">${lbl('給与比率',!isSummary)}${colsAch(achGr)}</tr>`,
