@@ -68,6 +68,34 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 .svc-other{background:#f5f5f5;color:#555}
 .tr-svc-total td{background:#f8fbff !important}
 .loading{text-align:center;padding:60px;color:#aaa;font-size:14px}
+/* ===== エリア集計表 ===== */
+.area-section{margin-bottom:28px}
+.area-section-title{font-size:14px;font-weight:700;color:#333;padding:10px 14px;background:#fff;border-radius:8px 8px 0 0;border:1px solid #E8EAED;border-bottom:2px solid #1D9E75;display:flex;align-items:center;gap:10px}
+.area-section-title .badge{font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px;background:#E8F5EE;color:#1D9E75}
+.area-table-wrap{overflow-x:auto;border:1px solid #E8EAED;border-top:none;border-radius:0 0 8px 8px;background:#fff}
+.area-table{width:100%;border-collapse:collapse;font-size:11px;min-width:900px}
+.area-table th,.area-table td{border:1px solid #e8e8e8;padding:4px 7px;text-align:right;white-space:nowrap}
+.area-table th{text-align:center;font-weight:500;color:#666;background:#F8F9FA}
+.th-area-half{background:#F4F6F8;color:#555;font-weight:600;text-align:center}
+.th-area-total{background:#E0F5ED;color:#0F6E56;font-weight:700;text-align:center}
+.th-area-cat{font-weight:600;font-size:11px;text-align:center}
+.td-rowlabel{background:#FAFAFA;color:#333;font-weight:600;text-align:left;padding:4px 10px;min-width:120px;position:sticky;left:0;z-index:3;border-right:2px solid #E8EAED}
+.td-rowlabel.sub{font-weight:400;color:#888;padding-left:18px}
+.td-area-h1{background:#F8FBFF;color:#2471A3;font-weight:600}
+.td-area-h2{background:#F5FFF8;color:#1D7A50;font-weight:600}
+.td-area-tot{background:#E0F5ED;color:#0F6E56;font-weight:700}
+.td-area-ach{font-weight:600}
+.ach-good{color:#1D9E75}.ach-warn{color:#CC6600}.ach-bad{color:#C0392B}.ach-none{color:#ccc}
+.tr-target td{background:#F8FBFF}
+.tr-actual td{background:#FAFFFC}
+.tr-achieve td{background:#F8F5FF}
+.tr-summary .td-rowlabel{background:#E8F5EE;color:#1D9E75;font-weight:700;border-bottom:2px solid #1D9E75}
+.tr-summary td{background:#F0FAF6;font-weight:600;border-bottom:2px solid #d4f4e8}
+.tr-summary .td-area-h1{background:#D4F0E4;color:#0F6E56}
+.tr-summary .td-area-h2{background:#D4F0E4;color:#0F6E56}
+.tr-summary .td-area-tot{background:#B2DFDB;color:#004D40;font-weight:700}
+.tr-office-name td{background:#F4F6F8;font-size:12px;font-weight:700;color:#333;border-top:2px solid #E8EAED}
+.tr-office-name .td-rowlabel{background:#F0F2F5;color:#185FA5;font-weight:700}
 </style>
 </head>
 <body>
@@ -83,9 +111,23 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
       <option value="2026" selected>2026年度</option>
       <option value="2027">2027年度</option>
     </select>
-    <select id="sel-office" style="padding:5px 8px;border-radius:6px;border:1px solid #E8EAED;font-size:12px;font-family:inherit;color:#333;background:#fff;cursor:pointer;min-width:140px"></select>
-    <button onclick="loadReport()" style="padding:5px 14px;border-radius:6px;border:1px solid #1D9E75;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">表示</button>
-    <button onclick="saveActual()" id="save-btn" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">💾 保存</button>
+    <!-- モード切り替え -->
+    <div style="display:flex;border:1px solid #E8EAED;border-radius:6px;overflow:hidden">
+      <button id="mode-office" onclick="switchMode('office')" style="padding:5px 12px;border:none;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">事業所</button>
+      <button id="mode-area"   onclick="switchMode('area')"   style="padding:5px 12px;border:none;background:#fff;color:#888;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;border-left:1px solid #E8EAED">エリア集計</button>
+    </div>
+    <!-- 事業所セレクター -->
+    <div id="ctrl-office" style="display:flex;gap:6px;align-items:center">
+      <select id="sel-office" style="padding:5px 8px;border-radius:6px;border:1px solid #E8EAED;font-size:12px;font-family:inherit;color:#333;background:#fff;cursor:pointer;min-width:140px"></select>
+      <button onclick="loadReport()" style="padding:5px 14px;border-radius:6px;border:1px solid #1D9E75;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">表示</button>
+      <button onclick="saveActual()" id="save-btn" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">💾 保存</button>
+      <span id="save-status" style="font-size:11px;color:#1D9E75"></span>
+    </div>
+    <!-- エリアセレクター -->
+    <div id="ctrl-area" style="display:none;gap:6px;align-items:center">
+      <select id="sel-area" style="padding:5px 8px;border-radius:6px;border:1px solid #E8EAED;font-size:12px;font-family:inherit;color:#333;background:#fff;cursor:pointer;min-width:160px"></select>
+      <button onclick="loadAreaReport()" style="padding:5px 14px;border-radius:6px;border:1px solid #1D9E75;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">表示</button>
+    </div>
     <div class="top-bar-divider"></div>
     <a href="daily.html" class="nav-link">速報入力</a>
     <a href="monthly.html" class="nav-link">月次カレンダー</a>
@@ -93,7 +135,6 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
     <a href="import.html" class="nav-link">CSV取込</a>
     <a href="settings.html" class="nav-link">設定</a>
     <a href="index.html" class="nav-link">ポータル</a>
-    <span id="save-status" style="font-size:11px;color:#1D9E75"></span>
   </div>
 </div>
 <div class="content">
@@ -133,22 +174,319 @@ function svcBadge(name) {
   return `<span class="svc-badge ${cls}">${name}</span>`;
 }
 
-let offices=[], prices=[], currentOffice=null, currentYear=2026;
+let offices=[], prices=[], areas=[], currentOffice=null, currentYear=2026;
 let wdData={}, actualData={};
+let viewMode = 'office'; // 'office' | 'area'
+
+// -------- モード切り替え --------
+window.switchMode = function(mode) {
+  viewMode = mode;
+  document.getElementById('mode-office').style.cssText = mode==='office'
+    ? 'padding:5px 12px;border:none;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600'
+    : 'padding:5px 12px;border:none;background:#fff;color:#888;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500';
+  document.getElementById('mode-area').style.cssText = mode==='area'
+    ? 'padding:5px 12px;border:none;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;border-left:1px solid #E8EAED'
+    : 'padding:5px 12px;border:none;background:#fff;color:#888;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;border-left:1px solid #E8EAED';
+  document.getElementById('ctrl-office').style.display = mode==='office' ? 'flex' : 'none';
+  document.getElementById('ctrl-area').style.display   = mode==='area'   ? 'flex' : 'none';
+  document.getElementById('report-area').innerHTML =
+    '<div class="loading">' + (mode==='office' ? '年度と事業所を選択して「表示」を押してください' : '年度とエリアを選択して「表示」を押してください') + '</div>';
+};
 
 async function init(){
-  const oSnap = await getDocs(collection(db,'offices'));
+  const [oSnap, pSnap, aSnap] = await Promise.all([
+    getDocs(collection(db,'offices')),
+    getDocs(collection(db,'prices')),
+    getDocs(collection(db,'areas'))
+  ]);
   offices=[];
   oSnap.forEach(d=>offices.push({id:d.id,...d.data()}));
   offices.sort((a,b)=>(a.order||99)-(b.order||99));
-  const pSnap = await getDocs(collection(db,'prices'));
   prices=[];
   pSnap.forEach(d=>prices.push({id:d.id,...d.data()}));
+  areas=[];
+  aSnap.forEach(d=>areas.push({id:d.id,...d.data()}));
+  areas.sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+
   document.getElementById('sel-office').innerHTML =
     offices.map(o=>`<option value="${o.id}">${o.name}</option>`).join('');
+
+  // エリアセレクター：Firestoreのエリア + 固定グループ
+  const areaOptions = [
+    ...areas.map(a=>`<option value="area:${a.name}">${a.name}</option>`),
+    `<optgroup label="────────"></optgroup>`,
+    `<option value="group:ラフォーレ">ラフォーレ（高陽・亀山）</option>`,
+    `<option value="group:レポ">レポ（白木）</option>`,
+    `<option value="group:全社">全社</option>`,
+  ];
+  document.getElementById('sel-area').innerHTML = areaOptions.join('');
 }
 
-// -------- ヘルパー --------
+// ======================================================
+// ===== エリア集計 =====
+// ======================================================
+
+// 1事業所分の年度データを読み込んで集計値を返す
+async function loadOfficeData(officeName, year) {
+  const [wdSnap, actSnap] = await Promise.all([
+    getDoc(doc(db,'workdays',`${year}_${officeName}`)),
+    getDoc(doc(db,'actuals', `${year}_${officeName}`))
+  ]);
+  const wd  = wdSnap.exists()  ? wdSnap.data().days   || {} : {};
+  const act = actSnap.exists() ? actSnap.data().months || {} : {};
+  const fy  = getFY(year);
+
+  const wdPerMonth = fy.map(([y,m])=>{
+    const mk=`${y}-${String(m).padStart(2,'0')}`;
+    return Object.entries(wd).filter(([k,v])=>k.startsWith(mk)&&v===1).length;
+  });
+
+  const office = offices.find(o=>o.name===officeName);
+  const price  = prices.find(p=>p.id===office?.priceId);
+  const cap    = price?.capacity || 0;
+  const up     = price?.price    || 0;
+
+  const tpm  = wdPerMonth.map(w=>w*cap);
+  const tRev = tpm.map(t=>t*up);
+
+  // 実績
+  const aTotals = MONTHS_ARR.map(m=>{
+    const md = act[m];
+    if(!md) return {people:0,basicRev:0,bodyRev:0,actualRev:0,treatRev:0,totalRev:0};
+    if(md.services){
+      let p=0,b=0,bo=0,a=0,t=0;
+      Object.values(md.services).forEach(s=>{p+=s.people||0;b+=s.basicRev||0;bo+=s.bodyRev||0;a+=s.actualRev||0;t+=s.treatRev||0;});
+      return {people:p,basicRev:b,bodyRev:bo,actualRev:a,treatRev:t,totalRev:b+bo+a+t};
+    }
+    const b=md.basicRev||0,bo=md.bodyRev||0,a=md.actualRev||0,t=md.treatRev||0;
+    return {people:md.people||0,basicRev:b,bodyRev:bo,actualRev:a,treatRev:t,totalRev:b+bo+a+t};
+  });
+
+  const aWd    = MONTHS_ARR.map((_,i)=>parseFloat(act[MONTHS_ARR[i]]?.wd)||0);
+  const aPpl   = aTotals.map(t=>t.people);
+  const aBasic = aTotals.map(t=>t.basicRev);
+  const aBody  = aTotals.map(t=>t.bodyRev);
+  const aActR  = aTotals.map(t=>t.actualRev);
+  const aTreat = aTotals.map(t=>t.treatRev);
+  const aRev   = aTotals.map(t=>t.totalRev);
+  const aSalS  = MONTHS_ARR.map((_,i)=>parseFloat(act[MONTHS_ARR[i]]?.salaryStaff)||0);
+  const aSalP  = MONTHS_ARR.map((_,i)=>parseFloat(act[MONTHS_ARR[i]]?.salaryPart)||0);
+  const aSal   = MONTHS_ARR.map((_,i)=>aSalS[i]+aSalP[i]);
+
+  return { officeName, cap, up, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal };
+}
+
+// 抜粋表の15行を生成（1事業所または集計行）
+function renderAreaTable(data, title, isSummary=false, officeCount=0) {
+  const { wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, cap } = data;
+
+  const aPpd  = MONTHS_ARR.map((_,i)=>aWd[i]&&aPpl[i]?aPpl[i]/aWd[i]:0);
+  const aPdef = MONTHS_ARR.map((_,i)=>cap&&aPpd[i]?aPpd[i]/cap:0);
+  const aGr   = MONTHS_ARR.map((_,i)=>aRev[i]&&aSal[i]?aSal[i]/aRev[i]:0);
+
+  const achWd  = MONTHS_ARR.map((_,i)=>wdPerMonth[i]&&aWd[i]   ?aWd[i]/wdPerMonth[i]:null);
+  const achPpl = MONTHS_ARR.map((_,i)=>tpm[i]         &&aPpl[i] ?aPpl[i]/tpm[i]:null);
+  const achRev = MONTHS_ARR.map((_,i)=>tRev[i]        &&aRev[i] ?aRev[i]/tRev[i]:null);
+  const achGr  = MONTHS_ARR.map((_,i)=>SALARY&&aGr[i]?SALARY/aGr[i]:null);
+
+  function cols(arr, fmt, cls='') {
+    const h1 = arr.slice(0,6).map(v=>`<td class="${cls}">${fmt(v)}</td>`).join('');
+    const sh1 = arr.slice(0,6).reduce((a,b)=>a+(b||0),0);
+    const h2 = arr.slice(6).map(v=>`<td class="${cls}">${fmt(v)}</td>`).join('');
+    const sh2 = arr.slice(6).reduce((a,b)=>a+(b||0),0);
+    const tot = sh1+sh2;
+    return `${h1}<td class="td-area-h1">${fmt(sh1)}</td>${h2}<td class="td-area-h2">${fmt(sh2)}</td><td class="td-area-tot">${fmt(tot)}</td>`;
+  }
+  function colsAvg(arr, fmt, cls='') {
+    // 平均値は月ごとに表示、小計・通期は平均の平均
+    const h1 = arr.slice(0,6).map(v=>`<td class="${cls}">${fmt(v)}</td>`).join('');
+    const av1 = arr.slice(0,6).filter(v=>v>0);
+    const sh1 = av1.length ? av1.reduce((a,b)=>a+b,0)/av1.length : null;
+    const h2 = arr.slice(6).map(v=>`<td class="${cls}">${fmt(v)}</td>`).join('');
+    const av2 = arr.slice(6).filter(v=>v>0);
+    const sh2 = av2.length ? av2.reduce((a,b)=>a+b,0)/av2.length : null;
+    const ava = arr.filter(v=>v>0);
+    const tot = ava.length ? ava.reduce((a,b)=>a+b,0)/ava.length : null;
+    return `${h1}<td class="td-area-h1">${fmt(sh1)}</td>${h2}<td class="td-area-h2">${fmt(sh2)}</td><td class="td-area-tot">${fmt(tot)}</td>`;
+  }
+  function colsAch(arr) {
+    const fmt = v => v===null?`<span class="ach-none">－</span>`:`<span class="ach-${v>=1?'good':v>=BREAK?'warn':'bad'}">${(v*100).toFixed(1)}%</span>`;
+    const h1 = arr.slice(0,6).map(v=>`<td class="td-area-ach">${fmt(v)}</td>`).join('');
+    const av1 = arr.slice(0,6).filter(v=>v!==null);
+    const sh1 = av1.length ? av1.reduce((a,b)=>a+b,0)/av1.length : null;
+    const h2 = arr.slice(6).map(v=>`<td class="td-area-ach">${fmt(v)}</td>`).join('');
+    const av2 = arr.slice(6).filter(v=>v!==null);
+    const sh2 = av2.length ? av2.reduce((a,b)=>a+b,0)/av2.length : null;
+    const ava = arr.filter(v=>v!==null);
+    const tot = ava.length ? ava.reduce((a,b)=>a+b,0)/ava.length : null;
+    return `${h1}<td class="td-area-h1 td-area-ach">${fmt(sh1)}</td>${h2}<td class="td-area-h2 td-area-ach">${fmt(sh2)}</td><td class="td-area-tot td-area-ach">${fmt(tot)}</td>`;
+  }
+
+  const fmtN = v => (!v&&v!==0)||v===null?'－':Math.round(v).toLocaleString();
+  const fmtP = v => v===null||v===undefined?'－':(v*100).toFixed(1)+'%';
+  const fmtD = v => v?v.toFixed(1):'－';
+
+  const trCls = isSummary ? 'tr-summary' : '';
+  const lbl = (text, sub=false) =>
+    `<td class="td-rowlabel${sub?' sub':''}">${text}</td>`;
+
+  const rows = [
+    // 目標
+    `<tr class="${trCls} tr-target"><td class="td-rowlabel" rowspan="3" style="color:#5B9BD5;background:#F8FBFF">目　標</td>${lbl('稼働日数',!isSummary)}${cols(wdPerMonth,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-target">${lbl('貢献人数／月',!isSummary)}${cols(tpm,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-target">${lbl('貢献報酬',!isSummary)}${cols(tRev,fmtN)}</tr>`,
+    // 実績
+    `<tr class="${trCls} tr-actual"><td class="td-rowlabel" rowspan="8" style="color:#1D9E75;background:#F5FFFB">実　績</td>${lbl('稼働日数',!isSummary)}${cols(aWd,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-actual">${lbl('貢献人数／月',!isSummary)}${cols(aPpl,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-actual">${lbl('貢献人数／定員',!isSummary)}${colsAvg(aPdef,fmtP)}</tr>`,
+    `<tr class="${trCls} tr-actual">${lbl('貢献報酬',!isSummary)}${cols(aRev,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-actual">${lbl('　基本報酬',true)}${cols(aBasic,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-actual">${lbl('　体制加算',true)}${cols(aBody,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-actual">${lbl('　実績加算',true)}${cols(aActR,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-actual">${lbl('　処遇改善加算',true)}${cols(aTreat,fmtN)}</tr>`,
+    // 貢献度
+    `<tr class="${trCls} tr-achieve"><td class="td-rowlabel" rowspan="4" style="color:#7B5EA7;background:#F8F5FF">貢献度</td>${lbl('稼働日数',!isSummary)}${colsAch(achWd)}</tr>`,
+    `<tr class="${trCls} tr-achieve">${lbl('貢献人数／月',!isSummary)}${colsAch(achPpl)}</tr>`,
+    `<tr class="${trCls} tr-achieve">${lbl('貢献報酬',!isSummary)}${colsAch(achRev)}</tr>`,
+    `<tr class="${trCls} tr-achieve">${lbl('給与比率',!isSummary)}${colsAch(achGr)}</tr>`,
+  ].join('');
+
+  const badgeText = isSummary
+    ? (officeCount > 0 ? `${officeCount}事業所合計` : '集計')
+    : '';
+
+  return `
+  <div class="area-section">
+    <div class="area-section-title">
+      ${title}
+      ${badgeText ? `<span class="badge">${badgeText}</span>` : ''}
+    </div>
+    <div class="area-table-wrap">
+      <table class="area-table">
+        <thead>
+          <tr>
+            <th colspan="2" class="td-rowlabel" style="z-index:5;background:#F4F6F8">項目</th>
+            ${ML_ARR.slice(0,6).map(m=>`<th>${m}</th>`).join('')}
+            <th class="th-area-half">上半期</th>
+            ${ML_ARR.slice(6).map(m=>`<th>${m}</th>`).join('')}
+            <th class="th-area-half">下半期</th>
+            <th class="th-area-total">通期</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// 複数事業所のデータを集計して1つのdataオブジェクトに合算
+function mergeOfficeData(dataList) {
+  if (!dataList.length) return null;
+  const zero12 = () => Array(12).fill(0);
+  const merged = {
+    cap: dataList.reduce((s,d)=>s+(d.cap||0),0),
+    wdPerMonth: zero12(), tpm: zero12(), tRev: zero12(),
+    aWd: zero12(), aPpl: zero12(), aBasic: zero12(),
+    aBody: zero12(), aActR: zero12(), aTreat: zero12(),
+    aRev: zero12(), aSal: zero12(),
+  };
+  dataList.forEach(d=>{
+    MONTHS_ARR.forEach((_,i)=>{
+      merged.wdPerMonth[i] += d.wdPerMonth[i]||0;
+      merged.tpm[i]        += d.tpm[i]||0;
+      merged.tRev[i]       += d.tRev[i]||0;
+      merged.aWd[i]        += d.aWd[i]||0;
+      merged.aPpl[i]       += d.aPpl[i]||0;
+      merged.aBasic[i]     += d.aBasic[i]||0;
+      merged.aBody[i]      += d.aBody[i]||0;
+      merged.aActR[i]      += d.aActR[i]||0;
+      merged.aTreat[i]     += d.aTreat[i]||0;
+      merged.aRev[i]       += d.aRev[i]||0;
+      merged.aSal[i]       += d.aSal[i]||0;
+    });
+  });
+  return merged;
+}
+
+// エリア集計メイン
+window.loadAreaReport = async function() {
+  const year = parseInt(document.getElementById('sel-year').value);
+  const areaVal = document.getElementById('sel-area').value;
+  document.getElementById('report-area').innerHTML = '<div class="loading">読み込み中...</div>';
+
+  // 対象事業所リストを決定
+  let targetGroups = []; // [{label, officeNames}]
+
+  if (areaVal === 'group:全社') {
+    // 全社：エリアごと＋ラフォーレ・レポ
+    const areaGroups = areas.map(a=>({
+      label: a.name,
+      officeNames: offices.filter(o=>o.area===a.name).map(o=>o.name)
+    })).filter(g=>g.officeNames.length>0);
+    const lafore = offices.filter(o=>['ラフォーレ高陽','ラフォーレ亀山'].includes(o.name)).map(o=>o.name);
+    const repo   = offices.filter(o=>o.name==='レポ白木').map(o=>o.name);
+    if(lafore.length) areaGroups.push({label:'ラフォーレ', officeNames:lafore});
+    if(repo.length)   areaGroups.push({label:'レポ',       officeNames:repo});
+    targetGroups = areaGroups;
+  } else if (areaVal === 'group:ラフォーレ') {
+    const offNames = offices.filter(o=>['ラフォーレ高陽','ラフォーレ亀山'].includes(o.name)).map(o=>o.name);
+    targetGroups = [{label:'ラフォーレ', officeNames:offNames}];
+  } else if (areaVal === 'group:レポ') {
+    const offNames = offices.filter(o=>o.name==='レポ白木').map(o=>o.name);
+    targetGroups = [{label:'レポ', officeNames:offNames}];
+  } else {
+    // エリア名
+    const areaName = areaVal.replace('area:','');
+    const offNames = offices.filter(o=>o.area===areaName).map(o=>o.name);
+    targetGroups = [{label:areaName, officeNames:offNames}];
+  }
+
+  // データ読み込み（全グループ全事業所を並列）
+  const allOfficeNames = [...new Set(targetGroups.flatMap(g=>g.officeNames))];
+  const dataMap = {};
+  await Promise.all(allOfficeNames.map(async name => {
+    dataMap[name] = await loadOfficeData(name, year);
+  }));
+
+  // HTML生成
+  let html = `<div style="padding:14px 0 6px;font-size:13px;font-weight:600;color:#555">${year}年度　${areaVal.includes(':') ? areaVal.split(':')[1] : areaVal}　集計</div>`;
+
+  const groupMerged = []; // 全社集計用
+
+  for (const group of targetGroups) {
+    const groupData = group.officeNames.map(n=>dataMap[n]).filter(Boolean);
+    if (!groupData.length) continue;
+
+    // 各事業所の抜粋表
+    for (const name of group.officeNames) {
+      if (dataMap[name]) {
+        html += renderAreaTable(dataMap[name], name, false);
+      }
+    }
+
+    // グループ集計
+    const merged = mergeOfficeData(groupData);
+    if (merged) {
+      html += renderAreaTable(merged, `${group.label}　集計`, true, groupData.length);
+      groupMerged.push(merged);
+    }
+  }
+
+  // 全社の場合は最後に全社集計を追加
+  if (areaVal === 'group:全社' && groupMerged.length > 1) {
+    const total = mergeOfficeData(groupMerged);
+    if (total) {
+      html += `<div style="height:4px;background:#E8EAED;border-radius:2px;margin:8px 0"></div>`;
+      html += renderAreaTable(total, '全社　合計', true, allOfficeNames.length);
+    }
+  }
+
+  document.getElementById('report-area').innerHTML = html;
+};
+
+// ======================================================
+// ===== 以下は事業所個別表示（既存） =====
+// ======================================================
 function sum(arr){ return arr.reduce((a,b)=>a+(b||0),0); }
 function avg(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
 function avgNonNull(arr){ const v=arr.filter(x=>x!==null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; }
@@ -507,8 +845,8 @@ window.loadReport = async function(){
         <td class="val-subtotal" id="ah2gr">${ah2gr?(ah2gr*100).toFixed(1)+'%':'－'}</td>
         <td class="val-total" id="atgr">${atGr?(atGr*100).toFixed(1)+'%':'－'}</td>
       </tr>
-      <!-- 達成率 -->
-      <tr><td class="row-cat-achieve" rowspan="4">達成率</td><td class="row-label">稼働日数</td>
+      <!-- 貢献度 -->
+      <tr><td class="row-cat-achieve" rowspan="4">貢献度</td><td class="row-label">稼働日数</td>
         ${achWd.slice(0,6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}
         <td class="val-subtotal ${achClass(avgNonNull(achWd.slice(0,6)))}">${fmtPct(avgNonNull(achWd.slice(0,6)))}</td>
         ${achWd.slice(6).map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}
