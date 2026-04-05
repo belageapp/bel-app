@@ -92,7 +92,8 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 .tr-target td{background:#F8FBFF}
 .tr-actual td{background:#FAFFFC}
 .tr-achieve td{background:#F8F5FF}
-.tr-summary .td-rowlabel{background:#E8F5EE;color:#1D9E75;font-weight:700}
+.tr-summary .row-cat-target,.tr-summary .row-cat-actual,.tr-summary .row-cat-achieve{opacity:1}
+.tr-summary .row-label,.tr-summary .row-label-sub{background:#F0FAF6;color:#0F6E56;font-weight:600}
 .tr-summary td{background:#F0FAF6;font-weight:600}
 .tr-summary .td-area-h1{background:#D4F0E4;color:#0F6E56}
 .tr-summary .td-area-h2{background:#D4F0E4;color:#0F6E56}
@@ -331,15 +332,15 @@ function renderAreaTable(data, title, isSummary=false, officeCount=0) {
 
   const trCls = isSummary ? 'tr-summary' : '';
   const lbl = (text, sub=false) =>
-    `<td class="td-rowlabel${sub?' sub':''}">${text}</td>`;
+    sub ? `<td class="row-label-sub">${text}</td>` : `<td class="row-label">${text}</td>`;
 
   const rows = [
     // 目標
-    `<tr class="${trCls} tr-target"><td class="td-rowlabel td-cat" rowspan="3" style="color:#5B9BD5;background:#F8FBFF;vertical-align:middle">目　標</td>${lbl('稼働日数',!isSummary)}${cols(wdPerMonth,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-target"><td class="row-cat-target" rowspan="3">目　標</td>${lbl('稼働日数',!isSummary)}${cols(wdPerMonth,fmtN)}</tr>`,
     `<tr class="${trCls} tr-target">${lbl('貢献人数／月',!isSummary)}${cols(tpm,fmtN)}</tr>`,
     `<tr class="${trCls} tr-target">${lbl('貢献報酬',!isSummary)}${cols(tRev,fmtN)}</tr>`,
     // 実績
-    `<tr class="${trCls} tr-actual"><td class="td-rowlabel td-cat" rowspan="8" style="color:#1D9E75;background:#F5FFFB;vertical-align:middle">実　績</td>${lbl('稼働日数',!isSummary)}${cols(aWd,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-actual"><td class="row-cat-actual" rowspan="8">実　績</td>${lbl('稼働日数',!isSummary)}${cols(aWd,fmtN)}</tr>`,
     `<tr class="${trCls} tr-actual">${lbl('貢献人数／月',!isSummary)}${cols(aPpl,fmtN)}</tr>`,
     `<tr class="${trCls} tr-actual">${lbl('貢献人数／定員',!isSummary)}${colsAvg(aPdef,fmtP)}</tr>`,
     `<tr class="${trCls} tr-actual">${lbl('貢献報酬',!isSummary)}${cols(aRev,fmtN)}</tr>`,
@@ -348,7 +349,7 @@ function renderAreaTable(data, title, isSummary=false, officeCount=0) {
     `<tr class="${trCls} tr-actual">${lbl('　実績加算',true)}${cols(aActR,fmtN)}</tr>`,
     `<tr class="${trCls} tr-actual">${lbl('　処遇改善加算',true)}${cols(aTreat,fmtN)}</tr>`,
     // 貢献度
-    `<tr class="${trCls} tr-achieve"><td class="td-rowlabel td-cat" rowspan="4" style="color:#7B5EA7;background:#F8F5FF;vertical-align:middle">貢献度</td>${lbl('稼働日数',!isSummary)}${colsAch(achWd)}</tr>`,
+    `<tr class="${trCls} tr-achieve"><td class="row-cat-achieve" rowspan="4">貢献度</td>${lbl('稼働日数',!isSummary)}${colsAch(achWd)}</tr>`,
     `<tr class="${trCls} tr-achieve">${lbl('貢献人数／月',!isSummary)}${colsAch(achPpl)}</tr>`,
     `<tr class="${trCls} tr-achieve">${lbl('貢献報酬',!isSummary)}${colsAch(achRev)}</tr>`,
     `<tr class="${trCls} tr-achieve">${lbl('給与比率',!isSummary)}${colsAch(achGr)}</tr>`,
@@ -372,7 +373,7 @@ function renderAreaTable(data, title, isSummary=false, officeCount=0) {
         </colgroup>
         <thead>
           <tr>
-            <th colspan="2" class="td-rowlabel" style="z-index:5;background:#F4F6F8">項目</th>
+            <th colspan="2" style="background:#f5f5f5;text-align:center;font-size:11px;color:#555;font-weight:500">項目</th>
             ${ML_ARR.slice(0,6).map(m=>`<th>${m}</th>`).join('')}
             <th class="th-area-half">上半期</th>
             ${ML_ARR.slice(6).map(m=>`<th>${m}</th>`).join('')}
