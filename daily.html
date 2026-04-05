@@ -7,48 +7,60 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="貢献人数速報">
-<meta name="theme-color" content="#1D9E75">
+<meta name="theme-color" content="#ffffff">
 <title>貢献人数速報</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f5f5f5;min-height:100dvh}
-.app{max-width:480px;margin:0 auto;padding:0 0 80px}
-.header{background:#1D9E75;color:#fff;padding:16px;padding-top:calc(16px + env(safe-area-inset-top));position:sticky;top:0;z-index:100}
-.header h1{font-size:17px;font-weight:600;text-align:center}
-.header .date{font-size:12px;text-align:center;opacity:0.85;margin-top:2px}
-.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-.portal-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;padding:4px 10px;border-radius:12px}
-.tab-bar{display:flex;background:#fff;border-bottom:1px solid #e5e5e5;position:sticky;top:calc(72px + env(safe-area-inset-top));z-index:99}
-.tab{flex:1;padding:12px;font-size:13px;border:none;background:none;cursor:pointer;color:#888;border-bottom:2px solid transparent;font-family:inherit}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#F4F6F8;min-height:100dvh}
+.app{max-width:600px;margin:0 auto;padding:0 0 80px}
+
+/* ===== トップバー ===== */
+.top-bar{background:#fff;border-bottom:1px solid #E8EAED;padding:0;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;min-height:52px}
+.top-bar-logo{background:#fff;padding:8px 16px;display:flex;align-items:center;border-right:1px solid #E8EAED;flex-shrink:0}
+.top-bar-logo img{height:34px;object-fit:contain}
+.top-bar-main{padding:0 12px;display:flex;align-items:center;gap:8px;flex:1;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.top-bar-title{font-size:14px;font-weight:600;color:#333;white-space:nowrap}
+.top-bar-back{border:none;background:none;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;padding:0;white-space:nowrap;display:none}
+.top-bar-date{font-size:11px;color:#999;white-space:nowrap}
+.top-bar-divider{width:1px;height:22px;background:#E8EAED;flex-shrink:0}
+.nav-link{padding:5px 10px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:11px;cursor:pointer;font-family:inherit;font-weight:500;transition:background .15s,border-color .15s,color .15s;white-space:nowrap;text-decoration:none;display:inline-block;flex-shrink:0}
+.nav-link:hover{background:#F4F6F8;border-color:#d0d3d8;color:#333}
+.nav-link.active{background:#F0FAF6;border-color:#1D9E75;color:#1D9E75;font-weight:600}
+
+/* ===== タブバー ===== */
+.tab-bar{display:flex;background:#fff;border-bottom:1px solid #E8EAED;position:sticky;top:52px;z-index:99}
+.tab{flex:1;padding:11px;font-size:13px;border:none;background:none;cursor:pointer;color:#888;border-bottom:2px solid transparent;font-family:inherit}
 .tab.active{color:#1D9E75;border-bottom-color:#1D9E75;font-weight:500}
+
+/* ===== コンテンツ ===== */
 .section{display:none;padding:16px}.section.active{display:block}
-.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid #E8EAED}
 .office-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.office-btn{padding:14px 10px;border:1px solid #e0e0e0;background:#fff;border-radius:10px;cursor:pointer;font-size:13px;font-family:inherit;text-align:left;display:flex;justify-content:space-between;align-items:center;color:#333}
+.office-btn{padding:14px 10px;border:1px solid #E8EAED;background:#fff;border-radius:10px;cursor:pointer;font-size:13px;font-family:inherit;text-align:left;display:flex;justify-content:space-between;align-items:center;color:#333;transition:border-color .15s,background .15s}
+.office-btn:hover{border-color:#d0d3d8;background:#fafafa}
 .office-btn.done{border-color:#1D9E75;background:#f0faf6}
 .office-btn.partial{border-color:#EF9F27;background:#FAEEDA}
 .office-btn .dot{width:8px;height:8px;border-radius:50%;background:#e0e0e0;flex-shrink:0}
 .office-btn.done .dot{background:#1D9E75}
 .office-btn.partial .dot{background:#EF9F27}
-.back-btn{background:none;border:none;color:#fff;font-size:14px;cursor:pointer;font-family:inherit;padding:0;opacity:0.9}
 .form-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .form-title{font-size:16px;font-weight:600}
-.status-pill{font-size:11px;padding:3px 10px;border-radius:20px;background:#FEF3CD;color:#854F0B}
+.status-pill{font-size:11px;padding:3px 10px;border-radius:20px;background:#F4F6F8;color:#888}
 .status-pill.done{background:#d4f4e8;color:#0F6E56}
 .status-pill.partial{background:#FAEEDA;color:#854F0B}
 .date-select-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #f0f0f0;margin-bottom:4px}
 .date-select-label{font-size:13px;color:#888;white-space:nowrap}
-.date-input{flex:1;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;color:#333;background:#fff;outline:none}
+.date-input{flex:1;padding:8px 10px;border:1px solid #E8EAED;border-radius:8px;font-size:14px;font-family:inherit;color:#333;background:#fff;outline:none}
 .date-input:focus{border-color:#1D9E75}
 .count-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f0f0}
 .count-label{font-size:15px;color:#333}
 .count-ctrl{display:flex;align-items:center;gap:12px}
-.cnt-btn{width:36px;height:36px;border-radius:50%;border:1px solid #d0d0d0;background:#f5f5f5;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#333;line-height:1}
+.cnt-btn{width:36px;height:36px;border-radius:50%;border:1px solid #E8EAED;background:#F4F6F8;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#333;line-height:1}
 .cnt-btn:active{background:#e0e0e0}
 .cnt-num{font-size:22px;font-weight:600;min-width:36px;text-align:center;color:#1D9E75}
 .comment-field{margin-top:14px}
 .comment-field label{font-size:13px;color:#888;display:block;margin-bottom:6px}
-textarea{width:100%;font-size:15px;padding:10px 12px;border:1px solid #e0e0e0;border-radius:8px;font-family:inherit;color:#333;background:#fff;resize:none;outline:none}
+textarea{width:100%;font-size:15px;padding:10px 12px;border:1px solid #E8EAED;border-radius:8px;font-family:inherit;color:#333;background:#fff;resize:none;outline:none}
 textarea:focus{border-color:#1D9E75}
 .submit-btn{width:100%;padding:14px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;margin-top:14px;font-family:inherit}
 .submit-btn:active{background:#0F6E56}
@@ -62,36 +74,37 @@ textarea:focus{border-color:#1D9E75}
 .input-progress-bar.over{background:#E24B4A}
 .input-progress-pct{font-size:11px;color:#0F6E56;margin-top:4px;text-align:right}
 /* 月次履歴 */
-.history-card{background:#fff;border-radius:12px;padding:14px;margin-top:10px;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+.history-card{background:#fff;border-radius:12px;padding:14px;margin-top:10px;border:1px solid #E8EAED}
 .history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .history-title{font-size:13px;font-weight:600;color:#333}
-.month-sel{padding:5px 8px;border:1px solid #e0e0e0;border-radius:6px;font-size:12px;font-family:inherit;color:#333;background:#fff;outline:none}
+.month-sel{padding:5px 8px;border:1px solid #E8EAED;border-radius:6px;font-size:12px;font-family:inherit;color:#333;background:#fff;outline:none}
 .month-sel:focus{border-color:#1D9E75}
 .history-table{width:100%;border-collapse:collapse;font-size:12px}
-.history-table th{text-align:center;padding:5px 4px;background:#f5f5f5;color:#888;font-weight:500;border-bottom:1px solid #e0e0e0}
+.history-table th{text-align:center;padding:5px 4px;background:#F4F6F8;color:#888;font-weight:500;border-bottom:1px solid #E8EAED}
 .history-table td{text-align:center;padding:5px 4px;border-bottom:1px solid #f5f5f5;color:#333}
 .history-table tr:last-child td{border-bottom:none}
 .history-table .wd{background:#E0F5ED;color:#0F6E56;font-weight:500}
-.history-table .hol{background:#f5f5f5;color:#aaa}
+.history-table .hol{background:#F4F6F8;color:#aaa}
 .history-summary{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0;font-size:12px;color:#666}
 .history-summary strong{color:#1D9E75;font-size:14px}
-.csv-btn{width:100%;padding:12px;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;color:#333;margin-bottom:14px}
-.csv-btn:active{background:#eee}
-.toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap}
+.csv-btn{width:100%;padding:12px;background:#fff;border:1px solid #E8EAED;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;color:#555;margin-bottom:14px}
+.csv-btn:hover{background:#F4F6F8}
+.toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
-.date-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;background:#fff;border-radius:10px;padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-.date-nav-btn{width:32px;height:32px;border:1px solid #e0e0e0;background:#f5f5f5;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.date-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;background:#fff;border-radius:10px;padding:10px 12px;border:1px solid #E8EAED}
+.date-nav-btn{width:32px;height:32px;border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .date-nav-btn:active{background:#e0e0e0}
-.date-nav-input{flex:1;padding:6px 8px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;color:#333;background:#fff;outline:none;text-align:center}
+.date-nav-input{flex:1;padding:6px 8px;border:1px solid #E8EAED;border-radius:8px;font-size:14px;font-family:inherit;color:#333;background:#fff;outline:none;text-align:center}
 .date-nav-input:focus{border-color:#1D9E75}
-.month-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;background:#fff;border-radius:10px;padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-.month-nav-btn{width:32px;height:32px;border:1px solid #e0e0e0;background:#f5f5f5;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.month-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;background:#fff;border-radius:10px;padding:10px 12px;border:1px solid #E8EAED}
+.month-nav-btn{width:32px;height:32px;border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .month-nav-btn:active{background:#e0e0e0}
 .month-nav-label{flex:1;text-align:center;font-size:15px;font-weight:500;color:#333}
+/* 全社一覧 */
 .cat-block{margin-bottom:14px}
-.cat-header{background:#1D9E75;color:#fff;font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px 8px 0 0}
-.cat-body{background:#fff;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px;overflow:hidden}
-.area-label{font-size:11px;color:#888;padding:6px 12px 2px;background:#fafafa;border-bottom:1px solid #f0f0f0}
+.cat-header{background:#F0FAF6;color:#1D9E75;font-size:13px;font-weight:600;padding:8px 12px;border-radius:8px 8px 0 0;border:1px solid #d4f4e8;border-bottom:none}
+.cat-body{background:#fff;border:1px solid #d4f4e8;border-radius:0 0 8px 8px;overflow:hidden}
+.area-label{font-size:11px;color:#999;padding:6px 12px 2px;background:#fafafa;border-bottom:1px solid #f0f0f0}
 .office-row{display:flex;justify-content:space-between;align-items:center;padding:7px 12px 7px 20px;border-bottom:1px solid #f5f5f5;gap:8px}
 .office-row-name{font-size:13px;color:#444;flex:1}
 .office-row-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
@@ -100,7 +113,7 @@ textarea:focus{border-color:#1D9E75}
 .area-avg{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:#f0faf6;border-bottom:1px solid #d4f4e8}
 .area-avg-lbl{font-size:12px;color:#0F6E56}
 .area-avg-num{font-size:13px;font-weight:700;color:#0F6E56}
-.cat-summary{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#e0f5ed;border-top:2px solid #1D9E75}
+.cat-summary{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#E8F5EE;border-top:1px solid #d4f4e8}
 .cat-summary-lbl{font-size:12px;color:#0F6E56;font-weight:600}
 .cat-summary-num{font-size:15px;font-weight:700;color:#0F6E56}
 .single-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid #f5f5f5;gap:8px}
@@ -111,11 +124,11 @@ textarea:focus{border-color:#1D9E75}
 .single-num.pending{color:#bbb;font-weight:400;font-size:12px}
 .single-sub{font-size:11px;color:#888}
 .tab-sub{display:flex;gap:6px;margin-bottom:14px}
-.tab-sub-btn{flex:1;padding:8px;font-size:13px;border:1px solid #e0e0e0;background:#fff;border-radius:8px;cursor:pointer;font-family:inherit;color:#888}
-.tab-sub-btn.active{background:#1D9E75;color:#fff;border-color:#1D9E75;font-weight:500}
-.monthly-cat-header{background:#185FA5;color:#fff;font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px 8px 0 0;margin-top:12px}
-.monthly-cat-body{background:#fff;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px;overflow:hidden;margin-bottom:4px}
-.monthly-area-label{font-size:11px;color:#888;padding:6px 12px 2px;background:#fafafa;border-bottom:1px solid #f0f0f0}
+.tab-sub-btn{flex:1;padding:8px;font-size:13px;border:1px solid #E8EAED;background:#fff;border-radius:8px;cursor:pointer;font-family:inherit;color:#888}
+.tab-sub-btn.active{background:#F0FAF6;color:#1D9E75;border-color:#1D9E75;font-weight:500}
+.monthly-cat-header{background:#EBF3FB;color:#185FA5;font-size:13px;font-weight:600;padding:8px 12px;border-radius:8px 8px 0 0;margin-top:12px;border:1px solid #B5D4F4;border-bottom:none}
+.monthly-cat-body{background:#fff;border:1px solid #B5D4F4;border-top:none;border-radius:0 0 8px 8px;overflow:hidden;margin-bottom:4px}
+.monthly-area-label{font-size:11px;color:#999;padding:6px 12px 2px;background:#fafafa;border-bottom:1px solid #f0f0f0}
 .monthly-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px 8px 20px;border-bottom:1px solid #f5f5f5;font-size:13px;gap:8px}
 .monthly-row:last-child{border-bottom:none}
 .monthly-office{color:#444;flex:1}
@@ -129,7 +142,7 @@ textarea:focus{border-color:#1D9E75}
 .monthly-area-summary{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:#EBF3FB;border-bottom:1px solid #B5D4F4}
 .monthly-area-summary-lbl{font-size:12px;color:#185FA5}
 .monthly-area-summary-num{font-size:13px;font-weight:700;color:#185FA5}
-.monthly-cat-summary{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#ddeef9;border-top:2px solid #185FA5}
+.monthly-cat-summary{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#EBF3FB;border-top:1px solid #B5D4F4}
 .monthly-cat-summary-lbl{font-size:12px;color:#185FA5;font-weight:600}
 .monthly-cat-summary-num{font-size:15px;font-weight:700;color:#185FA5}
 .loading{text-align:center;padding:20px;color:#888;font-size:13px}
@@ -140,17 +153,26 @@ textarea:focus{border-color:#1D9E75}
 </head>
 <body>
 <div class="app">
-  <div class="header">
-    <div class="header-top">
-      <button class="portal-btn" onclick="location.href='index.html'">← ポータル</button>
-      <span style="opacity:0"></span>
+  <!-- トップバー -->
+  <div class="top-bar">
+    <div class="top-bar-logo">
+      <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
     </div>
-    <div id="header-back" style="display:none;margin-bottom:4px">
-      <button class="back-btn" onclick="backToSelector()">← 事業所一覧</button>
+    <div class="top-bar-main">
+      <span class="top-bar-title" id="header-title">貢献人数速報</span>
+      <button class="top-bar-back" id="header-back" onclick="backToSelector()">← 事業所一覧</button>
+      <span class="top-bar-date" id="today-lbl"></span>
+      <div class="top-bar-divider"></div>
+      <a href="daily.html" class="nav-link active">速報入力</a>
+      <a href="monthly.html" class="nav-link">月次カレンダー</a>
+      <a href="report.html" class="nav-link">実績表</a>
+      <a href="import.html" class="nav-link">CSV取込</a>
+      <a href="settings.html" class="nav-link">設定</a>
+      <a href="index.html" class="nav-link">ポータル</a>
     </div>
-    <h1 id="header-title">貢献人数速報</h1>
-    <div class="date" id="today-lbl"></div>
   </div>
+
+  <!-- タブバー -->
   <div class="tab-bar">
     <button class="tab active" onclick="switchTab('input')">事業所入力</button>
     <button class="tab" onclick="switchTab('hq')">全社一覧</button>
@@ -199,7 +221,6 @@ textarea:focus{border-color:#1D9E75}
             <textarea id="comment-in" rows="3" placeholder="体調不良の児童あり、行事など…"></textarea>
           </div>
           <button class="submit-btn" onclick="submitReport()">報告する</button>
-          <!-- 月次履歴 -->
           <div class="history-card" id="history-area" style="display:none">
             <div class="history-header">
               <span class="history-title">稼働日・入力履歴</span>
@@ -209,7 +230,7 @@ textarea:focus{border-color:#1D9E75}
           </div>
         </div>
 
-        <!-- ラフォーレ用の入力（2行表示） -->
+        <!-- ラフォーレ用の入力 -->
         <div id="lafore-input" style="display:none">
           <div style="border-bottom:1px solid #f0f0f0;padding-bottom:12px;margin-bottom:12px">
             <div style="font-size:12px;font-weight:500;color:#185FA5;margin-bottom:6px">生活介護　<span style="font-size:11px;font-weight:400;color:#888">定員10名</span></div>
@@ -249,7 +270,6 @@ textarea:focus{border-color:#1D9E75}
             </div>
           </div>
           <button class="submit-btn" onclick="submitLafore()">報告する</button>
-          <!-- ラフォーレ月次履歴 -->
           <div class="history-card" id="lafore-history-area" style="display:none">
             <div class="history-header">
               <span class="history-title">稼働日・入力履歴</span>
@@ -348,7 +368,6 @@ function showConn(id,ok,msg){
   el.style.display='block';el.className='conn-status '+(ok?'conn-ok':'conn-ng');el.textContent=msg;
 }
 
-// 月選択のoptions生成（現在月から12ヶ月前まで）
 function buildMonthOptions(selId){
   const sel=document.getElementById(selId);if(!sel)return;
   sel.innerHTML='';
@@ -364,10 +383,8 @@ function buildMonthOptions(selId){
   }
 }
 
-// 稼働日をFirestoreから取得
 async function loadWorkdays(officeName, month){
   const year=parseInt(month.split('-')[0]);
-  // 月が4-9は当年度、10-3は前年度
   const mo=parseInt(month.split('-')[1]);
   const fiscalYear=mo>=4?year:year-1;
   const docId=`${fiscalYear}_${officeName}`;
@@ -378,7 +395,6 @@ async function loadWorkdays(officeName, month){
   return {};
 }
 
-// 月の入力履歴を表示
 window.loadHistory=async function(){
   const isLaf=isLafore(state.cur);
   const selId=isLaf?'lafore-history-month-sel':'history-month-sel';
@@ -389,10 +405,7 @@ window.loadHistory=async function(){
   state.historyMonth=month;
   const body=document.getElementById(bodyId);
   body.innerHTML='<div class="loading">読み込み中...</div>';
-
-  // 稼働日取得
   const wdays=await loadWorkdays(state.cur, month);
-  // その月の報告データ取得
   const q=query(collection(db,'reports'),where('office','==',state.cur),where('month','==',month));
   const snap=await getDocs(q);
   const reports={};
@@ -404,12 +417,9 @@ window.loadHistory=async function(){
     else reports[r.date].kids=r.kids;
     if(r.care!=null&&r.work!=null)reports[r.date].kids=r.care+r.work;
   });
-
-  // 月の日付一覧生成
   const [y,m]=month.split('-').map(Number);
   const daysInMonth=new Date(y,m,0).getDate();
   const DOW=['日','月','火','水','木','金','土'];
-
   let rows='';
   let totalWd=0,totalReported=0,totalKids=0;
   for(let d=1;d<=daysInMonth;d++){
@@ -431,7 +441,6 @@ window.loadHistory=async function(){
     }
     rows+=`<tr><td class="${trCls}">${d}(${DOW[dow]})</td><td>${isWd?'●':''}</td><td>${kidsCell}</td></tr>`;
   }
-
   body.innerHTML=`
     <table class="history-table">
       <thead><tr><th>日付</th><th>稼働</th><th>貢献人数</th></tr></thead>
@@ -514,66 +523,17 @@ function aggregateReports(rows){
   return reps;
 }
 
-async function loadGoals(){
-  // actualsコレクションから目標を参照（report.htmlと共通）
-  try{
-    // officesから全事業所の目標を取得
-    const offSnap=await getDocs(collection(db,'offices'));
-    const offices={};
-    offSnap.forEach(d=>offices[d.id]={...d.data()});
-    // actualsから当月の目標人数を参照
-    const year=parseInt(monthStr.split('-')[0]);
-    const mo=parseInt(monthStr.split('-')[1]);
-    const fiscalYear=mo>=4?year:year-1;
-    for(const office of OFFICES){
-      const docId=`${fiscalYear}_${office}`;
-      const snap=await getDoc(doc(db,'actuals',docId));
-      if(snap.exists()){
-        const data=snap.data().months||{};
-        // 当月の目標貢献人数/月を取得
-        // actualsにはtpmが保存されていないので、workdaysとcapacityから計算
-        // workdaysから当月稼働日数を取得
-        const wdSnap=await getDoc(doc(db,'workdays',docId));
-        const wdays=wdSnap.exists()?wdSnap.data().days||{}:{};
-        const wdCount=Object.entries(wdays).filter(([k,v])=>k.startsWith(monthStr)&&v===1).length;
-        // officesからcapacityを取得
-        const offList=Object.values(offices).find(o=>o.name===office);
-        const priceId=offList?.priceId;
-        if(priceId){
-          const prSnap=await getDoc(doc(db,'prices',priceId));
-          if(prSnap.exists()){
-            const cap=prSnap.data().capacity||0;
-            const goal=wdCount*cap;
-            if(goal>0)state.goals[office]=goal;
-          }
-        }
-      }
-    }
-    showConn('conn-banner',true,'Firebaseに接続済み');
-  }catch(e){
-    // フォールバック：settingsから取得
-    try{
-      const snap=await getDoc(doc(db,'settings','goals'));
-      if(snap.exists()){const d=snap.data();OFFICES.forEach(o=>{if(d[o])state.goals[o]=d[o];});}
-      showConn('conn-banner',true,'Firebaseに接続済み');
-    }catch(e2){showConn('conn-banner',false,'オフライン（目標未読込）');}
-  }
-}
-
 async function loadGoalsSimple(){
-  // シンプルバージョン：workdays+pricesから目標を計算
   try{
     const year=parseInt(monthStr.split('-')[0]);
     const mo=parseInt(monthStr.split('-')[1]);
     const fiscalYear=mo>=4?year:year-1;
-    // officesとprices一括取得
     const [offSnap,prSnap]=await Promise.all([
       getDocs(collection(db,'offices')),
       getDocs(collection(db,'prices'))
     ]);
     const prices={};prSnap.forEach(d=>prices[d.id]={...d.data()});
     const offMap={};offSnap.forEach(d=>offMap[d.data().name]={...d.data(),id:d.id});
-    // 各事業所の目標計算
     for(const office of OFFICES){
       const off=offMap[office];if(!off)continue;
       const price=prices[off.priceId];if(!price||!price.capacity)continue;
@@ -721,7 +681,6 @@ window.selectOffice=async function(name){
   state.cur=name;
   const r=state.reports[name];
   document.getElementById('form-name').textContent=name;
-
   if(isLafore(name)){
     document.getElementById('normal-input').style.display='none';
     document.getElementById('lafore-input').style.display='block';
@@ -745,7 +704,6 @@ window.selectOffice=async function(name){
       bar.className='input-progress-bar'+(mt>=goal?' over':'');
       document.getElementById('lp-pct').textContent=`${Math.round(mt/goal*100)}%`;
     }else document.getElementById('lafore-progress-area').style.display='none';
-    // 履歴表示
     buildMonthOptions('lafore-history-month-sel');
     document.getElementById('lafore-history-area').style.display='block';
     await window.loadHistory();
@@ -767,14 +725,13 @@ window.selectOffice=async function(name){
       bar.className='input-progress-bar'+(mt>=goal?' over':'');
       document.getElementById('ip-pct').textContent=`${Math.round(mt/goal*100)}%`;
     }else document.getElementById('input-progress-area').style.display='none';
-    // 履歴表示
     buildMonthOptions('history-month-sel');
     document.getElementById('history-area').style.display='block';
     await window.loadHistory();
   }
   document.getElementById('office-selector').style.display='none';
   document.getElementById('input-form').style.display='block';
-  document.getElementById('header-back').style.display='block';
+  document.getElementById('header-back').style.display='inline-block';
   document.getElementById('header-title').textContent=name;
 };
 
@@ -808,7 +765,6 @@ window.submitReport=async function(){
     }
     showToast('報告しました ✓');
     await loadMonthlyTotals();await loadToday();
-    // 履歴を更新
     await window.loadHistory();
     setTimeout(window.backToSelector,700);
   }catch(e){showToast('エラー: '+e.message);}
