@@ -29,9 +29,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
   .nav-item.active{background:#F0FAF6;border-color:#1D9E75;color:#1D9E75}
   .back-link{display:none}
 }
-.back-link{display:block;padding:10px 16px;color:#999;font-size:12px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-top:1px solid #E8EAED}
-@media(min-width:600px){.back-link{position:absolute;bottom:0;width:220px}}
-.back-link:hover{color:#1D9E75}
+.back-link{display:block;padding:8px 16px;color:#1D9E75;font-size:12px;cursor:pointer;border:none;background:#F0FAF6;width:100%;text-align:left;border-bottom:1px solid #E8EAED;font-weight:500}
+.back-link:hover{background:#E0F5ED;color:#0F6E56}
+@media(min-width:600px){.back-link{position:static;width:auto}}
 /* メインコンテンツ */
 .main{flex:1;padding:16px;overflow-y:auto}
 @media(min-width:600px){.main{padding:28px 32px}}
@@ -106,6 +106,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
     <div class="sidebar-logo">
       <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
     </div>
+    <button class="back-link" onclick="location.href='index.html'">← ポータルに戻る</button>
     <div class="sidebar-title">マスタ設定</div>
     <div class="sidebar-nav">
     <button class="nav-item active" onclick="showPage('service-types',this)">施設種別</button>
@@ -115,7 +116,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
     <button class="nav-item" onclick="showPage('offices',this)">事業所登録</button>
     <button class="nav-item" onclick="showPage('workdays',this)">稼働日設定</button>
     </div>
-    <button class="back-link" onclick="location.href='index.html'">← ポータルに戻る</button>
   </div>
 
   <div class="main">

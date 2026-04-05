@@ -12,22 +12,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 .top-bar{
   background:#fff;
   border-bottom:1px solid #E8EAED;
-  padding:0 20px;
-  height:52px;
+  padding:0;
   display:flex;
-  align-items:center;
-  gap:16px;
+  align-items:stretch;
   position:sticky;
   top:0;
   z-index:100;
+  min-height:52px;
 }
 .top-bar-logo{
   background:#fff;
-  padding:10px 16px;
+  padding:8px 16px;
   display:flex;align-items:center;
   border-right:1px solid #E8EAED;
   flex-shrink:0;
 }
+.top-bar-logo img{height:34px;object-fit:contain}
+.top-bar-main{padding:0 16px;display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap}
 .top-bar-divider{width:1px;height:24px;background:#E8EAED}
 
 /* 月ナビ */
@@ -178,24 +179,28 @@ th:last-child,td:last-child{border-right:none}
 <body>
 <div class="top-bar">
   <div class="top-bar-logo">
-    <img src="assets/belage_logo.png" alt="ベルアージュ" style="height:32px;object-fit:contain" onerror="this.style.display='none'">
+    <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
   </div>
-  <div class="top-bar-divider"></div>
-  <div class="month-nav">
-    <button class="nav-btn" onclick="shiftMonth(-1)">‹</button>
-    <span class="month-label" id="month-label">読込中...</span>
-    <button class="nav-btn" onclick="shiftMonth(1)">›</button>
-  </div>
-  <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#F8FBFF"></div><span style="color:#5B9BD5">目標</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:#FAFFFE"></div><span style="color:#1D9E75">実績</span></div>
-    <div class="legend-item"><div class="legend-dot" style="background:#F8F9FA"></div><span>閉所</span></div>
-  </div>
-  <div style="margin-left:auto;display:flex;gap:8px">
-    <button class="nav-link" onclick="location.href='index.html'">ポータル</button>
-    <button class="nav-link" onclick="location.href='report.html'">実績表</button>
-    <button class="nav-link" onclick="location.href='import.html'">CSV取込</button>
-    <button class="nav-link" onclick="location.href='daily.html'">速報入力</button>
+  <div class="top-bar-main">
+    <span class="top-bar-title">月次カレンダー</span>
+    <div class="top-bar-divider"></div>
+    <div class="month-nav">
+      <button class="nav-btn" onclick="shiftMonth(-1)">‹</button>
+      <span class="month-label" id="month-label">読込中...</span>
+      <button class="nav-btn" onclick="shiftMonth(1)">›</button>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#F8FBFF"></div><span style="color:#5B9BD5">目標</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FAFFFE"></div><span style="color:#1D9E75">実績</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#F8F9FA"></div><span style="color:#aaa">閉所</span></div>
+    </div>
+    <div class="top-bar-divider"></div>
+    <a href="daily.html" class="nav-link">速報入力</a>
+    <a href="monthly.html" class="nav-link active">月次カレンダー</a>
+    <a href="report.html" class="nav-link">実績表</a>
+    <a href="import.html" class="nav-link">CSV取込</a>
+    <a href="settings.html" class="nav-link">設定</a>
+    <a href="index.html" class="nav-link">ポータル</a>
   </div>
 </div>
 <div class="content">

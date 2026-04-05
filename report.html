@@ -78,12 +78,22 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
   <div class="top-bar-main">
     <span class="top-bar-title">貢献実績表</span>
     <div class="top-bar-divider"></div>
+    <select id="sel-year" style="padding:5px 8px;border-radius:6px;border:1px solid #E8EAED;font-size:12px;font-family:inherit;color:#333;background:#fff;cursor:pointer">
+      <option value="2025">2025年度</option>
+      <option value="2026" selected>2026年度</option>
+      <option value="2027">2027年度</option>
+    </select>
+    <select id="sel-office" style="padding:5px 8px;border-radius:6px;border:1px solid #E8EAED;font-size:12px;font-family:inherit;color:#333;background:#fff;cursor:pointer;min-width:140px"></select>
+    <button onclick="loadReport()" style="padding:5px 14px;border-radius:6px;border:1px solid #1D9E75;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">表示</button>
+    <button onclick="saveActual()" id="save-btn" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">💾 保存</button>
+    <div class="top-bar-divider"></div>
     <a href="daily.html" class="nav-link">速報入力</a>
     <a href="monthly.html" class="nav-link">月次カレンダー</a>
     <a href="report.html" class="nav-link active">貢献実績表</a>
     <a href="import.html" class="nav-link">CSV取込</a>
     <a href="settings.html" class="nav-link">設定</a>
     <a href="index.html" class="nav-link">ポータル</a>
+    <span id="save-status" style="font-size:11px;color:#1D9E75"></span>
   </div>
 </div>
 <div class="content">
