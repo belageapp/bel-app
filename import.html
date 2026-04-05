@@ -20,11 +20,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 .card{background:#fff;border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
 .card-title{font-size:14px;font-weight:700;color:#1D9E75;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #E0F5ED}
 .steps{display:flex;gap:0;margin-bottom:20px}
-.step{flex:1;text-align:center;padding:10px 4px;background:#f5f5f5;color:#aaa;font-size:11px;font-weight:600;position:relative}
-.step::after{content:'';position:absolute;right:-12px;top:0;bottom:0;width:24px;background:#f5f5f5;clip-path:polygon(0 0,100% 50%,0 100%);z-index:1}
+.step{flex:1;text-align:center;padding:10px 4px;background:#F4F6F8;color:#aaa;font-size:11px;font-weight:600;position:relative;border:1px solid #E8EAED;border-right:none}
+.step:last-child{border-right:1px solid #E8EAED}
+.step::after{content:'';position:absolute;right:-12px;top:0;bottom:0;width:24px;background:#F4F6F8;clip-path:polygon(0 0,100% 50%,0 100%);z-index:1;border:none}
 .step:last-child::after{display:none}
-.step.active{background:#1D9E75;color:#fff}.step.active::after{background:#1D9E75}
-.step.done{background:#B2DFDB;color:#004D40}.step.done::after{background:#B2DFDB}
+.step.active{background:#F0FAF6;color:#1D9E75;border-color:#d4f4e8}.step.active::after{background:#F0FAF6}
+.step.done{background:#E8F5EE;color:#0F6E56;border-color:#B2DFDB}.step.done::after{background:#E8F5EE}
 .step-num{display:block;font-size:18px;font-weight:700}
 .drop-zone{border:2px dashed #B2DFDB;border-radius:8px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;background:#F9FFFE}
 .drop-zone:hover,.drop-zone.over{border-color:#1D9E75;background:#E0F5ED}
@@ -66,7 +67,7 @@ th{background:#f5f5f5;text-align:center;font-weight:600;color:#555;font-size:11p
 .td-grand{background:#d4f4e8;color:#0F6E56;font-weight:700}
 .tr-service-total{background:#f0f8ff}
 .service-section{margin-bottom:24px}
-.month-header{font-size:13px;font-weight:700;color:#333;margin-bottom:8px;padding:8px 12px;background:#f5f5f5;border-radius:6px;border-left:4px solid #1D9E75}
+.month-header{font-size:13px;font-weight:700;color:#1D9E75;margin-bottom:8px;padding:8px 12px;background:#fff;border-radius:6px;border-left:3px solid #1D9E75;border:1px solid #E8EAED;border-left:3px solid #1D9E75}
 .warn-section-title{font-size:12px;font-weight:600;color:#CC6600;margin-bottom:6px}
 .warn-table{width:100%;border-collapse:collapse;font-size:11px}
 .warn-table th,.warn-table td{border:1px solid #FFD54F;padding:5px 8px;text-align:left}
@@ -76,13 +77,14 @@ th{background:#f5f5f5;text-align:center;font-weight:600;color:#555;font-size:11p
 .warn-num{text-align:right}
 .btn-primary{background:#1D9E75;color:#fff;padding:10px 24px;border-radius:6px;border:none;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600;transition:background .2s}
 .btn-primary:hover{background:#0F6E56}
-.btn-primary:disabled{background:#aaa;cursor:not-allowed}
-.btn-secondary{background:#fff;color:#555;padding:10px 24px;border-radius:6px;border:1px solid #ddd;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-primary:disabled{background:#ccc;cursor:not-allowed}
+.btn-secondary{background:#fff;color:#555;padding:10px 24px;border-radius:6px;border:1px solid #E8EAED;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-secondary:hover{background:#F4F6F8}
 .btn-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-.save-complete{background:#E0F5ED;border:1px solid #1D9E75;border-radius:8px;padding:20px;text-align:center}
+.save-complete{background:#fff;border:1px solid #d4f4e8;border-radius:8px;padding:24px;text-align:center}
 .save-complete-icon{font-size:36px;margin-bottom:8px}
 .save-complete-title{font-size:16px;font-weight:700;color:#0F6E56;margin-bottom:6px}
-.save-complete-sub{font-size:12px;color:#555;white-space:pre-line}
+.save-complete-sub{font-size:12px;color:#666;white-space:pre-line}
 .hidden{display:none}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
