@@ -26,10 +26,10 @@ table{width:100%;border-collapse:collapse;font-size:11px;min-width:1100px}
 th,td{border:1px solid #e0e0e0;padding:4px 6px;text-align:right;white-space:nowrap}
 th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 /* ヘッダー */
-.th-section{background:#185FA5;color:#fff;text-align:center;font-weight:600;font-size:11px}
-.th-actual{background:#1D6E3E;color:#fff;text-align:center;font-weight:600;font-size:11px}
-.th-achieve{background:#6B3FA0;color:#fff;text-align:center;font-weight:600;font-size:11px}
-.th-half{background:#1D9E75;color:#fff;text-align:center;font-weight:500}
+.th-section{background:#EBF3FB;color:#185FA5;text-align:center;font-weight:600;font-size:11px;border-bottom:2px solid #B5D4F4}
+.th-actual{background:#E8F5EE;color:#1D6E3E;text-align:center;font-weight:600;font-size:11px;border-bottom:2px solid #A8D5B5}
+.th-achieve{background:#F3E8FF;color:#6B3FA0;text-align:center;font-weight:600;font-size:11px;border-bottom:2px solid #D0B0F0}
+.th-half{background:#F4F6F8;color:#555;text-align:center;font-weight:600;border-bottom:2px solid #E8EAED}
 .th-month{background:#EBF3FB;color:#185FA5;text-align:center}
 .th-month-actual{background:#E8F5EE;color:#1D6E3E;text-align:center}
 .th-total{background:#E0F5ED;color:#0F6E56;text-align:center;font-weight:600}
@@ -40,15 +40,15 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 .row-cat-achieve{background:#F3E8FF;color:#6B3FA0;font-weight:600;text-align:center;vertical-align:middle;font-size:10px;width:52px}
 .row-label{background:#fafafa;color:#555;text-align:right;padding-right:6px;width:105px;font-size:11px}
 .row-label-sub{background:#fafafa;color:#888;text-align:right;padding-right:6px;padding-left:12px;width:105px;font-size:10px}
-.row-label-svc{background:#f0f8ff;color:#185FA5;text-align:right;padding-right:6px;padding-left:8px;font-size:10px;font-weight:600;border-left:3px solid #1D9E75}
+.row-label-svc{background:#f0f8ff;color:#185FA5;text-align:right;padding-right:6px;padding-left:8px;font-size:10px;font-weight:600;border-left:2px solid #B5D4F4}
 /* 値スタイル */
 .val{color:#185FA5}
 .val-break{color:#CC6600}
 .val-actual{color:#1D6E3E;font-weight:500}
 .val-svc{color:#555;font-size:10px}
 .val-achieve{color:#6B3FA0;font-weight:500}
-.val-subtotal{background:#E0F5ED !important;color:#0F6E56;font-weight:600}
-.val-total{background:#d4f4e8 !important;color:#0F6E56;font-weight:700}
+.val-subtotal{background:#F0FAF6 !important;color:#0F6E56;font-weight:600}
+.val-total{background:#E0F5ED !important;color:#0F6E56;font-weight:700}
 .val-fixed{color:#999}
 .val-dash{color:#ccc;text-align:center}
 /* 入力欄 */
@@ -641,7 +641,7 @@ window.loadReport = async function(){
         <th class="th-total">小計</th>
         <th colspan="6" class="th-half">下半期（10〜3月）</th>
         <th class="th-total">小計</th>
-        <th class="th-total" style="background:#0F6E56;color:#fff">通期</th>
+        <th class="th-total">通期</th>
       </tr>
       <tr>
         <th colspan="2" style="background:#f5f5f5"></th>
@@ -649,7 +649,7 @@ window.loadReport = async function(){
         <th class="th-total">合計</th>
         ${ML_ARR.slice(6).map(m=>`<th class="th-month">${m}</th>`).join('')}
         <th class="th-total">合計</th>
-        <th class="th-total" style="background:#0F6E56;color:#fff">合計</th>
+        <th class="th-total">合計</th>
       </tr>`;
   }
 
