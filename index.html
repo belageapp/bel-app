@@ -6,20 +6,18 @@
 <title>業務支援システム | 株式会社ベルアージュ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f0f2f5;min-height:100vh;color:#333}
-.top-bar{background:#fff;padding:0;display:flex;align-items:stretch;border-bottom:1px solid #e0e0e0;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
-.top-bar-logo{background:#f5f5f5;padding:12px 20px;display:flex;align-items:center;border-right:1px solid #e8e8e8}
-.top-bar-logo img{height:38px;object-fit:contain}
-.top-bar-divider{width:1px;background:#e0e0e0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#F4F6F8;min-height:100vh;color:#333}
+.top-bar{background:#fff;padding:0;display:flex;align-items:stretch;border-bottom:1px solid #E8EAED;position:sticky;top:0;z-index:100}
+.top-bar-logo{background:#fff;padding:8px 16px;display:flex;align-items:center;border-right:1px solid #E8EAED}
+.top-bar-logo img{height:34px;object-fit:contain}
 .top-bar-text{padding:0 20px;display:flex;flex-direction:column;justify-content:center}
-.top-bar-title{font-size:16px;font-weight:600;color:#1D9E75;letter-spacing:0.3px}
+.top-bar-title{font-size:15px;font-weight:600;color:#1D9E75;letter-spacing:0.3px}
 .top-bar-sub{font-size:11px;color:#888;margin-top:1px}
 .content{max-width:720px;margin:0 auto;padding:20px 16px}
 /* お知らせ */
-.notice-card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:14px 18px;margin-bottom:16px}
+.notice-card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);padding:14px 18px;margin-bottom:16px;border:1px solid #E8EAED}
 .notice-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .notice-title{font-size:13px;font-weight:600;color:#333}
-.notice-manage{font-size:11px;color:#185FA5;cursor:pointer;display:none}
 .notice-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f5f5f5;font-size:12px}
 .notice-item:last-child{border-bottom:none}
 .badge-new{background:#fdecea;color:#A32D2D;padding:1px 7px;border-radius:20px;font-size:10px;white-space:nowrap;font-weight:500}
@@ -28,26 +26,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .notice-text{color:#333;flex:1}
 .notice-empty{text-align:center;padding:16px;color:#aaa;font-size:12px}
 /* メニューグリッド */
-.section-label{font-size:11px;color:#888;font-weight:500;margin-bottom:8px;padding-left:2px;letter-spacing:0.5px;text-transform:uppercase}
-.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px}
-.menu-card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:14px 16px;cursor:pointer;text-decoration:none;display:block;transition:transform 0.1s,box-shadow 0.1s}
-.menu-card:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(0,0,0,0.12)}
+.section-label{font-size:11px;color:#999;font-weight:600;margin-bottom:8px;padding-left:2px;letter-spacing:0.5px;text-transform:uppercase}
+.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.menu-card{background:#fff;border-radius:10px;border:1px solid #E8EAED;box-shadow:0 1px 3px rgba(0,0,0,0.04);padding:14px 16px;cursor:pointer;text-decoration:none;display:block;transition:transform 0.1s,box-shadow 0.1s,border-color 0.1s}
+.menu-card:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,0.08);border-color:#d0d3d8}
 .menu-card:active{transform:scale(0.98)}
 .menu-card-inner{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .menu-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.icon-green{background:#d4f4e8}
-.icon-blue{background:#ddeef9}
+.icon-green{background:#E8F5EE}
+.icon-blue{background:#EBF3FB}
 .icon-amber{background:#FEF3C7}
+.icon-teal{background:#E0F5ED}
 .menu-name{font-size:13px;font-weight:600;color:#333}
-.menu-desc{font-size:11px;color:#888;padding-left:44px}
+.menu-desc{font-size:11px;color:#999;padding-left:44px}
 /* 準備中 */
 .menu-grid-small{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
-.menu-card-small{background:#fff;border-radius:8px;padding:10px 12px;text-align:center;opacity:0.55;cursor:default}
+.menu-card-small{background:#fff;border-radius:8px;border:1px solid #E8EAED;padding:10px 12px;text-align:center;opacity:0.5;cursor:default}
 .menu-card-small-name{font-size:12px;color:#888;font-weight:500}
 .menu-card-small-badge{font-size:10px;color:#bbb;margin-top:2px}
-/* 管理者リンク */
-.admin-link{text-align:center;padding:8px;font-size:11px;color:#bbb;cursor:pointer}
-.admin-link:hover{color:#888}
 </style>
 </head>
 <body>
@@ -86,6 +82,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
       <div class="menu-desc">日次入力・速報確認</div>
     </a>
 
+    <a href="monthly.html" class="menu-card">
+      <div class="menu-card-inner">
+        <div class="menu-icon icon-teal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div class="menu-name">月次カレンダー</div>
+      </div>
+      <div class="menu-desc">全事業所の目標・実績</div>
+    </a>
+
     <a href="report.html" class="menu-card">
       <div class="menu-card-inner">
         <div class="menu-icon icon-blue">
@@ -96,20 +102,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
       <div class="menu-desc">目標・実績・達成率</div>
     </a>
 
-    <a href="#" class="menu-card" style="opacity:0.5;pointer-events:none;cursor:default">
+    <a href="import.html" class="menu-card">
       <div class="menu-card-inner">
         <div class="menu-icon icon-amber">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         </div>
-        <div class="menu-name">中期経営計画</div>
+        <div class="menu-name">CSV取込</div>
       </div>
-      <div class="menu-desc">準備中</div>
+      <div class="menu-desc">国保連請求データ取込</div>
     </a>
 
     <a href="settings.html" class="menu-card">
       <div class="menu-card-inner">
         <div class="menu-icon" style="background:#F0EEF8">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B4FA0" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B4FA0" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </div>
         <div class="menu-name">マスタ設定</div>
       </div>
@@ -121,14 +127,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
   <!-- 準備中メニュー -->
   <div class="section-label">準備中</div>
   <div class="menu-grid-small">
+    <div class="menu-card-small"><div class="menu-card-small-name">中期経営計画</div><div class="menu-card-small-badge">準備中</div></div>
     <div class="menu-card-small"><div class="menu-card-small-name">報酬内容明細</div><div class="menu-card-small-badge">準備中</div></div>
     <div class="menu-card-small"><div class="menu-card-small-name">シフト管理</div><div class="menu-card-small-badge">準備中</div></div>
     <div class="menu-card-small"><div class="menu-card-small-name">採用管理</div><div class="menu-card-small-badge">準備中</div></div>
-    <div class="menu-card-small"><div class="menu-card-small-name">社内規程</div><div class="menu-card-small-badge">準備中</div></div>
     <div class="menu-card-small"><div class="menu-card-small-name">各種マニュアル</div><div class="menu-card-small-badge">準備中</div></div>
   </div>
-
-
 
 </div>
 

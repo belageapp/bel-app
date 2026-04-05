@@ -6,11 +6,16 @@
 <title>CSV取込 | ベルアージュ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f0f2f5;color:#333;font-size:13px}
-.top-bar{background:#1D9E75;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100}
-.top-bar-title{font-size:15px;font-weight:600}
-.top-bar button{padding:5px 12px;border-radius:5px;border:none;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
-.btn-gray{background:rgba(255,255,255,0.2);color:#fff}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333}
+.top-bar{background:#fff;border-bottom:1px solid #E8EAED;padding:0;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;min-height:52px}
+.top-bar-logo{background:#fff;padding:8px 16px;display:flex;align-items:center;border-right:1px solid #E8EAED;flex-shrink:0}
+.top-bar-logo img{height:34px;object-fit:contain}
+.top-bar-main{padding:0 16px;display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap}
+.top-bar-title{font-size:14px;font-weight:600;color:#333;white-space:nowrap}
+.top-bar-divider{width:1px;height:22px;background:#E8EAED;flex-shrink:0}
+.nav-link{padding:5px 12px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;transition:background .15s,border-color .15s,color .15s;white-space:nowrap;text-decoration:none;display:inline-block}
+.nav-link:hover{background:#F4F6F8;border-color:#d0d3d8;color:#333}
+.nav-link.active{background:#F0FAF6;border-color:#1D9E75;color:#1D9E75;font-weight:600}
 .content{padding:20px;max-width:1000px;margin:0 auto}
 .card{background:#fff;border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
 .card-title{font-size:14px;font-weight:700;color:#1D9E75;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #E0F5ED}
@@ -86,9 +91,19 @@ th{background:#f5f5f5;text-align:center;font-weight:600;color:#555;font-size:11p
 </head>
 <body>
 <div class="top-bar">
-  <span class="top-bar-title">📂 CSV取込</span>
-  <button class="btn-gray" onclick="location.href='report.html'">貢献実績表</button>
-  <button class="btn-gray" onclick="location.href='index.html'">ポータル</button>
+  <div class="top-bar-logo">
+    <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
+  </div>
+  <div class="top-bar-main">
+    <span class="top-bar-title">CSV取込</span>
+    <div class="top-bar-divider"></div>
+    <a href="daily.html" class="nav-link">速報入力</a>
+    <a href="monthly.html" class="nav-link">月次カレンダー</a>
+    <a href="report.html" class="nav-link">貢献実績表</a>
+    <a href="import.html" class="nav-link active">CSV取込</a>
+    <a href="settings.html" class="nav-link">設定</a>
+    <a href="index.html" class="nav-link">ポータル</a>
+  </div>
 </div>
 <div class="content">
   <div class="steps">

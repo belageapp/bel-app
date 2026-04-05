@@ -6,29 +6,32 @@
 <title>マスタ設定 | ベルアージュ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f0f2f5;min-height:100vh;color:#333}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;min-height:100vh;color:#333}
 .layout{display:flex;min-height:100vh;flex-direction:column}
 @media(min-width:600px){.layout{flex-direction:row}}
 /* サイドバー */
-.sidebar{background:#1D9E75;flex-shrink:0;padding:0;width:100%}
-@media(min-width:600px){.sidebar{width:200px;min-height:100vh}}
-.sidebar-title{padding:20px 16px 16px;color:#fff;font-size:15px;font-weight:600;border-bottom:1px solid rgba(255,255,255,0.2)}
-.sidebar-subtitle{font-size:11px;opacity:0.7;font-weight:400;display:block;margin-top:2px}
-.nav-item{display:block;padding:12px 16px;color:rgba(255,255,255,0.85);font-size:13px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-left:3px solid transparent;transition:all 0.15s}
-.nav-item:hover{background:rgba(255,255,255,0.1);color:#fff}
-.nav-item.active{background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;font-weight:500}
-.nav-section{padding:8px 16px 4px;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.5px;text-transform:uppercase}
+.sidebar{background:#fff;border-bottom:1px solid #E8EAED;flex-shrink:0;padding:0;width:100%}
+@media(min-width:600px){.sidebar{width:220px;min-height:100vh;border-bottom:none;border-right:1px solid #E8EAED}}
+.sidebar-logo{padding:14px 16px;border-bottom:1px solid #E8EAED;display:flex;align-items:center}
+.sidebar-logo img{height:30px;object-fit:contain}
+.sidebar-title{padding:16px 16px 8px;color:#555;font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase}
+.nav-item{display:block;padding:9px 16px;color:#555;font-size:13px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-left:3px solid transparent;transition:all 0.15s;border-radius:0 6px 6px 0;margin:1px 8px 1px 0}
+.nav-item:hover{background:#F4F6F8;color:#333}
+.nav-item.active{background:#F0FAF6;color:#1D9E75;border-left-color:#1D9E75;font-weight:600}
+.nav-section{padding:12px 16px 4px;font-size:10px;color:#bbb;letter-spacing:0.5px;text-transform:uppercase}
 @media(max-width:599px){
-  .sidebar-title{padding:12px 16px 8px}
+  .sidebar-logo{padding:8px 12px}
+  .sidebar-logo img{height:24px}
+  .sidebar-title{display:none}
   .nav-section{display:none}
-  .sidebar nav,.sidebar-nav{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:4px 8px 8px;gap:6px}
-  .nav-item{white-space:nowrap;padding:8px 14px;border-radius:20px;border-left:none;border:1px solid rgba(255,255,255,0.3);flex-shrink:0;width:auto}
-  .nav-item.active{background:rgba(255,255,255,0.2);border-color:#fff}
+  .sidebar-nav{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:6px 8px;gap:6px}
+  .nav-item{white-space:nowrap;padding:6px 14px;border-radius:20px;border-left:none;border:1px solid #E8EAED;flex-shrink:0;width:auto;margin:0}
+  .nav-item.active{background:#F0FAF6;border-color:#1D9E75;color:#1D9E75}
   .back-link{display:none}
 }
-.back-link{display:block;padding:12px 16px;color:rgba(255,255,255,0.6);font-size:12px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-top:1px solid rgba(255,255,255,0.15)}
-@media(min-width:600px){.back-link{position:absolute;bottom:0;width:200px}}
-.back-link:hover{color:#fff}
+.back-link{display:block;padding:10px 16px;color:#999;font-size:12px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-top:1px solid #E8EAED}
+@media(min-width:600px){.back-link{position:absolute;bottom:0;width:220px}}
+.back-link:hover{color:#1D9E75}
 /* メインコンテンツ */
 .main{flex:1;padding:16px;overflow-y:auto}
 @media(min-width:600px){.main{padding:28px 32px}}
@@ -100,6 +103,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 <body>
 <div class="layout">
   <div class="sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
+    </div>
     <div class="sidebar-title">マスタ設定</div>
     <div class="sidebar-nav">
     <button class="nav-item active" onclick="showPage('service-types',this)">施設種別</button>
