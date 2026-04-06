@@ -14,8 +14,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .top-bar-title{font-size:15px;font-weight:600;color:#1D9E75;letter-spacing:0.3px;white-space:nowrap}
 .top-bar-sub{font-size:11px;color:#888;margin-top:1px;white-space:nowrap}
 .top-bar-user{padding:0 16px;display:flex;align-items:center;gap:10px;border-left:1px solid #E8EAED;flex-shrink:0}
-.user-name{font-size:12px;font-weight:600;color:#333;text-align:right}
-.user-role{font-size:10px;color:#999;text-align:right}
+.user-name{font-size:12px;font-weight:600;color:#333;text-align:right;white-space:nowrap}
+.user-role{font-size:10px;color:#999;text-align:right;white-space:nowrap}
+.btn-logout{padding:5px 12px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.btn-logout:hover{background:#F4F6F8;color:#333}
+@media(max-width:600px){
+  .top-bar-text{display:none}
+  .top-bar-user{border-left:none;padding:0 12px}
+  .top-bar{justify-content:space-between}
+}
 .btn-logout{padding:5px 12px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap}
 .btn-logout:hover{background:#F4F6F8;color:#333}
 .content{max-width:720px;margin:0 auto;padding:20px 16px}
