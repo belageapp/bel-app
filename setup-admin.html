@@ -6,118 +6,59 @@
 <title>初期設定 | ベルアージュ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#F4F6F8;min-height:100vh;display:flex;align-items:center;justify-content:center}
+body{font-family:-apple-system,sans-serif;background:#F4F6F8;min-height:100vh;display:flex;align-items:center;justify-content:center}
 .card{background:#fff;border-radius:12px;border:1px solid #E8EAED;padding:32px;max-width:480px;width:100%;margin:24px}
 h2{font-size:18px;font-weight:700;color:#333;margin-bottom:8px}
-p{font-size:13px;color:#666;margin-bottom:24px;line-height:1.6}
-.form-group{margin-bottom:16px}
-label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px}
-input{width:100%;padding:10px 12px;border:1px solid #E8EAED;border-radius:8px;font-size:14px;font-family:inherit;color:#333;outline:none}
+p{font-size:13px;color:#666;margin-bottom:20px;line-height:1.6}
+.fg{margin-bottom:14px}
+label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:5px}
+input{width:100%;padding:10px 12px;border:1px solid #E8EAED;border-radius:8px;font-size:14px;color:#333;outline:none}
 input:focus{border-color:#1D9E75}
-.btn{width:100%;padding:12px;background:#F0FAF6;color:#1D9E75;border:1px solid #A8D5BE;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px}
-.btn:hover{background:#E0F5ED}
-.result{margin-top:16px;padding:12px 16px;border-radius:8px;font-size:13px;display:none}
-.result.ok{background:#E8F5EE;color:#0F6E56;border:1px solid #A8D5BE;display:block}
-.result.err{background:#FFF0F4;color:#C0392B;border:1px solid #F5B8C4;display:block}
-.warn{background:#FFF8E1;border:1px solid #FFD54F;border-radius:8px;padding:12px 16px;font-size:12px;color:#5D4037;margin-bottom:20px}
+button{width:100%;padding:12px;background:#F0FAF6;color:#1D9E75;border:1px solid #A8D5BE;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px}
+#log{margin-top:16px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:12px;font-family:monospace;white-space:pre-wrap;min-height:40px;color:#333}
 </style>
 </head>
 <body>
 <div class="card">
-  <h2>🔧 初期設定ツール</h2>
-  <p>Firebase AuthenticationのユーザーをFirestoreのusersコレクションに登録します。<br>このツールは初回設定後は削除してください。</p>
-
-  <div class="warn">
-    ⚠️ このページはFirebaseコンソールで作成したadminユーザーのUIDとメールアドレスを入力してください。
-  </div>
-
-  <div class="form-group">
-    <label>メールアドレス（Firebase Authに登録済みのもの）</label>
-    <input type="email" id="email" placeholder="hasegawa.belage@gmail.com">
-  </div>
-  <div class="form-group">
-    <label>パスワード（ログイン確認用）</label>
-    <input type="password" id="password" placeholder="パスワード">
-  </div>
-  <div class="form-group">
-    <label>表示名（氏名）</label>
-    <input type="text" id="displayName" placeholder="長谷川 剛" value="">
-  </div>
-
-  <button class="btn" onclick="setupAdmin()">adminユーザーとしてFirestoreに登録</button>
-  <div class="result" id="result"></div>
+  <h2>🔧 Admin初期設定</h2>
+  <p>Firebase Authに登録済みのメールとパスワードを入力してFirestoreに登録します。</p>
+  <div class="fg"><label>メールアドレス</label><input type="email" id="a"></div>
+  <div class="fg"><label>パスワード</label><input type="password" id="b"></div>
+  <div class="fg"><label>表示名（氏名）</label><input type="text" id="c" placeholder="長谷川 剛"></div>
+  <button id="btn">Firestoreに登録する</button>
+  <div id="log">ここにログが表示されます</div>
 </div>
-
 <script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-
-const firebaseConfig = {
-  apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
-  authDomain:"daily-report-b90e8.firebaseapp.com",
-  projectId:"daily-report-b90e8",
-  storageBucket:"daily-report-b90e8.firebasestorage.app",
-  messagingSenderId:"16569831525",
-  appId:"1:16569831525:web:aa250f2061f762dfe1768c"
-};
-const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getFirestore(app);
-
-window.setupAdmin = async function() {
-  const email       = document.getElementById('email').value.trim();
-  const password    = document.getElementById('password').value;
-  const displayName = document.getElementById('displayName').value.trim();
-  const result      = document.getElementById('result');
-
-  result.className = 'result';
-  result.style.display = 'none';
-
-  if (!email || !password || !displayName) {
-    result.textContent = 'すべての項目を入力してください';
-    result.className = 'result err';
-    return;
-  }
-
-  try {
-    // ログインしてUIDを取得
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    const uid  = cred.user.uid;
-
-    // Firestoreのusersコレクションに登録
-    await setDoc(doc(db, 'users', uid), {
-      uid,
-      email,
-      displayName,
-      role:        'admin',
-      disabled:    false,
-      officeId:    null,   // adminは全事業所
-      areaId:      null,
-      createdAt:   new Date().toISOString(),
-    });
-
-    // rolesコレクションの初期定義も登録
-    const roles = [
-      { id:'admin',        label:'Administrator',      level:5, description:'全権限' },
-      { id:'support',      label:'事業支援課',          level:4, description:'マスタ編集・稼働日変更' },
-      { id:'area_manager', label:'エリアマネジャー',    level:3, description:'稼働日承認・閲覧' },
-      { id:'unit_manager', label:'ユニットマネジャー',  level:2, description:'稼働日承認・閲覧' },
-      { id:'manager',      label:'事業所管理者',        level:1, description:'速報入力・稼働日申請' },
-    ];
-    for (const r of roles) {
-      await setDoc(doc(db, 'roles', r.id), r);
-    }
-
-    result.textContent = `✅ 完了！UID: ${uid}\nFirestoreにadminユーザーとして登録しました。\nrolesコレクションも初期設定しました。\n\nこのページを削除してください。`;
-    result.className = 'result ok';
-    result.style.whiteSpace = 'pre-line';
-
-  } catch(e) {
-    result.textContent = `エラー: ${e.message}`;
-    result.className = 'result err';
-  }
-};
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getAuth,signInWithEmailAndPassword}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import{getFirestore,doc,setDoc}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+const cfg={apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",authDomain:"daily-report-b90e8.firebaseapp.com",projectId:"daily-report-b90e8",storageBucket:"daily-report-b90e8.firebasestorage.app",messagingSenderId:"16569831525",appId:"1:16569831525:web:aa250f2061f762dfe1768c"};
+const app=initializeApp(cfg);
+const auth=getAuth(app);
+const db=getFirestore(app);
+const L=document.getElementById('log');
+const log=m=>{L.textContent+=m+'\n';console.log(m)};
+document.getElementById('btn').addEventListener('click',async()=>{
+  const email=document.getElementById('a').value.trim();
+  const pw=document.getElementById('b').value;
+  const name=document.getElementById('c').value.trim();
+  L.textContent='';
+  if(!email||!pw||!name){log('❌ すべて入力してください');return;}
+  log('🔄 ログイン中...');
+  try{
+    const cr=await signInWithEmailAndPassword(auth,email,pw);
+    const uid=cr.user.uid;
+    log('✅ ログイン成功 UID: '+uid);
+    log('🔄 users登録中...');
+    await setDoc(doc(db,'users',uid),{uid,email,displayName:name,role:'admin',disabled:false,officeId:null,areaId:null,createdAt:new Date().toISOString()});
+    log('✅ users登録完了');
+    log('🔄 roles登録中...');
+    const roles=[{id:'admin',label:'Administrator',level:5},{id:'support',label:'事業支援課',level:4},{id:'area_manager',label:'エリアマネジャー',level:3},{id:'unit_manager',label:'ユニットマネジャー',level:2},{id:'manager',label:'事業所管理者',level:1}];
+    for(const r of roles){await setDoc(doc(db,'roles',r.id),r);log('  ✅ role:'+r.id);}
+    log('');
+    log('🎉 完了！login.htmlからログインしてください');
+  }catch(e){log('❌ '+e.code+'\n'+e.message);}
+});
 </script>
 </body>
 </html>
