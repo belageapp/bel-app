@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ログイン | ベルアージュ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.login-wrap{width:100%;max-width:400px;padding:24px 16px}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo img{height:48px;object-fit:contain}
+.login-card{background:#fff;border-radius:12px;border:1px solid #E8EAED;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.login-title{font-size:18px;font-weight:700;color:#333;margin-bottom:6px;text-align:center}
+.login-sub{font-size:12px;color:#999;text-align:center;margin-bottom:28px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px}
+.form-group input{width:100%;padding:10px 12px;border:1px solid #E8EAED;border-radius:8px;font-size:14px;font-family:inherit;color:#333;background:#fff;outline:none;transition:border-color .15s}
+.form-group input:focus{border-color:#1D9E75}
+.btn-login{width:100%;padding:12px;background:#F0FAF6;color:#1D9E75;border:1px solid #A8D5BE;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;margin-top:8px}
+.btn-login:hover{background:#E0F5ED}
+.btn-login:disabled{background:#F4F6F8;color:#aaa;border-color:#E8EAED;cursor:not-allowed}
+.error-msg{background:#FFF0F4;border:1px solid #F5B8C4;border-radius:6px;padding:10px 14px;font-size:12px;color:#C0392B;margin-top:14px;display:none}
+.error-msg.show{display:block}
+.loading-msg{text-align:center;font-size:12px;color:#999;margin-top:12px;display:none}
+.loading-msg.show{display:block}
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-logo">
+    <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
+  </div>
+  <div class="login-card">
+    <div class="login-title">業務支援システム</div>
+    <div class="login-sub">株式会社ベルアージュ</div>
+    <div class="form-group">
+      <label>メールアドレス</label>
+      <input type="email" id="email" placeholder="example@belage.jp" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>パスワード</label>
+      <input type="password" id="password" placeholder="パスワード" autocomplete="current-password">
+    </div>
+    <button class="btn-login" id="login-btn" onclick="doLogin()">ログイン</button>
+    <div class="error-msg" id="error-msg"></div>
+    <div class="loading-msg" id="loading-msg">認証中...</div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
+  authDomain:"daily-report-b90e8.firebaseapp.com",
+  projectId:"daily-report-b90e8",
+  storageBucket:"daily-report-b90e8.firebasestorage.app",
+  messagingSenderId:"16569831525",
+  appId:"1:16569831525:web:aa250f2061f762dfe1768c"
+};
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+// すでにログイン済みならポータルへ
+onAuthStateChanged(auth, user => {
+  if (user) location.href = 'index.html';
+});
+
+const ERROR_MESSAGES = {
+  'auth/invalid-email':          'メールアドレスの形式が正しくありません',
+  'auth/user-not-found':         'メールアドレスまたはパスワードが違います',
+  'auth/wrong-password':         'メールアドレスまたはパスワードが違います',
+  'auth/invalid-credential':     'メールアドレスまたはパスワードが違います',
+  'auth/too-many-requests':      'ログイン試行が多すぎます。しばらくしてから再試行してください',
+  'auth/user-disabled':          'このアカウントは無効化されています。管理者に連絡してください',
+};
+
+window.doLogin = async function() {
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn      = document.getElementById('login-btn');
+  const errMsg   = document.getElementById('error-msg');
+  const loading  = document.getElementById('loading-msg');
+
+  errMsg.classList.remove('show');
+
+  if (!email || !password) {
+    errMsg.textContent = 'メールアドレスとパスワードを入力してください';
+    errMsg.classList.add('show');
+    return;
+  }
+
+  btn.disabled = true;
+  loading.classList.add('show');
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    location.href = 'index.html';
+  } catch(e) {
+    errMsg.textContent = ERROR_MESSAGES[e.code] || 'ログインに失敗しました。もう一度お試しください';
+    errMsg.classList.add('show');
+    btn.disabled = false;
+    loading.classList.remove('show');
+  }
+};
+
+// Enterキーでログイン
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') window.doLogin();
+});
+</script>
+</body>
+</html>
