@@ -507,6 +507,9 @@ window.showPage = function(id, el){
   if(id==='offices') renderOfficeTable();
   if(id==='workdays'){initWdOfficeSelect();loadWorkdays();}
   if(id==='users') loadUsers();
+  // スクロールをトップに戻す
+  document.querySelector('.main').scrollTop = 0;
+  window.scrollTo(0, 0);
 };
 
 // ===== 初期データ投入 =====
