@@ -169,6 +169,8 @@ textarea:focus{border-color:#1D9E75}
       <a href="import.html" class="nav-link">CSV取込</a>
       <a href="settings.html" class="nav-link">設定</a>
       <a href="index.html" class="nav-link">ポータル</a>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;flex-shrink:0;margin-left:4px" id="top-bar-user-info"></div>
+    <button onclick="_logout()" style="padding:4px 10px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;margin-left:4px">ログアウト</button>
     </div>
   </div>
 
@@ -312,6 +314,7 @@ textarea:focus{border-color:#1D9E75}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
@@ -323,6 +326,34 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// ===== 認証チェック =====
+const auth = getAuth(app);
+const ROLE_LABELS = {
+  admin:'Administrator', support:'事業支援課',
+  area_manager:'エリアマネジャー', unit_manager:'ユニットマネジャー',
+  manager:'事業所管理者'
+};
+let currentUserData = null;
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { location.href = 'login.html'; return; }
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (!snap.exists() || snap.data().disabled) {
+      await signOut(auth); location.href = 'login.html'; return;
+    }
+    currentUserData = snap.data();
+    // ユーザー表示
+    const el = document.getElementById('top-bar-user-info');
+    if (el) {
+      el.innerHTML = `<span style="font-size:11px;color:#555;white-space:nowrap">${currentUserData.displayName||user.email}</span>
+        <span style="font-size:10px;color:#999;white-space:nowrap">${ROLE_LABELS[currentUserData.role]||currentUserData.role}</span>`;
+    }
+  } catch(e) { console.error(e); }
+});
+
+window._logout = async function() { await signOut(auth); location.href = 'login.html'; };
 
 const LAFORE_OFFICES = ["ラフォーレ高陽","ラフォーレ亀山"];
 const OFFICES = [
