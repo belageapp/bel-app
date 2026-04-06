@@ -115,6 +115,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
     <button class="nav-item" onclick="showPage('areas',this)">エリア</button>
     <button class="nav-item" onclick="showPage('offices',this)">事業所登録</button>
     <button class="nav-item" onclick="showPage('workdays',this)">稼働日設定</button>
+    <button class="nav-item" id="nav-users" style="display:none" onclick="showPage('users',this)">ユーザー管理</button>
     </div>
   </div>
 
@@ -285,6 +286,116 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
     </div>
   </div>
 </div>
+    <!-- ユーザー管理 -->
+    <div class="page" id="page-users">
+      <div class="page-header">
+        <div class="page-title">ユーザー管理</div>
+        <div class="page-desc">システムユーザーの登録・ロール設定を行います。adminロールの付与はadminのみ可能です。</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">ユーザー一覧</span>
+          <button class="btn btn-blue" onclick="showAddUserForm()">＋ ユーザーを招待</button>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr>
+              <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">氏名</th>
+              <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">メールアドレス</th>
+              <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">ロール</th>
+              <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">担当</th>
+              <th style="text-align:center;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">状態</th>
+              <th style="text-align:center;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">操作</th>
+            </tr></thead>
+            <tbody id="users-tbody"><tr><td colspan="6" class="empty">読み込み中...</td></tr></tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ユーザー追加フォーム -->
+      <div class="card" id="add-user-card" style="display:none">
+        <div class="card-header"><span class="card-title">ユーザーを招待</span></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label>メールアドレス <span style="color:#C0392B">*</span></label>
+            <input type="email" id="new-user-email" placeholder="example@belage.jp" style="width:100%;max-width:320px">
+          </div>
+          <div class="form-group">
+            <label>氏名 <span style="color:#C0392B">*</span></label>
+            <input type="text" id="new-user-name" placeholder="山田 太郎" style="width:100%;max-width:320px">
+          </div>
+          <div class="form-group">
+            <label>初期パスワード <span style="color:#C0392B">*</span></label>
+            <input type="text" id="new-user-password" placeholder="8文字以上" style="width:100%;max-width:320px">
+            <div style="font-size:11px;color:#888;margin-top:4px">※ 本人に伝えてください。ログイン後に変更を推奨します</div>
+          </div>
+          <div class="form-group">
+            <label>ロール <span style="color:#C0392B">*</span></label>
+            <select id="new-user-role" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="manager">事業所管理者</option>
+              <option value="unit_manager">ユニットマネジャー</option>
+              <option value="area_manager">エリアマネジャー</option>
+              <option value="support">事業支援課</option>
+              <option value="admin" id="admin-option" style="display:none">Administrator</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>担当事業所（管理者の場合）</label>
+            <select id="new-user-office" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="">－</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-primary" onclick="createUser()">招待する</button>
+            <button class="btn btn-secondary" onclick="hideAddUserForm()">キャンセル</button>
+          </div>
+          <div id="user-create-status" style="margin-top:8px;font-size:12px"></div>
+        </div>
+      </div>
+
+      <!-- ユーザー編集フォーム -->
+      <div class="card" id="edit-user-card" style="display:none">
+        <div class="card-header"><span class="card-title" id="edit-user-title">ユーザーを編集</span></div>
+        <div class="card-body">
+          <input type="hidden" id="edit-user-uid">
+          <div class="form-group">
+            <label>氏名</label>
+            <input type="text" id="edit-user-name" style="width:100%;max-width:320px">
+          </div>
+          <div class="form-group">
+            <label>ロール</label>
+            <select id="edit-user-role" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="manager">事業所管理者</option>
+              <option value="unit_manager">ユニットマネジャー</option>
+              <option value="area_manager">エリアマネジャー</option>
+              <option value="support">事業支援課</option>
+              <option value="admin" id="edit-admin-option" style="display:none">Administrator</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>担当事業所</label>
+            <select id="edit-user-office" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="">－</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>アカウント状態</label>
+            <select id="edit-user-disabled" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="false">有効</option>
+              <option value="true">無効</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-primary" onclick="saveUser()">保存</button>
+            <button class="btn btn-secondary" onclick="hideEditUserForm()">キャンセル</button>
+          </div>
+          <div id="user-edit-status" style="margin-top:8px;font-size:12px"></div>
+        </div>
+      </div>
+    </div>
+
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, getDocs, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -323,6 +434,26 @@ onAuthStateChanged(auth, async user => {
     if (el) {
       el.innerHTML = `<div style="font-size:12px;font-weight:600;color:#333">${currentUserData.displayName||user.email}</div>
         <div style="font-size:10px;color:#999">${ROLE_LABELS[currentUserData.role]||currentUserData.role}</div>`;
+    }
+    // ユーザー管理メニュー：admin・supportのみ表示
+    const role = currentUserData.role;
+    if (role === 'admin' || role === 'support') {
+      document.getElementById('nav-users').style.display = 'block';
+    }
+    // adminのみadminロール付与可能
+    if (role === 'admin') {
+      const adminOpt = document.getElementById('admin-option');
+      const editAdminOpt = document.getElementById('edit-admin-option');
+      if (adminOpt) adminOpt.style.display = 'block';
+      if (editAdminOpt) editAdminOpt.style.display = 'block';
+    }
+    // area_manager・unit_manager・managerはマスタ設定の編集不可（閲覧のみ）
+    if (role === 'area_manager' || role === 'unit_manager' || role === 'manager') {
+      document.querySelectorAll('.btn-primary,.btn-blue,.btn-danger').forEach(b => {
+        b.disabled = true;
+        b.style.opacity = '0.4';
+        b.style.cursor = 'not-allowed';
+      });
     }
   } catch(e) { console.error(e); }
 });
@@ -375,6 +506,7 @@ window.showPage = function(id, el){
   if(id==='prices') renderPriceTypeSelect();
   if(id==='offices') renderOfficeTable();
   if(id==='workdays'){initWdOfficeSelect();loadWorkdays();}
+  if(id==='users') loadUsers();
 };
 
 // ===== 初期データ投入 =====
@@ -791,6 +923,159 @@ async function init(){
   renderAreas();
   initWdOfficeSelect();
 }
+// ===== ユーザー管理 =====
+async function loadUsers() {
+  const tb = document.getElementById('users-tbody');
+  tb.innerHTML = '<tr><td colspan="6" class="empty">読み込み中...</td></tr>';
+  try {
+    const snap = await getDocs(collection(db,'users'));
+    const users = [];
+    snap.forEach(d => users.push({id:d.id,...d.data()}));
+    users.sort((a,b)=>(a.displayName||'').localeCompare(b.displayName||'','ja'));
+
+    // 事業所セレクターにも反映
+    const officeOpts = ['<option value="">－</option>',
+      ...cache.offices.map(o=>`<option value="${o.id}">${o.name}</option>`)].join('');
+    document.getElementById('new-user-office').innerHTML = officeOpts;
+    document.getElementById('edit-user-office').innerHTML = officeOpts;
+
+    if (!users.length) {
+      tb.innerHTML = '<tr><td colspan="6" class="empty">ユーザーがいません</td></tr>';
+      return;
+    }
+
+    const officeMap = {};
+    cache.offices.forEach(o => officeMap[o.id] = o.name);
+
+    tb.innerHTML = users.map(u => {
+      const roleBadge = `<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#EBF3FB;color:#185FA5">${ROLE_LABELS[u.role]||u.role}</span>`;
+      const statusBadge = u.disabled
+        ? '<span style="padding:2px 8px;border-radius:10px;font-size:11px;background:#FFF0F4;color:#C0392B">無効</span>'
+        : '<span style="padding:2px 8px;border-radius:10px;font-size:11px;background:#E8F5EE;color:#1D6E3E">有効</span>';
+      const office = u.officeId ? (officeMap[u.officeId] || u.officeId) : '－';
+      return `<tr>
+        <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5;font-weight:500">${u.displayName||'－'}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5;font-size:12px;color:#888">${u.email||'－'}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5">${roleBadge}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5;font-size:12px">${office}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5;text-align:center">${statusBadge}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5;text-align:center">
+          <button class="btn btn-blue btn-sm" onclick="editUser('${u.id}')">編集</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tb.innerHTML = `<tr><td colspan="6" class="empty">エラー: ${e.message}</td></tr>`; }
+}
+
+window.showAddUserForm = function() {
+  document.getElementById('add-user-card').style.display = 'block';
+  document.getElementById('edit-user-card').style.display = 'none';
+};
+window.hideAddUserForm = function() {
+  document.getElementById('add-user-card').style.display = 'none';
+  document.getElementById('new-user-email').value = '';
+  document.getElementById('new-user-name').value = '';
+  document.getElementById('new-user-password').value = '';
+};
+
+window.createUser = async function() {
+  const email    = document.getElementById('new-user-email').value.trim();
+  const name     = document.getElementById('new-user-name').value.trim();
+  const password = document.getElementById('new-user-password').value;
+  const role     = document.getElementById('new-user-role').value;
+  const officeId = document.getElementById('new-user-office').value;
+  const status   = document.getElementById('user-create-status');
+
+  if (!email||!name||!password) { status.textContent='必須項目を入力してください'; status.style.color='#C0392B'; return; }
+  if (password.length < 8) { status.textContent='パスワードは8文字以上にしてください'; status.style.color='#C0392B'; return; }
+  if (role==='admin' && currentUserData?.role!=='admin') { status.textContent='adminロールはadminのみ付与できます'; status.style.color='#C0392B'; return; }
+
+  status.textContent = 'ユーザーを作成中...'; status.style.color = '#888';
+
+  try {
+    // Firebase Auth APIでユーザー作成（Admin SDKが必要なため、Firestoreに招待データを保存して別途作成）
+    // ここではFirebase Auth REST APIを使って直接作成
+    const apiKey = 'AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs';
+    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email, password, returnSecureToken:true})
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const uid = data.localId;
+    await setDoc(doc(db,'users',uid), {
+      uid, email, displayName:name, role,
+      officeId: officeId||null,
+      areaId: null,
+      disabled: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    status.textContent = `✅ ${name}さんを登録しました`;
+    status.style.color = '#1D9E75';
+    window.hideAddUserForm();
+    await loadUsers();
+  } catch(e) {
+    const msgs = {
+      'EMAIL_EXISTS':'このメールアドレスはすでに登録されています',
+      'WEAK_PASSWORD : Password should be at least 6 characters':'パスワードは6文字以上にしてください',
+    };
+    status.textContent = msgs[e.message] || `エラー: ${e.message}`;
+    status.style.color = '#C0392B';
+  }
+};
+
+window.editUser = function(uid) {
+  const tb = document.getElementById('users-tbody');
+  // キャッシュから対象ユーザーを探す
+  getDocs(collection(db,'users')).then(snap => {
+    let u = null;
+    snap.forEach(d => { if(d.id===uid) u = {id:d.id,...d.data()}; });
+    if (!u) return;
+    document.getElementById('edit-user-uid').value = uid;
+    document.getElementById('edit-user-title').textContent = `${u.displayName||u.email} を編集`;
+    document.getElementById('edit-user-name').value = u.displayName||'';
+    document.getElementById('edit-user-role').value = u.role||'manager';
+    document.getElementById('edit-user-office').value = u.officeId||'';
+    document.getElementById('edit-user-disabled').value = u.disabled ? 'true' : 'false';
+    document.getElementById('edit-user-card').style.display = 'block';
+    document.getElementById('add-user-card').style.display = 'none';
+    document.getElementById('edit-user-card').scrollIntoView({behavior:'smooth'});
+  });
+};
+
+window.hideEditUserForm = function() {
+  document.getElementById('edit-user-card').style.display = 'none';
+};
+
+window.saveUser = async function() {
+  const uid      = document.getElementById('edit-user-uid').value;
+  const name     = document.getElementById('edit-user-name').value.trim();
+  const role     = document.getElementById('edit-user-role').value;
+  const officeId = document.getElementById('edit-user-office').value;
+  const disabled = document.getElementById('edit-user-disabled').value === 'true';
+  const status   = document.getElementById('user-edit-status');
+
+  if (!name) { status.textContent='氏名を入力してください'; status.style.color='#C0392B'; return; }
+  if (role==='admin' && currentUserData?.role!=='admin') { status.textContent='adminロールはadminのみ付与できます'; status.style.color='#C0392B'; return; }
+  // 自分自身の無効化・ロール変更を防止
+  if (uid === currentUserData?.uid && disabled) { status.textContent='自分自身を無効化することはできません'; status.style.color='#C0392B'; return; }
+
+  status.textContent = '保存中...'; status.style.color='#888';
+  try {
+    await setDoc(doc(db,'users',uid), {
+      displayName: name, role,
+      officeId: officeId||null,
+      disabled,
+    }, {merge:true});
+    status.textContent = '✅ 保存しました'; status.style.color='#1D9E75';
+    await loadUsers();
+    setTimeout(window.hideEditUserForm, 1000);
+  } catch(e) { status.textContent=`エラー: ${e.message}`; status.style.color='#C0392B'; }
+};
+
 init();
 </script>
 </body>
