@@ -8,10 +8,10 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;min-height:100vh;color:#333}
 .layout{display:flex;min-height:100vh;flex-direction:column}
-@media(min-width:600px){.layout{flex-direction:row}}
+@media(min-width:600px){.layout{flex-direction:row;align-items:flex-start}}
 /* サイドバー */
 .sidebar{background:#fff;border-bottom:1px solid #E8EAED;flex-shrink:0;padding:0;width:100%}
-@media(min-width:600px){.sidebar{width:220px;min-height:100vh;border-bottom:none;border-right:1px solid #E8EAED}}
+@media(min-width:600px){.sidebar{width:220px;border-bottom:none;border-right:1px solid #E8EAED;position:sticky;top:0;height:100vh;overflow-y:auto}}
 .sidebar-logo{padding:14px 16px;border-bottom:1px solid #E8EAED;display:flex;align-items:center}
 .sidebar-logo img{height:30px;object-fit:contain}
 .sidebar-title{padding:16px 16px 8px;color:#555;font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase}
@@ -33,7 +33,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 .back-link:hover{background:#E0F5ED;color:#0F6E56}
 @media(min-width:600px){.back-link{position:static;width:auto}}
 /* メインコンテンツ */
-.main{flex:1;padding:16px;overflow-y:auto}
+.main{flex:1;padding:16px;overflow-y:visible}
 @media(min-width:600px){.main{padding:28px 32px}}
 .page{display:none}.page.active{display:block}
 .page-header{margin-bottom:24px}
@@ -507,9 +507,7 @@ window.showPage = function(id, el){
   if(id==='offices') renderOfficeTable();
   if(id==='workdays'){initWdOfficeSelect();loadWorkdays();}
   if(id==='users') loadUsers();
-  // スクロールをトップに戻す
-  const main = document.querySelector('.main');
-  if (main) main.scrollTop = 0;
+  window.scrollTo(0,0);
 };
 
 // ===== 初期データ投入 =====
