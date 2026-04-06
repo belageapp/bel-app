@@ -6,13 +6,17 @@
 <title>マスタ設定 | ベルアージュ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;min-height:100vh;color:#333}
-.layout{display:flex;min-height:100vh;flex-direction:column}
-@media(min-width:600px){.layout{flex-direction:row;align-items:flex-start}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333}
+.layout{display:flex;flex-direction:column;min-height:100vh}
+@media(min-width:600px){.layout{flex-direction:row}}
 /* サイドバー */
-.sidebar{background:#fff;border-bottom:1px solid #E8EAED;flex-shrink:0;padding:0;width:100%}
-@media(min-width:600px){.sidebar{width:220px;border-bottom:none;border-right:1px solid #E8EAED;position:sticky;top:0;height:100vh;overflow-y:auto}}
-.sidebar-logo{padding:14px 16px;border-bottom:1px solid #E8EAED;display:flex;align-items:center}
+.sidebar{background:#fff;border-bottom:1px solid #E8EAED;flex-shrink:0;width:100%}
+@media(min-width:600px){
+  .sidebar{width:220px;min-height:100vh;border-bottom:none;border-right:1px solid #E8EAED;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:10}
+}
+/* メインコンテンツ */
+.main{flex:1;padding:16px}
+@media(min-width:600px){.main{padding:28px 32px;margin-left:220px}}.sidebar-logo{padding:14px 16px;border-bottom:1px solid #E8EAED;display:flex;align-items:center}
 .sidebar-logo img{height:30px;object-fit:contain}
 .sidebar-title{padding:16px 16px 8px;color:#555;font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase}
 .nav-item{display:block;padding:9px 16px;color:#555;font-size:13px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-left:3px solid transparent;transition:all 0.15s;border-radius:0 6px 6px 0;margin:1px 8px 1px 0}
@@ -33,8 +37,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 .back-link:hover{background:#E0F5ED;color:#0F6E56}
 @media(min-width:600px){.back-link{position:static;width:auto}}
 /* メインコンテンツ */
-.main{flex:1;padding:16px;overflow-y:visible}
-@media(min-width:600px){.main{padding:28px 32px}}
 .page{display:none}.page.active{display:block}
 .page-header{margin-bottom:24px}
 .page-title{font-size:20px;font-weight:600;color:#1D9E75;margin-bottom:4px}
