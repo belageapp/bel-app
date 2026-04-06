@@ -10,13 +10,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .top-bar{background:#fff;padding:0;display:flex;align-items:stretch;border-bottom:1px solid #E8EAED;position:sticky;top:0;z-index:100}
 .top-bar-logo{background:#fff;padding:8px 16px;display:flex;align-items:center;border-right:1px solid #E8EAED}
 .top-bar-logo img{height:34px;object-fit:contain}
-.top-bar-text{padding:0 16px;display:flex;flex-direction:column;justify-content:center;flex:1}
-.top-bar-title{font-size:15px;font-weight:600;color:#1D9E75;letter-spacing:0.3px}
-.top-bar-sub{font-size:11px;color:#888;margin-top:1px}
-.top-bar-user{padding:0 16px;display:flex;align-items:center;gap:10px;border-left:1px solid #E8EAED;white-space:nowrap}
-.user-info{text-align:right}
-.user-name{font-size:12px;font-weight:600;color:#333}
-.user-role{font-size:10px;color:#999}
+.top-bar-text{padding:0 20px;display:flex;flex-direction:column;justify-content:center;flex:1;min-width:0}
+.top-bar-title{font-size:15px;font-weight:600;color:#1D9E75;letter-spacing:0.3px;white-space:nowrap}
+.top-bar-sub{font-size:11px;color:#888;margin-top:1px;white-space:nowrap}
+.top-bar-user{padding:0 16px;display:flex;align-items:center;gap:10px;border-left:1px solid #E8EAED;flex-shrink:0}
+.user-name{font-size:12px;font-weight:600;color:#333;text-align:right}
+.user-role{font-size:10px;color:#999;text-align:right}
 .btn-logout{padding:5px 12px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap}
 .btn-logout:hover{background:#F4F6F8;color:#333}
 .content{max-width:720px;margin:0 auto;padding:20px 16px}
@@ -78,10 +77,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
     <div class="top-bar-sub">株式会社ベルアージュ</div>
   </div>
   <div class="top-bar-user" id="top-bar-user" style="display:none">
-    <div class="user-info">
-      <span class="user-name" id="user-name"></span>
-      <span style="color:#ddd;margin:0 4px">|</span>
-      <span class="user-role" id="user-role"></span>
+    <div>
+      <div class="user-name" id="user-name"></div>
+      <div class="user-role" id="user-role"></div>
     </div>
     <button class="btn-logout" onclick="doLogout()">ログアウト</button>
   </div>
