@@ -508,8 +508,8 @@ window.showPage = function(id, el){
   if(id==='workdays'){initWdOfficeSelect();loadWorkdays();}
   if(id==='users') loadUsers();
   // スクロールをトップに戻す
-  document.querySelector('.main').scrollTop = 0;
-  window.scrollTo(0, 0);
+  const main = document.querySelector('.main');
+  if (main) main.scrollTop = 0;
 };
 
 // ===== 初期データ投入 =====
