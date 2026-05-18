@@ -361,13 +361,29 @@ function parseCSV(text, filename) {
     const totalUnits = units * count;
 
     if (!monthData[ym]) monthData[ym] = {};
-    if (!monthData[ym][svcCat]) monthData[ym][svcCat] = {basicUnits:0,bodyUnits:0,actUnits:0,treatUnits:0,basicCount:0};
+    if (!monthData[ym][svcCat]) monthData[ym][svcCat] = {basicUnits:0,bodyUnits:0,actUnits:0,treatUnits:0,basicCount:0,details:[]};
 
     const d = monthData[ym][svcCat];
     if      (cat === '基本報酬')     { d.basicUnits += totalUnits; d.basicCount += count; }
     else if (cat === '体制加算')     { d.bodyUnits  += totalUnits; }
     else if (cat === '実績加算')     { d.actUnits   += totalUnits; }
     else if (cat === '処遇改善加算') { d.treatUnits += totalUnits; }
+
+    // サービスコード別詳細を保存
+    const existing = d.details.find(x => x.code === code);
+    if (existing) {
+      existing.count += count;
+      existing.totalUnits += totalUnits;
+    } else {
+      d.details.push({
+        code,
+        name: sc.name || code,
+        category: cat,
+        unitPrice: units,
+        count,
+        totalUnits,
+      });
+    }
   }
 
   return { office, officeNo, regionCode, monthData, unknownCodes, filename };
@@ -532,6 +548,11 @@ window.saveToFirestore = async function() {
           actualUnits: d.actUnits,
           treatUnits:  d.treatUnits,
           unitPrice:   up,
+          // サービスコード別詳細（報酬内容明細用）
+          details: (d.details || []).map(x => ({
+            ...x,
+            amount: Math.round(x.totalUnits * up),
+          })),
         };
       });
 

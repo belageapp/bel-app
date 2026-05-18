@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>報酬内容明細 | ベルアージュ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333}
+.top-bar{background:#fff;border-bottom:1px solid #E8EAED;padding:0;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;min-height:52px;print:none}
+.top-bar-logo{padding:8px 16px;display:flex;align-items:center;border-right:1px solid #E8EAED;flex-shrink:0}
+.top-bar-logo img{height:34px;object-fit:contain}
+.top-bar-main{padding:0 16px;display:flex;align-items:center;gap:10px;flex:1}
+.nav-link{padding:5px 12px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;text-decoration:none;display:inline-block}
+.nav-link:hover{background:#F4F6F8}
+.btn-print{padding:6px 16px;background:#F0FAF6;color:#1D9E75;border:1px solid #A8D5BE;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.content{padding:20px;max-width:900px;margin:0 auto}
+/* 選択フォーム */
+.select-card{background:#fff;border-radius:8px;border:1px solid #E8EAED;padding:20px;margin-bottom:20px}
+.select-card h2{font-size:14px;font-weight:700;color:#1D9E75;margin-bottom:14px}
+.form-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.form-group{display:flex;flex-direction:column;gap:4px}
+label{font-size:12px;font-weight:600;color:#555}
+select{padding:8px 10px;border:1px solid #E8EAED;border-radius:6px;font-size:13px;font-family:inherit;color:#333;background:#fff;min-width:160px}
+.btn-load{padding:8px 20px;background:#F0FAF6;color:#1D9E75;border:1px solid #A8D5BE;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+/* 明細 */
+#invoice-area{background:#fff;padding:0}
+/* 印刷スタイル */
+@media print{
+  .top-bar,.select-card,.no-print{display:none!important}
+  body{background:#fff}
+  .content{padding:0;max-width:100%}
+  #invoice-area{padding:0}
+  .page-break{page-break-before:always}
+}
+/* 明細スタイル */
+.invoice-page{background:#fff;padding:24px 32px;margin-bottom:20px;border:1px solid #E8EAED;border-radius:8px}
+.invoice-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:12px;border-bottom:2px solid #333}
+.invoice-title{font-size:20px;font-weight:700}
+.invoice-date{font-size:12px;color:#555;text-align:right}
+.office-name{font-size:16px;font-weight:700;margin-bottom:16px;padding-bottom:6px;border-bottom:1px solid #E8EAED}
+.provide-block{margin-bottom:24px}
+.provide-header{display:flex;justify-content:space-between;font-size:13px;font-weight:700;background:#f5f5f5;padding:8px 12px;border-radius:4px;margin-bottom:2px}
+.provide-header .total{text-align:right}
+.svc-type-header{display:flex;justify-content:space-between;font-size:12px;font-weight:700;padding:6px 12px 6px 20px;background:#f9f9f9;border-bottom:1px solid #E8EAED}
+.cat-header{font-size:11px;font-weight:700;padding:4px 12px 4px 28px;color:#555;background:#fafafa;border-bottom:1px solid #f0f0f0}
+table.detail-table{width:100%;border-collapse:collapse;font-size:11px}
+table.detail-table td{padding:4px 8px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
+table.detail-table td:nth-child(1){width:60px;color:#777;text-align:center}
+table.detail-table td:nth-child(2){color:#777;font-size:10px;padding-left:36px}
+table.detail-table td:nth-child(3){width:50px;text-align:right}
+table.detail-table td:nth-child(4){width:50px;text-align:right}
+table.detail-table td:nth-child(5){width:70px;text-align:right}
+table.detail-table td:nth-child(6){width:80px;text-align:right;font-weight:600}
+table.detail-table thead td{background:#fafafa;font-weight:700;color:#333;font-size:10px;border-bottom:1px solid #ddd}
+.subtotal-row td{background:#F0FAF6;font-weight:700;color:#1D6E3E;border-bottom:2px solid #B2DFDB}
+.total-row{display:flex;justify-content:space-between;padding:10px 12px;background:#E8F5EE;border-radius:4px;margin-top:8px;font-weight:700;font-size:14px}
+.total-row .label{color:#555}
+.total-row .amount{color:#1D6E3E;font-size:16px}
+.empty-msg{text-align:center;padding:40px;color:#aaa;font-size:14px}
+.loading{text-align:center;padding:40px;color:#888;font-size:14px}
+</style>
+</head>
+<body>
+
+<div class="top-bar no-print">
+  <div class="top-bar-logo">
+    <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
+  </div>
+  <div class="top-bar-main">
+    <a href="index.html" class="nav-link">← ポータル</a>
+    <div id="top-bar-user-info" style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:1px"></div>
+    <button onclick="_logout()" style="padding:4px 10px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap">ログアウト</button>
+  </div>
+</div>
+
+<div class="content">
+  <div class="select-card no-print">
+    <h2>📄 報酬内容明細</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>請求月</label>
+        <select id="sel-year-month">
+          <option value="">選択してください</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>事業所</label>
+        <select id="sel-office">
+          <option value="all">全事業所</option>
+        </select>
+      </div>
+      <button class="btn-load" onclick="loadInvoice()">表示</button>
+      <button class="btn-print" onclick="window.print()">🖨️ 印刷・PDF保存</button>
+    </div>
+  </div>
+
+  <div id="invoice-area">
+    <div class="empty-msg">請求月と事業所を選択して「表示」をクリックしてください</div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const cfg = {
+  apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
+  authDomain:"daily-report-b90e8.firebaseapp.com",
+  projectId:"daily-report-b90e8",
+  storageBucket:"daily-report-b90e8.firebasestorage.app",
+  messagingSenderId:"16569831525",
+  appId:"1:16569831525:web:aa250f2061f762dfe1768c"
+};
+const app  = initializeApp(cfg);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+const ROLE_LABELS = {
+  admin:'Administrator', support:'事業支援課',
+  area_manager:'エリアマネジャー', unit_manager:'ユニットマネジャー', manager:'事業所管理者'
+};
+
+let offices = [];
+
+// 認証
+onAuthStateChanged(auth, async user => {
+  if (!user) { location.href = 'login.html'; return; }
+  const snap = await getDoc(doc(db,'users',user.uid));
+  if (!snap.exists() || snap.data().disabled) { await signOut(auth); location.href = 'login.html'; return; }
+  const ud = snap.data();
+  const el = document.getElementById('top-bar-user-info');
+  if (el) {
+    el.innerHTML = `<span style="font-size:11px;color:#555">${ud.displayName||user.email}</span>
+      <span style="font-size:10px;color:#999">${ROLE_LABELS[ud.role]||ud.role}</span>`;
+  }
+  await init();
+});
+window._logout = async () => { await signOut(auth); location.href = 'login.html'; };
+
+async function init() {
+  // 事業所一覧取得
+  const snap = await getDocs(collection(db,'offices'));
+  snap.forEach(d => offices.push({id:d.id,...d.data()}));
+  offices.sort((a,b)=>(a.order||99)-(b.order||99));
+
+  // 事業所セレクター
+  const selO = document.getElementById('sel-office');
+  offices.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.name;
+    opt.textContent = o.name;
+    selO.appendChild(opt);
+  });
+
+  // 請求月セレクター（actualsコレクションから取得）
+  const actualsSnap = await getDocs(collection(db,'actuals'));
+  const ymSet = new Set();
+  actualsSnap.forEach(d => {
+    const months = d.data().months || {};
+    const officeData = d.data();
+    Object.keys(months).forEach(m => {
+      // fiscalYearとmonthから請求月（提供月）を算出
+      const fiscalYear = officeData.fiscalYear || parseInt(d.id.split('_')[0]);
+      const mon = parseInt(m);
+      const year = mon >= 4 ? fiscalYear : fiscalYear + 1;
+      ymSet.add(`${year}${String(mon).padStart(2,'0')}`);
+    });
+  });
+
+  const selYM = document.getElementById('sel-year-month');
+  [...ymSet].sort().reverse().forEach(ym => {
+    const y = ym.slice(0,4), m = parseInt(ym.slice(4));
+    const opt = document.createElement('option');
+    opt.value = ym;
+    opt.textContent = `${y}年${m}月`;
+    selYM.appendChild(opt);
+  });
+}
+
+window.loadInvoice = async function() {
+  const ym     = document.getElementById('sel-year-month').value;
+  const office = document.getElementById('sel-office').value;
+  const area   = document.getElementById('invoice-area');
+
+  if (!ym) { alert('請求月を選択してください'); return; }
+
+  area.innerHTML = '<div class="loading">読み込み中...</div>';
+
+  const billingYear  = parseInt(ym.slice(0,4));
+  const billingMonth = parseInt(ym.slice(4,6));
+  // 提供月から年度計算
+  const fiscalYear   = billingMonth >= 4 ? billingYear : billingYear - 1;
+
+  // 対象事業所リスト
+  const targetOffices = office === 'all' ? offices.map(o=>o.name) : [office];
+
+  let html = '';
+  let pageIdx = 0;
+
+  for (const officeName of targetOffices) {
+    const docKey  = `${fiscalYear}_${officeName}`;
+    const snap    = await getDoc(doc(db,'actuals',docKey));
+    if (!snap.exists()) continue;
+
+    const monthData = snap.data().months?.[billingMonth];
+    if (!monthData?.services) continue;
+
+    const services = monthData.services;
+    if (Object.keys(services).length === 0) continue;
+
+    // 事業所合計
+    let totalUnits = 0, totalAmount = 0;
+    Object.values(services).forEach(s => {
+      totalUnits  += (s.basicUnits||0)+(s.bodyUnits||0)+(s.actualUnits||0)+(s.treatUnits||0);
+      totalAmount += (s.basicRev||0)+(s.bodyRev||0)+(s.actualRev||0)+(s.treatRev||0);
+    });
+
+    if (pageIdx > 0) html += '<div class="page-break"></div>';
+
+    html += `
+    <div class="invoice-page">
+      <div class="invoice-header">
+        <div class="invoice-title">報酬内容明細（請求月 ${billingYear}${String(billingMonth).padStart(2,'0')}）</div>
+        <div class="invoice-date">${new Date().toLocaleDateString('ja-JP')}</div>
+      </div>
+      <div class="office-name">${officeName}</div>`;
+
+    // 提供月（請求月の2ヶ月前）
+    const provideMonth = billingMonth <= 2 ? billingMonth + 10 : billingMonth - 2;
+    const provideYear  = provideMonth > billingMonth ? billingYear - 1 : billingYear;
+
+    html += `
+      <div class="provide-block">
+        <div class="provide-header">
+          <span>提供月　${provideYear}${String(provideMonth).padStart(2,'0')}</span>
+          <span class="total">${totalUnits.toLocaleString()}　¥${totalAmount.toLocaleString()}</span>
+        </div>`;
+
+    // サービス種別ごと
+    for (const [svcName, svc] of Object.entries(services)) {
+      const svcUnits  = (svc.basicUnits||0)+(svc.bodyUnits||0)+(svc.actualUnits||0)+(svc.treatUnits||0);
+      const svcAmount = (svc.basicRev||0)+(svc.bodyRev||0)+(svc.actualRev||0)+(svc.treatRev||0);
+      const up = svc.unitPrice || 1;
+
+      html += `
+        <div class="svc-type-header">
+          <span>${svcName}</span>
+          <span>${svcUnits.toLocaleString()}　¥${svcAmount.toLocaleString()}</span>
+        </div>`;
+
+      // 詳細明細（detailsがある場合）
+      const details = svc.details || [];
+      const cats = ['基本報酬','体制加算','実績加算','処遇改善加算'];
+
+      for (const cat of cats) {
+        const catDetails = details.filter(d => d.category === cat);
+        if (catDetails.length === 0) continue;
+
+        const catUnits  = catDetails.reduce((s,d) => s+d.totalUnits, 0);
+        const catAmount = catDetails.reduce((s,d) => s+(d.amount||Math.round(d.totalUnits*up)), 0);
+
+        html += `<div class="cat-header">${cat}　${catDetails.reduce((s,d)=>s+d.count,0)}　${catUnits.toLocaleString()}　¥${catAmount.toLocaleString()}</div>`;
+        html += `<table class="detail-table">
+          <thead><td>コード</td><td>サービス名</td><td style="text-align:right">単位</td><td style="text-align:right">回数</td><td style="text-align:right">単位数</td><td style="text-align:right">報酬額</td></thead>`;
+
+        for (const d of catDetails) {
+          const amt = d.amount || Math.round(d.totalUnits * up);
+          html += `<tr>
+            <td>${d.code}</td>
+            <td>${d.name}</td>
+            <td>${d.unitPrice?.toLocaleString()||''}</td>
+            <td>${d.count}</td>
+            <td>${d.totalUnits.toLocaleString()}</td>
+            <td>¥${amt.toLocaleString()}</td>
+          </tr>`;
+        }
+        html += `</table>`;
+      }
+
+      // detailsがない場合（旧データ）はカテゴリ合計のみ表示
+      if (details.length === 0) {
+        const rows = [
+          {cat:'基本報酬',  units:svc.basicUnits||0,  rev:svc.basicRev||0},
+          {cat:'体制加算',  units:svc.bodyUnits||0,   rev:svc.bodyRev||0},
+          {cat:'実績加算',  units:svc.actualUnits||0, rev:svc.actualRev||0},
+          {cat:'処遇改善加算',units:svc.treatUnits||0,rev:svc.treatRev||0},
+        ].filter(r=>r.units>0||r.rev>0);
+
+        html += `<table class="detail-table">
+          <thead><td colspan="2">カテゴリ</td><td colspan="2" style="text-align:right"></td><td style="text-align:right">単位数</td><td style="text-align:right">報酬額</td></thead>`;
+        for (const r of rows) {
+          html += `<tr><td colspan="2" style="padding-left:36px">${r.cat}</td><td></td><td></td><td>${r.units.toLocaleString()}</td><td>¥${r.rev.toLocaleString()}</td></tr>`;
+        }
+        html += `</table><div style="font-size:10px;color:#aaa;padding:4px 12px">※詳細明細を表示するにはCSVを再取込してください</div>`;
+      }
+    }
+
+    html += `
+        <div class="total-row">
+          <span class="label">合計</span>
+          <span class="amount">${totalUnits.toLocaleString()}　¥${totalAmount.toLocaleString()}</span>
+        </div>
+      </div>
+    </div>`;
+
+    pageIdx++;
+  }
+
+  area.innerHTML = html || '<div class="empty-msg">対象データがありません</div>';
+};
+</script>
+</body>
+</html>
