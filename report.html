@@ -148,7 +148,7 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, doc, getDoc, setDoc, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, doc, getDoc, setDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const firebaseConfig = {
@@ -296,7 +296,23 @@ async function loadOfficeData(officeName, year) {
     return {people:md.people||0,basicRev:b,bodyRev:bo,actualRev:a,treatRev:t,totalRev:b+bo+a+t};
   });
 
-  const aWd    = MONTHS_ARR.map((_,i)=>parseFloat(act[MONTHS_ARR[i]]?.wd)||0);
+  // 実績稼働日数：reportsコレクションからkids>0の日数を月別集計
+  const reportsSnap = await getDocs(query(
+    collection(db,'reports'),
+    where('office','==',officeName)
+  ));
+  const reportDays = {}; // "YYYY-MM" -> Set of dates
+  reportsSnap.forEach(d => {
+    const r = d.data();
+    if (!r.date || !r.month) return;
+    if ((r.kids || 0) <= 0) return;
+    if (!reportDays[r.month]) reportDays[r.month] = new Set();
+    reportDays[r.month].add(r.date);
+  });
+  const aWd = fy.map(([y,m]) => {
+    const mk = `${y}-${String(m).padStart(2,'0')}`;
+    return reportDays[mk] ? reportDays[mk].size : 0;
+  });
   const aPpl   = aTotals.map(t=>t.people);
   const aBasic = aTotals.map(t=>t.basicRev);
   const aBody  = aTotals.map(t=>t.bodyRev);
