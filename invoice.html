@@ -79,7 +79,7 @@ table.detail-table thead td{background:#fafafa;font-weight:700;color:#333;font-s
     <h2>📄 報酬内容明細</h2>
     <div class="form-row">
       <div class="form-group">
-        <label>請求月</label>
+        <label>提供月</label>
         <select id="sel-year-month">
           <option value="">選択してください</option>
         </select>
@@ -188,10 +188,13 @@ window.loadInvoice = async function() {
 
   area.innerHTML = '<div class="loading">読み込み中...</div>';
 
-  const billingYear  = parseInt(ym.slice(0,4));
-  const billingMonth = parseInt(ym.slice(4,6));
+  const provideYear  = parseInt(ym.slice(0,4));
+  const provideMonth = parseInt(ym.slice(4,6));
   // 提供月から年度計算
-  const fiscalYear   = billingMonth >= 4 ? billingYear : billingYear - 1;
+  const fiscalYear   = provideMonth >= 4 ? provideYear : provideYear - 1;
+  // 請求月（提供月の2ヶ月後）
+  const billingMonth2 = provideMonth <= 10 ? provideMonth + 2 : provideMonth - 10;
+  const billingYear2  = provideMonth <= 10 ? provideYear : provideYear + 1;
 
   // 対象事業所リスト
   const targetOffices = office === 'all' ? offices.map(o=>o.name) : [office];
@@ -204,7 +207,7 @@ window.loadInvoice = async function() {
     const snap    = await getDoc(doc(db,'actuals',docKey));
     if (!snap.exists()) continue;
 
-    const monthData = snap.data().months?.[billingMonth];
+    const monthData = snap.data().months?.[provideMonth];
     if (!monthData?.services) continue;
 
     const services = monthData.services;
@@ -222,14 +225,10 @@ window.loadInvoice = async function() {
     html += `
     <div class="invoice-page">
       <div class="invoice-header">
-        <div class="invoice-title">報酬内容明細（請求月 ${billingYear}${String(billingMonth).padStart(2,'0')}）</div>
+        <div class="invoice-title">報酬内容明細（請求月 ${billingYear2}${String(billingMonth2).padStart(2,'0')}）</div>
         <div class="invoice-date">${new Date().toLocaleDateString('ja-JP')}</div>
       </div>
       <div class="office-name">${officeName}</div>`;
-
-    // 提供月（請求月の2ヶ月前）
-    const provideMonth = billingMonth <= 2 ? billingMonth + 10 : billingMonth - 2;
-    const provideYear  = provideMonth > billingMonth ? billingYear - 1 : billingYear;
 
     html += `
       <div class="provide-block">
