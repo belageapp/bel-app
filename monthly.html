@@ -315,7 +315,7 @@ async function loadMonth() {
     } catch { workdays[o] = {}; }
   }));
 
-  // 速報データ取得
+  // 速報データ取得（reportsコレクション）
   reports = {};
   try {
     const q = query(collection(db, 'reports'), where('month', '==', monthStr));
@@ -330,6 +330,23 @@ async function loadMonth() {
       else if (r.serviceType === 'work') { entry.work = r.kids; entry.kids += r.kids; }
       else { entry.kids = r.kids; }
     });
+  } catch (e) { console.error(e); }
+
+  // 業務報告集計データ取得（dailyActualsコレクション）で補完
+  try {
+    await Promise.all(OFFICES.map(async o => {
+      const docId = `${viewYear}_${viewMonth}_${o}`;
+      const snap = await getDoc(doc(db, 'dailyActuals', docId));
+      if (!snap.exists()) return;
+      const daily = snap.data().daily || {};
+      Object.entries(daily).forEach(([dateStr, kids]) => {
+        if (kids <= 0) return;
+        if (!reports[dateStr]) reports[dateStr] = {};
+        if (!reports[dateStr][o]) {
+          reports[dateStr][o] = { kids, care: null, work: null };
+        }
+      });
+    }));
   } catch (e) { console.error(e); }
 
   render(fiscalYear, viewYear, viewMonth, monthStr);
