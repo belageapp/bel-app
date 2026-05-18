@@ -609,6 +609,23 @@ window.loadReport = async function(){
   const actSnap = await getDoc(doc(db,'actuals',`${currentYear}_${currentOffice.name}`));
   actualData = actSnap.exists() ? actSnap.data().months||{} : {};
 
+  // reportsコレクションから実績稼働日数を集計してキャッシュ
+  if (!window._reportDaysCache) window._reportDaysCache = {};
+  window._reportDaysCache[currentOffice.name] = {};
+  try {
+    const rSnap = await getDocs(query(
+      collection(db,'reports'),
+      where('office','==',currentOffice.name)
+    ));
+    rSnap.forEach(d => {
+      const r = d.data();
+      if (!r.date || !r.month || (r.kids||0) <= 0) return;
+      if (!window._reportDaysCache[currentOffice.name][r.month])
+        window._reportDaysCache[currentOffice.name][r.month] = new Set();
+      window._reportDaysCache[currentOffice.name][r.month].add(r.date);
+    });
+  } catch(e) { console.error(e); }
+
   const fy = getFY(currentYear);
   const wdPerMonth = fy.map(([y,m])=>{
     const mk=`${y}-${String(m).padStart(2,'0')}`;
@@ -628,7 +645,15 @@ window.loadReport = async function(){
 
   // 実績値（合計）
   const aTotals = MONTHS_ARR.map((_,i)=>getMonthTotals(MONTHS_ARR[i]));
-  const aWd     = MONTHS_ARR.map((_,i)=>parseFloat(actualData[MONTHS_ARR[i]]?.wd)||0);
+  // 実績稼働日数：reportsコレクションからkids>0の日数を月別集計
+  const reportDays2 = {};
+  if (window._reportDaysCache && window._reportDaysCache[currentOffice.name]) {
+    Object.assign(reportDays2, window._reportDaysCache[currentOffice.name]);
+  }
+  const aWd = fy.map(([y,m]) => {
+    const mk = `${y}-${String(m).padStart(2,'0')}`;
+    return reportDays2[mk] ? reportDays2[mk].size : (parseFloat(actualData[MONTHS_ARR[fy.findIndex(([fy2,fm])=>fy2===y&&fm===m)]]?.wd)||0);
+  });
   const aPpl    = aTotals.map(t=>t.people);
   const aBasic  = aTotals.map(t=>t.basicRev);
   const aBody   = aTotals.map(t=>t.bodyRev);
@@ -817,9 +842,9 @@ window.loadReport = async function(){
       </tr>
       <!-- 実績 -->
       <tr><td class="row-cat-actual" rowspan="${14 + (multiSvc ? allSvcs.length * 2 : 0)}">実　績</td><td class="row-label">稼働日数</td>
-        ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td>${inp(i,'wd',actualData[MONTHS_ARR[i]]?.wd||'')}</td>`).join('')}
+        ${aWd.slice(0,6).map(v=>`<td class="val-actual">${v||'－'}</td>`).join('')}
         <td class="val-subtotal" id="ah1wd">${ah1wd||'－'}</td>
-        ${MONTHS_ARR.slice(6).map((_,i)=>`<td>${inp(i+6,'wd',actualData[MONTHS_ARR[i+6]]?.wd||'')}</td>`).join('')}
+        ${aWd.slice(6).map(v=>`<td class="val-actual">${v||'－'}</td>`).join('')}
         <td class="val-subtotal" id="ah2wd">${ah2wd||'－'}</td>
         <td class="val-total" id="atwd">${atWd||'－'}</td>
       </tr>
