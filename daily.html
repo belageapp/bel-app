@@ -585,12 +585,22 @@ async function loadMonthlyTotals(){
   try{
     const q=query(collection(db,'reports'),where('month','==',monthStr));
     const snap=await getDocs(q);
-    // source:'excel'のデータは除外（速報入力のみ集計）
-    const raw=[];snap.forEach(d=>{
-      const r=d.data();
-      if(r.source==='excel') return;
-      raw.push({...r,_id:d.id});
+    const allRows=[];snap.forEach(d=>allRows.push({...d.data(),_id:d.id}));
+
+    // 日付ごとに速報入力を優先、なければExcelデータを使う
+    const byDateOffice={};
+    // まずExcelデータを登録
+    allRows.filter(r=>r.source==='excel').forEach(r=>{
+      const key=r.date+'__'+r.office;
+      if(!byDateOffice[key]) byDateOffice[key]=r;
     });
+    // 速報入力で上書き
+    allRows.filter(r=>r.source!=='excel').forEach(r=>{
+      const key=r.date+'__'+r.office;
+      byDateOffice[key]=r;
+    });
+
+    const raw=Object.values(byDateOffice);
     const reps=aggregateReports(raw);
     state.monthlyTotals={};
     OFFICES.forEach(o=>{if(reps[o])state.monthlyTotals[o]=reps[o].kids;});
