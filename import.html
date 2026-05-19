@@ -599,11 +599,12 @@ window.saveToFirestore = async function() {
   document.getElementById('save-complete-sub').textContent =
     `以下の実績を保存しました：\n` + savedLabels.join('\n');
 
-  // 取り込んだ請求月を取得（最初のCSVの請求月）
+  // 取り込んだ請求月と事業所をURLパラメータで渡す
   const firstBillingYM = getBillingYM(parseResults[0]?.rawText || '');
   if (firstBillingYM) {
+    const officeNames = parseResults.map(r => r.office.name).join(',');
     setTimeout(() => {
-      location.href = `invoice.html?billing=${firstBillingYM}`;
+      location.href = `invoice.html?billing=${firstBillingYM}&offices=${encodeURIComponent(officeNames)}`;
     }, 1500);
   }
 };
