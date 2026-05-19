@@ -432,7 +432,9 @@ function render(fiscalYear, year, month, monthStr) {
       <span class="d-dow">${DOW_JP[dow]}</span>
     </th>`;
   });
-  html += `<th class="th-summary">月計<br><span style="font-size:9px;font-weight:400;color:#999">予定/実績</span></th>`;
+  html += `<th class="th-summary" style="min-width:32px;font-size:9px">予定</th>
+    <th class="th-summary" style="min-width:32px;font-size:9px">実績</th>
+    <th class="th-summary" style="min-width:36px;font-size:9px">達成率</th>`;
   html += '</tr></thead>';
 
   // ===== ボディ =====
@@ -514,14 +516,9 @@ function officeRows(o, dates, goals, actuals, todayStr) {
   const a = Object.values(actuals[o] || {}).reduce((s,v) => s + (v||0), 0);
   monthActual = dates.reduce((s,{dateStr}) => s + (actuals[o]?.[dateStr] ?? 0), 0);
   const achRate = monthPlanned > 0 ? Math.round(monthActual / monthPlanned * 100) : null;
-  html += `<td class="td-sum" rowspan="${rowspan}" style="vertical-align:middle">
-    <div class="td-sum-inner">
-      <span class="sum-label">予定</span><span class="sum-goal">${monthPlanned||'—'}</span>
-      <span class="sum-label" style="margin-top:2px">実績</span>
-      <span class="sum-actual ${monthActual < monthPlanned ? 'under' : ''}">${monthActual||'—'}</span>
-      ${achRate !== null ? `<span style="font-size:9px;color:#888;margin-top:2px">達成率 ${achRate}%</span>` : ''}
-    </div>
-  </td>`;
+  html += `<td class="td-sum" rowspan="${rowspan}" style="text-align:center;vertical-align:middle;font-size:10px;font-weight:600;color:#5B9BD5">${monthPlanned||'—'}</td>`;
+  html += `<td class="td-sum" rowspan="${rowspan}" style="text-align:center;vertical-align:middle;font-size:10px;font-weight:700;color:${monthActual < monthPlanned ? '#C0392B' : '#1D9E75'}">${monthActual||'—'}</td>`;
+  html += `<td class="td-sum" rowspan="${rowspan}" style="text-align:center;vertical-align:middle;font-size:9px;color:#888">${achRate !== null ? achRate+'%' : '—'}</td>`;
   html += `</tr>`;
 
   // === 実績行 ===
@@ -618,13 +615,10 @@ function areaSum(offices, dates, goals, actuals, label, todayStr) {
     </td>`;
   });
 
-  html += `<td class="td-sum" style="border-left:2px solid #D6E8F8;background:#E8F4FF">
-    <div class="td-sum-inner">
-      <span class="sum-label">目標</span><span class="sum-goal" style="color:#2471A3">${mGoal}</span>
-      <span class="sum-label" style="margin-top:2px">実績</span>
-      <span class="sum-actual ${hasActual && mActual < mGoal ? 'under' : ''}">${hasActual ? mActual : '—'}</span>
-    </div>
-  </td>`;
+  html += `<td class="td-sum" style="border-left:2px solid #D6E8F8;background:#E8F4FF;text-align:center;font-size:10px;font-weight:600;color:#2471A3">${mGoal}</td>`;
+  html += `<td class="td-sum" style="background:#E8F4FF;text-align:center;font-size:10px;font-weight:700;color:${hasActual && mActual < mGoal ? '#C0392B' : '#1D6E3E'}">${hasActual ? mActual : '—'}</td>`;
+  const areRate = mGoal > 0 && hasActual ? Math.round(mActual/mGoal*100)+'%' : '—';
+  html += `<td class="td-sum" style="background:#E8F4FF;text-align:center;font-size:9px;color:#888">${areRate}</td>`;
   html += `</tr>`;
   return html;
 }
@@ -657,13 +651,10 @@ function catSum(offices, dates, goals, actuals, label, todayStr) {
     </td>`;
   });
 
-  html += `<td class="td-sum" style="border-left:2px solid #B2DFDB;background:#E0F5ED">
-    <div class="td-sum-inner">
-      <span class="sum-label">目標</span><span class="sum-goal" style="color:#1D9E75">${mGoal}</span>
-      <span class="sum-label" style="margin-top:2px">実績</span>
-      <span class="sum-actual ${hasActual && mActual < mGoal ? 'under' : ''}">${hasActual ? mActual : '—'}</span>
-    </div>
-  </td>`;
+  html += `<td class="td-sum" style="border-left:2px solid #B2DFDB;background:#E0F5ED;text-align:center;font-size:10px;font-weight:600;color:#1D9E75">${mGoal}</td>`;
+  html += `<td class="td-sum" style="background:#E0F5ED;text-align:center;font-size:10px;font-weight:700;color:${hasActual && mActual < mGoal ? '#C0392B' : '#0F6E56'}">${hasActual ? mActual : '—'}</td>`;
+  const catRate = mGoal > 0 && hasActual ? Math.round(mActual/mGoal*100)+'%' : '—';
+  html += `<td class="td-sum" style="background:#E0F5ED;text-align:center;font-size:9px;color:#888">${catRate}</td>`;
   html += `</tr>`;
   return html;
 }
