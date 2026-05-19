@@ -587,23 +587,31 @@ async function loadMonthlyTotals(){
     const snap=await getDocs(q);
     const allRows=[];snap.forEach(d=>allRows.push({...d.data(),_id:d.id}));
 
-    // 日付ごとに速報入力を優先、なければExcelデータを使う
+    // 日付×事業所ごとに速報優先・Excel補完で集計
+    // key: "date__office" -> kids
     const byDateOffice={};
     // まずExcelデータを登録
     allRows.filter(r=>r.source==='excel').forEach(r=>{
       const key=r.date+'__'+r.office;
-      if(!byDateOffice[key]) byDateOffice[key]=r;
+      if(!byDateOffice[key]) byDateOffice[key]={office:r.office,kids:0};
+      byDateOffice[key].kids+=r.kids||0;
+      byDateOffice[key].fromExcel=true;
     });
-    // 速報入力で上書き
+    // 速報入力で上書き（同じ日は速報値に置き換え）
+    const dailyInput={};
     allRows.filter(r=>r.source!=='excel').forEach(r=>{
       const key=r.date+'__'+r.office;
-      byDateOffice[key]=r;
+      if(!dailyInput[key]) dailyInput[key]={office:r.office,kids:0};
+      dailyInput[key].kids+=r.kids||0;
     });
+    Object.entries(dailyInput).forEach(([key,v])=>{byDateOffice[key]=v;});
 
-    const raw=Object.values(byDateOffice);
-    const reps=aggregateReports(raw);
+    // 事業所ごとに合計
     state.monthlyTotals={};
-    OFFICES.forEach(o=>{if(reps[o])state.monthlyTotals[o]=reps[o].kids;});
+    Object.values(byDateOffice).forEach(v=>{
+      if(!state.monthlyTotals[v.office]) state.monthlyTotals[v.office]=0;
+      state.monthlyTotals[v.office]+=v.kids||0;
+    });
   }catch(e){}
 }
 
