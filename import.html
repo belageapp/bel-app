@@ -386,7 +386,7 @@ function parseCSV(text, filename) {
     }
   }
 
-  return { office, officeNo, regionCode, monthData, unknownCodes, filename };
+  return { office, officeNo, regionCode, monthData, unknownCodes, filename, rawText: text };
 }
 
 function showPreview(results) {
@@ -524,13 +524,16 @@ window.saveToFirestore = async function() {
 
   // CSVファイル名から請求月を取得（例：HUG_TI012605.CSV → 202605）
   // ファイル名に含まれる6桁数字を請求月として使用
-  const getBillingYM = (filename) => {
-    const m = filename.match(/(\d{6})/);
-    return m ? m[1] : null;
+  // CSVデータから請求月を取得（先頭行の[9]フィールド）
+  const getBillingYM = (text) => {
+    const firstLine = text.split('\n')[0];
+    const fields = firstLine.split(',');
+    const ym = fields[9]?.replace(/"/g,'').trim();
+    return ym && /^\d{6}$/.test(ym) ? ym : null;
   };
 
   for (const r of parseResults) {
-    const billingYM = getBillingYM(r.filename); // 請求月（例："202605"）
+    const billingYM = getBillingYM(r.rawText); // CSVデータから請求月を取得
     const months = Object.keys(r.monthData).sort();
 
     for (const ym of months) {
