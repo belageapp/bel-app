@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>月次カレンダー | ベルアージュ</title>
+<title>月次貢献実績表 | ベルアージュ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333;font-size:12px}
@@ -174,6 +174,8 @@ th:last-child,td:last-child{border-right:none}
 
 /* ===== ローディング ===== */
 .loading{text-align:center;padding:60px;color:#aaa;font-size:14px}
+.tr-detail td{height:16px!important;padding:0 1px!important}
+.tr-detail .cell-inner{min-height:14px}
 </style>
 </head>
 <body>
@@ -182,7 +184,7 @@ th:last-child,td:last-child{border-right:none}
     <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
   </div>
   <div class="top-bar-main">
-    <span class="top-bar-title">月次カレンダー</span>
+    <span class="top-bar-title">月次貢献実績表</span>
     <div class="top-bar-divider"></div>
     <div class="month-nav">
       <button class="nav-btn" onclick="shiftMonth(-1)">‹</button>
@@ -190,13 +192,14 @@ th:last-child,td:last-child{border-right:none}
       <button class="nav-btn" onclick="shiftMonth(1)">›</button>
     </div>
     <div class="legend">
-      <div class="legend-item"><div class="legend-dot" style="background:#F8FBFF"></div><span style="color:#5B9BD5">目標</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#EEF4FF"></div><span style="color:#5B9BD5">予定</span></div>
       <div class="legend-item"><div class="legend-dot" style="background:#FAFFFE"></div><span style="color:#1D9E75">実績</span></div>
       <div class="legend-item"><div class="legend-dot" style="background:#F8F9FA"></div><span style="color:#aaa">閉所</span></div>
     </div>
+    <button id="detail-btn" onclick="toggleDetail()" style="padding:5px 12px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap">詳細表示</button>
     <div class="top-bar-divider"></div>
     <a href="daily.html" class="nav-link">速報入力</a>
-    <a href="monthly.html" class="nav-link active">月次カレンダー</a>
+    <a href="monthly.html" class="nav-link active">月次貢献実績表</a>
     <a href="report.html" class="nav-link">実績表</a>
     <a href="import.html" class="nav-link">CSV取込</a>
     <a href="settings.html" class="nav-link">設定</a>
@@ -349,6 +352,36 @@ async function loadMonth() {
     }));
   } catch (e) { console.error(e); }
 
+  // 予定人数取得（dailyPlannedコレクション）
+  dailyPlanned = {};
+  try {
+    await Promise.all(OFFICES.map(async o => {
+      const snap = await getDoc(doc(db, 'dailyPlanned', `${viewYear}_${viewMonth}_${o}`));
+      if (!snap.exists()) return;
+      dailyPlanned[o] = snap.data().daily || {};
+    }));
+  } catch (e) { console.error(e); }
+
+  // reportsから問合せ・見学・契約・予定人数（速報入力）を取得
+  try {
+    const rSnap = await getDocs(query(collection(db,'reports'), where('month','==',monthStr)));
+    rSnap.forEach(d => {
+      const r = d.data();
+      if (!r.date || !r.office || r.source === 'excel') return;
+      if (!reports[r.date]) reports[r.date] = {};
+      if (!reports[r.date][r.office]) reports[r.date][r.office] = {kids:r.kids||0};
+      const e = reports[r.date][r.office];
+      if (r.inquiry  != null) e.inquiry  = (e.inquiry  ||0)+(r.inquiry ||0);
+      if (r.visit    != null) e.visit    = (e.visit    ||0)+(r.visit   ||0);
+      if (r.contract != null) e.contract = (e.contract ||0)+(r.contract||0);
+      // 速報入力の予定人数で上書き
+      if (r.planned > 0) {
+        if (!dailyPlanned[r.office]) dailyPlanned[r.office] = {};
+        dailyPlanned[r.office][r.date] = r.planned;
+      }
+    });
+  } catch (e) { console.error(e); }
+
   render(fiscalYear, viewYear, viewMonth, monthStr);
 }
 
@@ -365,19 +398,20 @@ function render(fiscalYear, year, month, monthStr) {
     dates.push({ d, dateStr, dow });
   }
 
-  // 目標・実績を事業所×日付で計算
-  // goals[office][dateStr] = 定員（開所日のみ）
-  // actuals[office][dateStr] = kids
-  const goals   = {};
-  const actuals = {};
+  // 予定・実績を事業所×日付で計算
+  const planned  = {};
+  const actuals  = {};
   OFFICES.forEach(o => {
-    goals[o]   = {};
-    actuals[o] = {};
+    planned[o]  = {};
+    actuals[o]  = {};
     const cap = capacities[o] || 10;
     const wd  = workdays[o] || {};
     dates.forEach(({ dateStr }) => {
-      goals[o][dateStr]   = wd[dateStr] === 1 ? cap : null; // nullは閉所
-      actuals[o][dateStr] = reports[dateStr]?.[o]?.kids ?? null;
+      const isOpen = wd[dateStr] === 1;
+      // 予定人数：dailyPlannedがあればその値、なければ定員（開所日のみ）
+      const p = dailyPlanned[o]?.[dateStr];
+      planned[o][dateStr]  = isOpen ? (p || cap) : null;
+      actuals[o][dateStr]  = reports[dateStr]?.[o]?.kids ?? null;
     });
   });
 
@@ -396,7 +430,7 @@ function render(fiscalYear, year, month, monthStr) {
       <span class="d-dow">${DOW_JP[dow]}</span>
     </th>`;
   });
-  html += `<th class="th-summary">月計<br><span style="font-size:9px;font-weight:400;color:#999">目標/実績</span></th>`;
+  html += `<th class="th-summary">月計<br><span style="font-size:9px;font-weight:400;color:#999">予定/実績</span></th>`;
   html += '</tr></thead>';
 
   // ===== ボディ =====
@@ -424,34 +458,38 @@ function render(fiscalYear, year, month, monthStr) {
 
         // 各事業所
         area.offices.forEach(o => {
-          html += officeRows(o, dates, goals, actuals, todayStr);
+          html += officeRows(o, dates, planned, actuals, todayStr);
         });
 
         // エリア合計行
-        html += areaSum(area.offices, dates, goals, actuals, area.label, todayStr);
+        html += areaSum(area.offices, dates, planned, actuals, area.label, todayStr);
       });
     } else {
       cat.single.forEach(o => {
-        html += officeRows(o, dates, goals, actuals, todayStr);
+        html += officeRows(o, dates, planned, actuals, todayStr);
       });
     }
 
     // 事業部合計行
-    html += catSum(catOffices, dates, goals, actuals, cat.cat, todayStr);
+    html += catSum(catOffices, dates, planned, actuals, cat.cat, todayStr);
   });
 
   html += '</tbody></table></div>';
   document.getElementById('cal-area').innerHTML = html;
 }
 
-// -------- 事業所行（目標・実績2行）--------
+// -------- 事業所行（予定・実績・詳細）--------
 function officeRows(o, dates, goals, actuals, todayStr) {
   let html = '';
-  // === 目標行 ===
-  html += `<tr>`;
-  html += `<td class="td-office" rowspan="2" style="vertical-align:middle">${o}</td>`;
+  const rowspan = detailMode ? 4 : 2;
 
-  let monthGoal = 0;
+  // === 予定行 ===
+  html += `<tr>`;
+  html += `<td class="td-office" rowspan="${rowspan}" style="vertical-align:middle">${o}</td>`;
+
+  let monthPlanned = 0, monthActual = 0;
+  let monthInquiry = 0, monthVisit = 0, monthContract = 0;
+
   dates.forEach(({ dateStr, dow }) => {
     const g = goals[o][dateStr];
     const isToday = dateStr === todayStr;
@@ -459,48 +497,48 @@ function officeRows(o, dates, goals, actuals, todayStr) {
     const colBg = isToday ? '#F0FDF8' : isSun ? '#FDF8F8' : isSat ? '#F8FAFD' : '';
 
     if (g === null) {
-      // 閉所：2行まとめてrowspan
-      html += `<td class="td-data td-closed" rowspan="2" style="${colBg?'background:'+colBg:'background:#F8F9FA'}">
+      html += `<td class="td-data td-closed" rowspan="${rowspan}" style="${colBg?'background:'+colBg:'background:#F8F9FA'}">
         <div class="cell-inner"><span class="cell-closed">閉</span></div>
       </td>`;
       return;
     }
-    monthGoal += g;
-    html += `<td class="td-data td-goal" style="${colBg?'background:'+colBg:''}">
+    monthPlanned += g;
+    html += `<td class="td-data td-goal" style="${colBg?'background:'+colBg:'background:#EEF4FF'}">
       <div class="cell-inner"><span class="cell-goal">${g}</span></div>
     </td>`;
   });
 
-  // 月計セル（2行またぎ）
-  html += `<td class="td-sum" rowspan="2" style="vertical-align:middle">
+  // 月計セル（rowspan）
+  const a = Object.values(actuals[o] || {}).reduce((s,v) => s + (v||0), 0);
+  monthActual = dates.reduce((s,{dateStr}) => s + (actuals[o]?.[dateStr] ?? 0), 0);
+  const achRate = monthPlanned > 0 ? Math.round(monthActual / monthPlanned * 100) : null;
+  html += `<td class="td-sum" rowspan="${rowspan}" style="vertical-align:middle">
     <div class="td-sum-inner">
-      <span class="sum-label">目標</span>
-      <span class="sum-goal">${monthGoal || '—'}</span>
+      <span class="sum-label">予定</span><span class="sum-goal">${monthPlanned||'—'}</span>
+      <span class="sum-label" style="margin-top:2px">実績</span>
+      <span class="sum-actual ${monthActual < monthPlanned ? 'under' : ''}">${monthActual||'—'}</span>
+      ${achRate !== null ? `<span style="font-size:9px;color:#888;margin-top:2px">達成率 ${achRate}%</span>` : ''}
     </div>
   </td>`;
   html += `</tr>`;
 
   // === 実績行 ===
   html += `<tr>`;
-  let monthActual = 0;
   dates.forEach(({ dateStr, dow }) => {
     const g = goals[o][dateStr];
-    if (g === null) return; // 閉所はrowspan済みスキップ
-    const a = actuals[o][dateStr];
+    if (g === null) return;
+    const av = actuals[o][dateStr];
     const isToday = dateStr === todayStr;
     const isSun = dow === 0, isSat = dow === 6;
     const colBg = isToday ? '#F0FDF8' : isSun ? '#FDF8F8' : isSat ? '#F8FAFD' : '#FAFFFE';
 
-    if (a !== null) {
-      monthActual += a;
-      const cls = a < g ? 'under' : '';
+    if (av !== null && av !== undefined) {
+      const cls = av < g ? 'under' : '';
       html += `<td class="td-data td-actual" style="background:${colBg}">
-        <div class="cell-inner"><span class="cell-actual ${cls}">${a}</span></div>
+        <div class="cell-inner"><span class="cell-actual ${cls}">${av}</span></div>
       </td>`;
     } else {
-      const d = new Date(dateStr);
-      const today = new Date(todayStr);
-      const isPast = d < today;
+      const isPast = new Date(dateStr) < new Date(todayStr);
       html += `<td class="td-data td-actual" style="background:${colBg}">
         <div class="cell-inner"><span class="cell-actual none">${isPast ? '—' : ''}</span></div>
       </td>`;
@@ -508,7 +546,45 @@ function officeRows(o, dates, goals, actuals, todayStr) {
   });
   html += `</tr>`;
 
-  // 月計実績を月計セルに埋め込む（rowspan後なのでDOMで更新が難しいため月計行を別に追加する必要なし）
+  // === 詳細モード：問合せ・見学行 ===
+  if (detailMode) {
+    // 問合せ・見学行
+    html += `<tr class="tr-detail">`;
+    dates.forEach(({ dateStr }) => {
+      const g = goals[o][dateStr];
+      if (g === null) return;
+      const r = reports[dateStr]?.[o];
+      const inq = r?.inquiry || 0;
+      const vis = r?.visit   || 0;
+      monthInquiry += inq;
+      monthVisit   += vis;
+      html += `<td class="td-data" style="background:#FFFEF0;padding:1px">
+        <div class="cell-inner" style="font-size:8px;line-height:1.4">
+          ${inq ? `<span style="color:#E67E22">問${inq}</span>` : ''}
+          ${vis ? `<span style="color:#8E44AD">見${vis}</span>` : ''}
+          ${!inq && !vis ? '<span style="color:#ddd">-</span>' : ''}
+        </div>
+      </td>`;
+    });
+    html += `</tr>`;
+
+    // 契約行
+    html += `<tr class="tr-detail">`;
+    dates.forEach(({ dateStr }) => {
+      const g = goals[o][dateStr];
+      if (g === null) return;
+      const r = reports[dateStr]?.[o];
+      const con = r?.contract || 0;
+      monthContract += con;
+      html += `<td class="td-data" style="background:#F0FFF4;padding:1px">
+        <div class="cell-inner" style="font-size:8px">
+          ${con ? `<span style="color:#1D9E75">契${con}</span>` : '<span style="color:#ddd">-</span>'}
+        </div>
+      </td>`;
+    });
+    html += `</tr>`;
+  }
+
   return html;
 }
 
