@@ -162,6 +162,96 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
+// ===== billing構造からmonthsデータを合算取得するヘルパー =====
+async function loadActualsMonths(fiscalYear, officeName) {
+  const docKey = `${fiscalYear}_${officeName}`;
+  const months = {};
+
+  try {
+    // 全提供月を取得
+    const monthsSnap = await getDocs(collection(db,'actuals',docKey,'months'));
+    for (const mDoc of monthsSnap.docs) {
+      const provideMonth = parseInt(mDoc.id);
+      const billSnap = await getDocs(collection(db,'actuals',docKey,'months',mDoc.id,'billing'));
+
+      // 複数請求月のservicesを合算
+      const merged = {};
+      billSnap.forEach(bDoc => {
+        const services = bDoc.data().services || {};
+        Object.entries(services).forEach(([svc, d]) => {
+          if (!merged[svc]) {
+            merged[svc] = { ...d, details: [] };
+          } else {
+            // 数値フィールドを合算
+            ['people','basicRev','bodyRev','actualRev','treatRev',
+             'basicUnits','bodyUnits','actualUnits','treatUnits'].forEach(f => {
+              merged[svc][f] = (merged[svc][f]||0) + (d[f]||0);
+            });
+            // detailsを合算
+            (d.details||[]).forEach(nd => {
+              const ex = merged[svc].details.find(x=>x.code===nd.code);
+              if (ex) {
+                ex.count      += nd.count;
+                ex.totalUnits += nd.totalUnits;
+                ex.amount     = (ex.amount||0) + (nd.amount||0);
+              } else {
+                merged[svc].details.push({...nd});
+              }
+            });
+          }
+        });
+      });
+
+      if (Object.keys(merged).length > 0) {
+        months[provideMonth] = {
+          ...mDoc.data(),
+          services: merged,
+        };
+      }
+    }
+  } catch(e) { console.error('loadActualsMonths:', e); }
+
+  return months;
+}
+
+// ===== billing構造からmonthsデータを合算取得するヘルパー =====
+async function loadActualsMonths(fiscalYear, officeName) {
+  const docKey = `${fiscalYear}_${officeName}`;
+  const months = {};
+  try {
+    const monthsSnap = await getDocs(collection(db,'actuals',docKey,'months'));
+    for (const mDoc of monthsSnap.docs) {
+      const provideMonth = parseInt(mDoc.id);
+      const billSnap = await getDocs(collection(db,'actuals',docKey,'months',mDoc.id,'billing'));
+      const merged = {};
+      billSnap.forEach(bDoc => {
+        const services = bDoc.data().services || {};
+        Object.entries(services).forEach(([svc, d]) => {
+          if (!merged[svc]) {
+            merged[svc] = {...d, details: JSON.parse(JSON.stringify(d.details||[]))};
+          } else {
+            ['people','basicRev','bodyRev','actualRev','treatRev',
+             'basicUnits','bodyUnits','actualUnits','treatUnits'].forEach(f => {
+              merged[svc][f] = (merged[svc][f]||0) + (d[f]||0);
+            });
+            (d.details||[]).forEach(nd => {
+              const ex = merged[svc].details.find(x=>x.code===nd.code);
+              if (ex) {
+                ex.count += nd.count; ex.totalUnits += nd.totalUnits;
+                ex.amount = (ex.amount||0)+(nd.amount||0);
+              } else { merged[svc].details.push({...nd}); }
+            });
+          }
+        });
+      });
+      if (Object.keys(merged).length > 0) {
+        months[provideMonth] = { ...mDoc.data(), services: merged };
+      }
+    }
+  } catch(e) { console.error('loadActualsMonths:', e); }
+  return months;
+}
+
 // ===== 認証チェック =====
 const auth = getAuth(app);
 const ROLE_LABELS = {
@@ -267,7 +357,7 @@ async function loadOfficeData(officeName, year) {
     getDoc(doc(db,'actuals', `${year}_${officeName}`))
   ]);
   const wd  = wdSnap.exists()  ? wdSnap.data().days   || {} : {};
-  const act = actSnap.exists() ? actSnap.data().months || {} : {};
+  const act = await loadActualsMonths(currentYear, o.name);
   const fy  = getFY(year);
 
   const wdPerMonth = fy.map(([y,m])=>{
@@ -606,8 +696,7 @@ window.loadReport = async function(){
   const wdSnap = await getDoc(doc(db,'workdays',`${currentYear}_${currentOffice.name}`));
   wdData = wdSnap.exists() ? wdSnap.data().days||{} : {};
 
-  const actSnap = await getDoc(doc(db,'actuals',`${currentYear}_${currentOffice.name}`));
-  actualData = actSnap.exists() ? actSnap.data().months||{} : {};
+  actualData = await loadActualsMonths(currentYear, currentOffice.name);
 
   // reportsコレクションから実績稼働日数を集計してキャッシュ
   if (!window._reportDaysCache) window._reportDaysCache = {};

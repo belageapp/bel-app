@@ -522,17 +522,24 @@ window.saveToFirestore = async function() {
 
   const savedLabels = [];
 
-  for (const r of parseResults) {
-    const months = Object.keys(r.monthData).sort();
-    for (const ym of months) {
-      const billingYear  = parseInt(ym.slice(0,4));
-      const billingMonth = parseInt(ym.slice(4,6));
-      const fiscalYear   = billingMonth >= 4 ? billingYear : billingYear - 1;
+  // CSVファイル名から請求月を取得（例：HUG_TI012605.CSV → 202605）
+  // ファイル名に含まれる6桁数字を請求月として使用
+  const getBillingYM = (filename) => {
+    const m = filename.match(/(\d{6})/);
+    return m ? m[1] : null;
+  };
 
-      const docKey = `${fiscalYear}_${r.office.name}`;
-      const actRef = doc(db,'actuals',docKey);
-      const snap   = await getDoc(actRef);
-      const existing = snap.exists() ? snap.data().months || {} : {};
+  for (const r of parseResults) {
+    const billingYM = getBillingYM(r.filename); // 請求月（例："202605"）
+    const months = Object.keys(r.monthData).sort();
+
+    for (const ym of months) {
+      const provideYear  = parseInt(ym.slice(0,4));
+      const provideMonth = parseInt(ym.slice(4,6));
+      const fiscalYear   = provideMonth >= 4 ? provideYear : provideYear - 1;
+
+      const docKey   = `${fiscalYear}_${r.office.name}`;
+      const actRef   = doc(db,'actuals',docKey);
 
       const services = {};
       Object.entries(r.monthData[ym]).forEach(([svc,d]) => {
@@ -548,7 +555,6 @@ window.saveToFirestore = async function() {
           actualUnits: d.actUnits,
           treatUnits:  d.treatUnits,
           unitPrice:   up,
-          // サービスコード別詳細（報酬内容明細用）
           details: (d.details || []).map(x => ({
             ...x,
             amount: Math.round(x.totalUnits * up),
@@ -556,24 +562,32 @@ window.saveToFirestore = async function() {
         };
       });
 
-      const updatedMonths = {
-        ...existing,
-        [billingMonth]: {
-          services,
-          wd:          existing[billingMonth]?.wd          ?? null,
-          salaryStaff: existing[billingMonth]?.salaryStaff ?? null,
-          salaryPart:  existing[billingMonth]?.salaryPart  ?? null,
-        }
-      };
-
+      // 親ドキュメントを作成・更新
       await setDoc(actRef, {
         office: r.office.name,
         fiscalYear,
-        months: updatedMonths,
         updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      // months/{提供月}/billing/{請求月} に保存
+      // 同じ請求月の再取込は丸ごと差し替え
+      const billingKey = billingYM || ym; // 請求月が取れない場合は提供月で代替
+      const billRef = doc(db,'actuals',docKey,'months',String(provideMonth),'billing',billingKey);
+      await setDoc(billRef, {
+        services,
+        billingYM:   billingKey,
+        provideYM:   ym,
+        savedAt:     new Date().toISOString(),
       });
 
-      savedLabels.push(`${r.office.name} ${billingYear}年${billingMonth}月`);
+      // months/{提供月} に wd・salary等のメタデータを保持（既存を維持）
+      const monthRef = doc(db,'actuals',docKey,'months',String(provideMonth));
+      await setDoc(monthRef, {
+        provideMonth,
+        fiscalYear,
+      }, { merge: true });
+
+      savedLabels.push(`${r.office.name} 提供月${provideYear}年${provideMonth}月（請求月${billingKey}）`);
     }
   }
 

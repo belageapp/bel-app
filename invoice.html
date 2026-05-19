@@ -79,7 +79,7 @@ table.detail-table thead td{background:#fafafa;font-weight:700;color:#333;font-s
     <h2>📄 報酬内容明細</h2>
     <div class="form-row">
       <div class="form-group">
-        <label>提供月</label>
+        <label>請求月</label>
         <select id="sel-year-month">
           <option value="">選択してください</option>
         </select>
@@ -155,23 +155,22 @@ async function init() {
   });
 
   // 請求月セレクター（actualsコレクションから取得）
+  // 請求月一覧をbillingドキュメントから収集
   const actualsSnap = await getDocs(collection(db,'actuals'));
   const ymSet = new Set();
-  actualsSnap.forEach(d => {
-    const months = d.data().months || {};
-    const officeData = d.data();
-    Object.keys(months).forEach(m => {
-      // fiscalYearとmonthから請求月（提供月）を算出
-      const fiscalYear = officeData.fiscalYear || parseInt(d.id.split('_')[0]);
-      const mon = parseInt(m);
-      const year = mon >= 4 ? fiscalYear : fiscalYear + 1;
-      ymSet.add(`${year}${String(mon).padStart(2,'0')}`);
-    });
-  });
+  for (const d of actualsSnap.docs) {
+    try {
+      const monthsSnap = await getDocs(collection(db,'actuals',d.id,'months'));
+      for (const mDoc of monthsSnap.docs) {
+        const billSnap = await getDocs(collection(db,'actuals',d.id,'months',mDoc.id,'billing'));
+        billSnap.forEach(bDoc => ymSet.add(bDoc.id)); // billingのIDが請求月
+      }
+    } catch(e) {}
+  }
 
   const selYM = document.getElementById('sel-year-month');
   [...ymSet].sort().reverse().forEach(ym => {
-    const y = ym.slice(0,4), m = parseInt(ym.slice(4));
+    const y = ym.slice(0,4), m = parseInt(ym.slice(4,6));
     const opt = document.createElement('option');
     opt.value = ym;
     opt.textContent = `${y}年${m}月`;
@@ -204,13 +203,33 @@ window.loadInvoice = async function() {
 
   for (const officeName of targetOffices) {
     const docKey  = `${fiscalYear}_${officeName}`;
-    const snap    = await getDoc(doc(db,'actuals',docKey));
-    if (!snap.exists()) continue;
-
-    const monthData = snap.data().months?.[provideMonth];
-    if (!monthData?.services) continue;
-
-    const services = monthData.services;
+    // billing構造から該当提供月のservicesを合算取得
+    let services = {};
+    try {
+      const billSnap = await getDocs(collection(db,'actuals',docKey,'months',String(provideMonth),'billing'));
+      if (billSnap.empty) continue;
+      billSnap.forEach(bDoc => {
+        const svcs = bDoc.data().services || {};
+        Object.entries(svcs).forEach(([svc, d]) => {
+          if (!services[svc]) {
+            services[svc] = {...d, details: JSON.parse(JSON.stringify(d.details||[]))};
+          } else {
+            ['people','basicRev','bodyRev','actualRev','treatRev',
+             'basicUnits','bodyUnits','actualUnits','treatUnits'].forEach(f => {
+              services[svc][f] = (services[svc][f]||0) + (d[f]||0);
+            });
+            (d.details||[]).forEach(nd => {
+              const ex = services[svc].details.find(x=>x.code===nd.code);
+              if (ex) {
+                ex.count += nd.count; ex.totalUnits += nd.totalUnits;
+                ex.amount = (ex.amount||0)+(nd.amount||0);
+              } else { services[svc].details.push({...nd}); }
+            });
+          }
+        });
+      });
+    } catch(e) { console.error(e); continue; }
+    if (Object.keys(services).length === 0) continue;
     if (Object.keys(services).length === 0) continue;
 
     // 事業所合計
@@ -294,14 +313,13 @@ window.loadInvoice = async function() {
         }
         html += `</table><div style="font-size:10px;color:#aaa;padding:4px 12px">※詳細明細を表示するにはCSVを再取込してください</div>`;
       }
-    }
+    }  // 提供月ループ終了
 
     html += `
         <div class="total-row">
-          <span class="label">合計</span>
-          <span class="amount">${totalUnits.toLocaleString()}　¥${totalAmount.toLocaleString()}</span>
+          <span class="label">請求月合計</span>
+          <span class="amount">${grandTotalUnits.toLocaleString()}　¥${grandTotalAmount.toLocaleString()}</span>
         </div>
-      </div>
     </div>`;
 
     pageIdx++;
