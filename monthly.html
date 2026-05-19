@@ -123,7 +123,7 @@ th:last-child,td:last-child{border-right:none}
 
 /* ===== データセル ===== */
 .td-data{padding:0;min-width:40px;line-height:1}
-.cell-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1px;min-height:12px}
+.cell-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 1px;min-height:16px}
 
 /* 目標セル */
 .td-goal{background:#F8FBFF}
@@ -192,7 +192,7 @@ th:last-child,td:last-child{border-right:none}
       <button class="nav-btn" onclick="shiftMonth(1)">›</button>
     </div>
     <div class="legend">
-      <div class="legend-item"><div class="legend-dot" style="background:#EEF4FF"></div><span style="color:#5B9BD5">予定</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#EEF4FF"></div><span style="color:#5B9BD5">予約</span></div>
       <div class="legend-item"><div class="legend-dot" style="background:#FAFFFE"></div><span style="color:#1D9E75">実績</span></div>
       <div class="legend-item"><div class="legend-dot" style="background:#F8F9FA"></div><span style="color:#aaa">閉所</span></div>
     </div>
@@ -432,9 +432,11 @@ function render(fiscalYear, year, month, monthStr) {
       <span class="d-dow">${DOW_JP[dow]}</span>
     </th>`;
   });
-  html += `<th class="th-summary" style="min-width:32px;font-size:9px">予定</th>
-    <th class="th-summary" style="min-width:32px;font-size:9px">実績</th>
-    <th class="th-summary" style="min-width:36px;font-size:9px">達成率</th>`;
+  html += `<th class="th-summary" style="min-width:28px;font-size:9px">目標</th>
+    <th class="th-summary" style="min-width:28px;font-size:9px">予約</th>
+    <th class="th-summary" style="min-width:28px;font-size:9px">実績</th>
+    <th class="th-summary" style="min-width:32px;font-size:9px">達成率</th>
+    <th class="th-summary" style="min-width:28px;font-size:9px">平均</th>`;
   html += '</tr></thead>';
 
   // ===== ボディ =====
@@ -513,12 +515,17 @@ function officeRows(o, dates, goals, actuals, todayStr) {
   });
 
   // 月計セル（rowspan）
-  const a = Object.values(actuals[o] || {}).reduce((s,v) => s + (v||0), 0);
-  monthActual = dates.reduce((s,{dateStr}) => s + (actuals[o]?.[dateStr] ?? 0), 0);
-  const achRate = monthPlanned > 0 ? Math.round(monthActual / monthPlanned * 100) : null;
-  html += `<td class="td-sum" rowspan="${rowspan}" style="text-align:center;vertical-align:middle;font-size:10px;font-weight:600;color:#5B9BD5">${monthPlanned||'—'}</td>`;
-  html += `<td class="td-sum" rowspan="${rowspan}" style="text-align:center;vertical-align:middle;font-size:10px;font-weight:700;color:${monthActual < monthPlanned ? '#C0392B' : '#1D9E75'}">${monthActual||'—'}</td>`;
-  html += `<td class="td-sum" rowspan="${rowspan}" style="text-align:center;vertical-align:middle;font-size:9px;color:#888">${achRate !== null ? achRate+'%' : '—'}</td>`;
+  const monthGoal   = dates.reduce((s,{dateStr}) => s + (workdays[o]?.[dateStr]===1 ? (capacities[o]||10) : 0), 0);
+  monthActual       = dates.reduce((s,{dateStr}) => s + (actuals[o]?.[dateStr] ?? 0), 0);
+  const achRate     = monthGoal   > 0 ? Math.round(monthActual  / monthGoal   * 100) : null;
+  const openDays    = dates.filter(({dateStr}) => actuals[o]?.[dateStr] != null && actuals[o]?.[dateStr] > 0).length;
+  const avgActual   = openDays   > 0 ? (monthActual / openDays).toFixed(1) : null;
+  const s = `text-align:center;vertical-align:middle;font-size:10px`;
+  html += `<td class="td-sum" rowspan="${rowspan}" style="${s};font-weight:600;color:#5B9BD5">${monthGoal||'—'}</td>`;
+  html += `<td class="td-sum" rowspan="${rowspan}" style="${s};font-weight:600;color:#7B8FB0">${monthPlanned||'—'}</td>`;
+  html += `<td class="td-sum" rowspan="${rowspan}" style="${s};font-weight:700;color:${monthActual < monthGoal ? '#C0392B' : '#1D9E75'}">${monthActual||'—'}</td>`;
+  html += `<td class="td-sum" rowspan="${rowspan}" style="${s};font-size:9px;color:#888">${achRate !== null ? achRate+'%' : '—'}</td>`;
+  html += `<td class="td-sum" rowspan="${rowspan}" style="${s};font-size:9px;color:#555">${avgActual !== null ? avgActual : '—'}</td>`;
   html += `</tr>`;
 
   // === 実績行 ===
@@ -616,9 +623,11 @@ function areaSum(offices, dates, goals, actuals, label, todayStr) {
   });
 
   html += `<td class="td-sum" style="border-left:2px solid #D6E8F8;background:#E8F4FF;text-align:center;font-size:10px;font-weight:600;color:#2471A3">${mGoal}</td>`;
+  html += `<td class="td-sum" style="background:#E8F4FF;text-align:center;font-size:10px;font-weight:600;color:#7B8FB0">—</td>`;
   html += `<td class="td-sum" style="background:#E8F4FF;text-align:center;font-size:10px;font-weight:700;color:${hasActual && mActual < mGoal ? '#C0392B' : '#1D6E3E'}">${hasActual ? mActual : '—'}</td>`;
   const areRate = mGoal > 0 && hasActual ? Math.round(mActual/mGoal*100)+'%' : '—';
   html += `<td class="td-sum" style="background:#E8F4FF;text-align:center;font-size:9px;color:#888">${areRate}</td>`;
+  html += `<td class="td-sum" style="background:#E8F4FF;text-align:center;font-size:9px;color:#555">—</td>`;
   html += `</tr>`;
   return html;
 }
@@ -652,9 +661,11 @@ function catSum(offices, dates, goals, actuals, label, todayStr) {
   });
 
   html += `<td class="td-sum" style="border-left:2px solid #B2DFDB;background:#E0F5ED;text-align:center;font-size:10px;font-weight:600;color:#1D9E75">${mGoal}</td>`;
+  html += `<td class="td-sum" style="background:#E0F5ED;text-align:center;font-size:10px;font-weight:600;color:#7B8FB0">—</td>`;
   html += `<td class="td-sum" style="background:#E0F5ED;text-align:center;font-size:10px;font-weight:700;color:${hasActual && mActual < mGoal ? '#C0392B' : '#0F6E56'}">${hasActual ? mActual : '—'}</td>`;
   const catRate = mGoal > 0 && hasActual ? Math.round(mActual/mGoal*100)+'%' : '—';
   html += `<td class="td-sum" style="background:#E0F5ED;text-align:center;font-size:9px;color:#888">${catRate}</td>`;
+  html += `<td class="td-sum" style="background:#E0F5ED;text-align:center;font-size:9px;color:#555">—</td>`;
   html += `</tr>`;
   return html;
 }
