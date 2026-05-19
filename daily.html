@@ -60,6 +60,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .cnt-num{font-size:22px;font-weight:600;min-width:36px;text-align:center;color:#1D9E75}
 .comment-field{margin-top:14px}
 .comment-field label{font-size:13px;color:#888;display:block;margin-bottom:6px}
+.extra-inputs{border-top:1px solid #f0f0f0;margin-top:12px;padding-top:4px}
+.extra-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f8f8f8}
+.extra-row:last-child{border-bottom:none}
+.extra-label{font-size:14px;color:#555;font-weight:500}
 textarea{width:100%;font-size:15px;padding:10px 12px;border:1px solid #E8EAED;border-radius:8px;font-family:inherit;color:#333;background:#fff;resize:none;outline:none}
 textarea:focus{border-color:#1D9E75}
 .submit-btn{width:100%;padding:14px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;margin-top:14px;font-family:inherit}
@@ -207,6 +211,42 @@ textarea:focus{border-color:#1D9E75}
               <button class="cnt-btn" onclick="adj('normal',1)">＋</button>
             </div>
           </div>
+          <!-- 追加入力欄 -->
+          <div class="extra-inputs">
+            <div class="extra-row">
+              <span class="extra-label">予定人数</span>
+              <div class="count-ctrl">
+                <button class="cnt-btn" onclick="adjExtra('planned',-1)">−</button>
+                <span class="cnt-num" id="planned-num">0</span>
+                <button class="cnt-btn" onclick="adjExtra('planned',1)">＋</button>
+              </div>
+            </div>
+            <div class="extra-row">
+              <span class="extra-label">問合せ</span>
+              <div class="count-ctrl">
+                <button class="cnt-btn" onclick="adjExtra('inquiry',-1)">−</button>
+                <span class="cnt-num" id="inquiry-num">0</span>
+                <button class="cnt-btn" onclick="adjExtra('inquiry',1)">＋</button>
+              </div>
+            </div>
+            <div class="extra-row">
+              <span class="extra-label">見学</span>
+              <div class="count-ctrl">
+                <button class="cnt-btn" onclick="adjExtra('visit',-1)">−</button>
+                <span class="cnt-num" id="visit-num">0</span>
+                <button class="cnt-btn" onclick="adjExtra('visit',1)">＋</button>
+              </div>
+            </div>
+            <div class="extra-row">
+              <span class="extra-label">契約</span>
+              <div class="count-ctrl">
+                <button class="cnt-btn" onclick="adjExtra('contract',-1)">−</button>
+                <span class="cnt-num" id="contract-num">0</span>
+                <button class="cnt-btn" onclick="adjExtra('contract',1)">＋</button>
+              </div>
+            </div>
+          </div>
+
           <div id="input-progress-area" style="display:none">
             <div class="input-progress-card">
               <div class="input-progress-title">今月の貢献人数</div>
@@ -767,6 +807,11 @@ window.selectOffice=async function(name){
     state.kids=r?r.kids:0;
     document.getElementById('kids-num').textContent=state.kids;
     document.getElementById('comment-in').value=r?r.comment:'';
+    // 追加入力欄の既存データを反映
+    ['planned','inquiry','visit','contract'].forEach(f=>{
+      extraState[f]=r?parseInt(r[f]||0):0;
+      document.getElementById(f+'-num').textContent=extraState[f];
+    });
     const done=!!r;
     const b=document.getElementById('form-badge');b.textContent=done?'報告済':'未報告';b.className='status-pill'+(done?' done':'');
     const goal=state.goals[name],mt=state.monthlyTotals[name]||0;
@@ -802,12 +847,20 @@ window.adj=function(type,d){
   else if(type==='work'){state.kidsWork=Math.max(0,state.kidsWork+d);document.getElementById('kids-work').textContent=state.kidsWork;}
 };
 
+const extraState={planned:0,inquiry:0,visit:0,contract:0};
+window.adjExtra=function(field,delta){
+  extraState[field]=Math.max(0,(extraState[field]||0)+delta);
+  document.getElementById(field+'-num').textContent=extraState[field];
+};
+
 window.submitReport=async function(){
   const selectedDate=document.getElementById('report-date').value||todayStr;
   const selectedMonth=dateToMonth(selectedDate);
   const comment=document.getElementById('comment-in').value.trim();
   const time=getTime();
-  const data={office:state.cur,kids:state.kids,comment,time,date:selectedDate,month:selectedMonth};
+  const data={office:state.cur,kids:state.kids,comment,time,date:selectedDate,month:selectedMonth,
+    planned:extraState.planned||0,inquiry:extraState.inquiry||0,
+    visit:extraState.visit||0,contract:extraState.contract||0};
   try{
     const r=state.reports[state.cur];
     if(r&&r.docId&&selectedDate===todayStr){await setDoc(doc(db,'reports',r.docId),data);}
