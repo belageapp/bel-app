@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>actualsデータ削除</title>
+<style>
+body{font-family:-apple-system,sans-serif;background:#F4F6F8;padding:24px}
+.card{background:#fff;border-radius:12px;border:1px solid #E8EAED;padding:24px;max-width:480px;margin:0 auto}
+h2{font-size:18px;font-weight:700;margin-bottom:8px}
+p{font-size:13px;color:#666;margin-bottom:16px;line-height:1.6}
+.warn{background:#FFF0F4;border:1px solid #F5B8C4;border-radius:8px;padding:12px;font-size:12px;color:#C0392B;margin-bottom:16px}
+button{width:100%;padding:12px;background:#FFF0F4;color:#C0392B;border:1px solid #F5B8C4;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+button:hover{background:#FFE0E8}
+button:disabled{background:#f5f5f5;color:#aaa;border-color:#E8EAED;cursor:not-allowed}
+#log{margin-top:16px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:12px;font-family:monospace;white-space:pre-wrap;max-height:400px;overflow-y:auto}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>🗑️ actualsデータ削除</h2>
+  <p>Firestoreの actuals コレクションを全削除します。</p>
+  <div class="warn">⚠️ この操作は取り消せません。削除後はCSVを再取込してください。</div>
+  <button id="btn" onclick="run()">actualsを全削除する</button>
+  <div id="log">ボタンを押すと開始します</div>
+</div>
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getFirestore,collection,getDocs,deleteDoc,doc,getDoc}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+const cfg={apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",authDomain:"daily-report-b90e8.firebaseapp.com",projectId:"daily-report-b90e8",storageBucket:"daily-report-b90e8.firebasestorage.app",messagingSenderId:"16569831525",appId:"1:16569831525:web:aa250f2061f762dfe1768c"};
+const app=initializeApp(cfg);
+const db=getFirestore(app);
+const L=document.getElementById('log');
+const log=m=>{L.textContent+=m+'\n';L.scrollTop=L.scrollHeight;};
+
+window.run=async function(){
+  document.getElementById('btn').disabled=true;
+  L.textContent='';
+  log('🔄 削除開始...');
+  let ok=0,ng=0;
+  try{
+    const snap=await getDocs(collection(db,'actuals'));
+    log(`対象: ${snap.size}件`);
+    for(const d of snap.docs){
+      try{
+        // サブコレクション months も削除
+        const monthsSnap=await getDocs(collection(db,'actuals',d.id,'months'));
+        for(const m of monthsSnap.docs){
+          // billing サブコレクションも削除
+          const billSnap=await getDocs(collection(db,'actuals',d.id,'months',m.id,'billing'));
+          for(const b of billSnap.docs){
+            await deleteDoc(b.ref);
+          }
+          await deleteDoc(m.ref);
+        }
+        await deleteDoc(d.ref);
+        log(`  ✅ ${d.id}`);
+        ok++;
+      }catch(e){
+        log(`  ❌ ${d.id}: ${e.message}`);
+        ng++;
+      }
+    }
+    log(`\n🎉 完了: ${ok}件削除 / ${ng}件失敗`);
+    log('このファイルをGitHubから削除してください');
+  }catch(e){
+    log(`❌ エラー: ${e.message}`);
+  }
+};
+</script>
+</body>
+</html>
