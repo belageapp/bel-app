@@ -281,6 +281,8 @@ let viewMonth = now.getMonth() + 1; // 1-indexed
 let capacities = {};   // office → capacity
 let workdays   = {};   // office → { "YYYY-MM-DD": 0|1 }
 let reports    = {};   // "YYYY-MM-DD" → { office → {kids, care, work} }
+let dailyPlanned = {}; // office → { "YYYY-MM-DD": 予定人数 }
+let detailMode   = false;
 
 // -------- 初期化 --------
 async function init() {
