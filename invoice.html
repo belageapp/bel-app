@@ -184,63 +184,54 @@ window.loadInvoice = async function() {
   const area   = document.getElementById('invoice-area');
 
   if (!ym) { alert('請求月を選択してください'); return; }
-
   area.innerHTML = '<div class="loading">読み込み中...</div>';
 
-  const provideYear  = parseInt(ym.slice(0,4));
-  const provideMonth = parseInt(ym.slice(4,6));
-  // 提供月から年度計算
-  const fiscalYear   = provideMonth >= 4 ? provideYear : provideYear - 1;
-  // 請求月（提供月の1ヶ月後）
-  const billingMonth2 = provideMonth <= 11 ? provideMonth + 1 : 1;
-  const billingYear2  = provideMonth <= 11 ? provideYear : provideYear + 1;
-
-  // 対象事業所リスト
+  const billingYM     = ym;
+  const billingYear2  = parseInt(ym.slice(0,4));
+  const billingMonth2 = parseInt(ym.slice(4,6));
   const targetOffices = office === 'all' ? offices.map(o=>o.name) : [office];
 
   let html = '';
   let pageIdx = 0;
 
   for (const officeName of targetOffices) {
-    const docKey  = `${fiscalYear}_${officeName}`;
-    // billing構造から該当提供月のservicesを合算取得
-    let services = {};
-    try {
-      const billSnap = await getDocs(collection(db,'actuals',docKey,'months',String(provideMonth),'billing'));
-      if (billSnap.empty) continue;
-      billSnap.forEach(bDoc => {
-        const svcs = bDoc.data().services || {};
-        Object.entries(svcs).forEach(([svc, d]) => {
-          if (!services[svc]) {
-            services[svc] = {...d, details: JSON.parse(JSON.stringify(d.details||[]))};
-          } else {
-            ['people','basicRev','bodyRev','actualRev','treatRev',
-             'basicUnits','bodyUnits','actualUnits','treatUnits'].forEach(f => {
-              services[svc][f] = (services[svc][f]||0) + (d[f]||0);
-            });
-            (d.details||[]).forEach(nd => {
-              const ex = services[svc].details.find(x=>x.code===nd.code);
-              if (ex) {
-                ex.count += nd.count; ex.totalUnits += nd.totalUnits;
-                ex.amount = (ex.amount||0)+(nd.amount||0);
-              } else { services[svc].details.push({...nd}); }
-            });
-          }
-        });
-      });
-    } catch(e) { console.error(e); continue; }
-    if (Object.keys(services).length === 0) continue;
-    if (Object.keys(services).length === 0) continue;
+    // 全年度・全提供月からbilling/{billingYM}を検索
+    const provideMonthsData = [];
+    const fiscalYears = billingMonth2 >= 4
+      ? [billingYear2, billingYear2-1]
+      : [billingYear2-1, billingYear2];
+
+    for (const fy of fiscalYears) {
+      const docKey = `${fy}_${officeName}`;
+      try {
+        const monthsSnap = await getDocs(collection(db,'actuals',docKey,'months'));
+        for (const mDoc of monthsSnap.docs) {
+          const provideMonth = parseInt(mDoc.id);
+          const billRef = doc(db,'actuals',docKey,'months',mDoc.id,'billing',billingYM);
+          const billDoc = await getDoc(billRef);
+          if (!billDoc.exists()) continue;
+          provideMonthsData.push({
+            provideMonth,
+            fiscalYear: fy,
+            services: billDoc.data().services || {},
+          });
+        }
+      } catch(e) {}
+    }
+
+    if (provideMonthsData.length === 0) continue;
+    provideMonthsData.sort((a,b) => a.provideMonth - b.provideMonth);
 
     // 事業所合計
-    let totalUnits = 0, totalAmount = 0;
-    Object.values(services).forEach(s => {
-      totalUnits  += (s.basicUnits||0)+(s.bodyUnits||0)+(s.actualUnits||0)+(s.treatUnits||0);
-      totalAmount += (s.basicRev||0)+(s.bodyRev||0)+(s.actualRev||0)+(s.treatRev||0);
+    let grandTotalUnits = 0, grandTotalAmount = 0;
+    provideMonthsData.forEach(({services}) => {
+      Object.values(services).forEach(s => {
+        grandTotalUnits  += (s.basicUnits||0)+(s.bodyUnits||0)+(s.actualUnits||0)+(s.treatUnits||0);
+        grandTotalAmount += (s.basicRev||0)+(s.bodyRev||0)+(s.actualRev||0)+(s.treatRev||0);
+      });
     });
 
     if (pageIdx > 0) html += '<div class="page-break"></div>';
-
     html += `
     <div class="invoice-page">
       <div class="invoice-header">
@@ -249,84 +240,89 @@ window.loadInvoice = async function() {
       </div>
       <div class="office-name">${officeName}</div>`;
 
-    html += `
+    // 提供月ごとにループ
+    for (const {provideMonth, fiscalYear, services} of provideMonthsData) {
+      const provYear = provideMonth >= 4 ? fiscalYear : fiscalYear + 1;
+      let totalUnits = 0, totalAmount = 0;
+      Object.values(services).forEach(s => {
+        totalUnits  += (s.basicUnits||0)+(s.bodyUnits||0)+(s.actualUnits||0)+(s.treatUnits||0);
+        totalAmount += (s.basicRev||0)+(s.bodyRev||0)+(s.actualRev||0)+(s.treatRev||0);
+      });
+
+      html += `
       <div class="provide-block">
         <div class="provide-header">
-          <span>提供月　${provideYear}${String(provideMonth).padStart(2,'0')}</span>
+          <span>提供月　${provYear}${String(provideMonth).padStart(2,'0')}</span>
           <span class="total">${totalUnits.toLocaleString()}　¥${totalAmount.toLocaleString()}</span>
         </div>`;
 
-    // サービス種別ごと
-    for (const [svcName, svc] of Object.entries(services)) {
-      const svcUnits  = (svc.basicUnits||0)+(svc.bodyUnits||0)+(svc.actualUnits||0)+(svc.treatUnits||0);
-      const svcAmount = (svc.basicRev||0)+(svc.bodyRev||0)+(svc.actualRev||0)+(svc.treatRev||0);
-      const up = svc.unitPrice || 1;
+      // サービス種別ごと
+      for (const [svcName, svc] of Object.entries(services)) {
+        const svcUnits  = (svc.basicUnits||0)+(svc.bodyUnits||0)+(svc.actualUnits||0)+(svc.treatUnits||0);
+        const svcAmount = (svc.basicRev||0)+(svc.bodyRev||0)+(svc.actualRev||0)+(svc.treatRev||0);
+        const up = svc.unitPrice || 1;
 
-      html += `
+        html += `
         <div class="svc-type-header">
           <span>${svcName}</span>
           <span>${svcUnits.toLocaleString()}　¥${svcAmount.toLocaleString()}</span>
         </div>`;
 
-      // 詳細明細（detailsがある場合）
-      const details = svc.details || [];
-      const cats = ['基本報酬','体制加算','実績加算','処遇改善加算'];
+        const details = svc.details || [];
+        const cats = ['基本報酬','体制加算','実績加算','処遇改善加算'];
 
-      for (const cat of cats) {
-        const catDetails = details.filter(d => d.category === cat);
-        if (catDetails.length === 0) continue;
+        for (const cat of cats) {
+          const catDetails = details.filter(d => d.category === cat);
+          if (catDetails.length === 0) continue;
+          const catUnits  = catDetails.reduce((s,d) => s+d.totalUnits, 0);
+          const catAmount = catDetails.reduce((s,d) => s+(d.amount||Math.round(d.totalUnits*up)), 0);
 
-        const catUnits  = catDetails.reduce((s,d) => s+d.totalUnits, 0);
-        const catAmount = catDetails.reduce((s,d) => s+(d.amount||Math.round(d.totalUnits*up)), 0);
-
-        html += `<div class="cat-header">${cat}　${catDetails.reduce((s,d)=>s+d.count,0)}　${catUnits.toLocaleString()}　¥${catAmount.toLocaleString()}</div>`;
-        html += `<table class="detail-table">
-          <thead><td>コード</td><td>サービス名</td><td style="text-align:right">単位</td><td style="text-align:right">回数</td><td style="text-align:right">単位数</td><td style="text-align:right">報酬額</td></thead>`;
-
-        for (const d of catDetails) {
-          const amt = d.amount || Math.round(d.totalUnits * up);
-          html += `<tr>
-            <td>${d.code}</td>
-            <td>${d.name}</td>
-            <td>${d.unitPrice?.toLocaleString()||''}</td>
-            <td>${d.count}</td>
-            <td>${d.totalUnits.toLocaleString()}</td>
-            <td>¥${amt.toLocaleString()}</td>
-          </tr>`;
+          html += `<div class="cat-header">${cat}　${catDetails.reduce((s,d)=>s+d.count,0)}　${catUnits.toLocaleString()}　¥${catAmount.toLocaleString()}</div>`;
+          html += `<table class="detail-table">
+            <thead><td>コード</td><td>サービス名</td><td style="text-align:right">単位</td><td style="text-align:right">回数</td><td style="text-align:right">単位数</td><td style="text-align:right">報酬額</td></thead>`;
+          for (const d of catDetails) {
+            const amt = d.amount || Math.round(d.totalUnits * up);
+            html += `<tr>
+              <td>${d.code}</td>
+              <td>${d.name}</td>
+              <td>${d.unitPrice?.toLocaleString()||''}</td>
+              <td>${d.count}</td>
+              <td>${d.totalUnits.toLocaleString()}</td>
+              <td>¥${amt.toLocaleString()}</td>
+            </tr>`;
+          }
+          html += `</table>`;
         }
-        html += `</table>`;
+
+        if (details.length === 0) {
+          const rows = [
+            {cat:'基本報酬',  units:svc.basicUnits||0,  rev:svc.basicRev||0},
+            {cat:'体制加算',  units:svc.bodyUnits||0,   rev:svc.bodyRev||0},
+            {cat:'実績加算',  units:svc.actualUnits||0, rev:svc.actualRev||0},
+            {cat:'処遇改善加算',units:svc.treatUnits||0,rev:svc.treatRev||0},
+          ].filter(r=>r.units>0||r.rev>0);
+          html += `<table class="detail-table"><thead><td colspan="2">カテゴリ</td><td></td><td></td><td style="text-align:right">単位数</td><td style="text-align:right">報酬額</td></thead>`;
+          for (const r of rows) {
+            html += `<tr><td colspan="2" style="padding-left:36px">${r.cat}</td><td></td><td></td><td>${r.units.toLocaleString()}</td><td>¥${r.rev.toLocaleString()}</td></tr>`;
+          }
+          html += `</table><div style="font-size:10px;color:#aaa;padding:4px 12px">※詳細明細を表示するにはCSVを再取込してください</div>`;
+        }
       }
 
-      // detailsがない場合（旧データ）はカテゴリ合計のみ表示
-      if (details.length === 0) {
-        const rows = [
-          {cat:'基本報酬',  units:svc.basicUnits||0,  rev:svc.basicRev||0},
-          {cat:'体制加算',  units:svc.bodyUnits||0,   rev:svc.bodyRev||0},
-          {cat:'実績加算',  units:svc.actualUnits||0, rev:svc.actualRev||0},
-          {cat:'処遇改善加算',units:svc.treatUnits||0,rev:svc.treatRev||0},
-        ].filter(r=>r.units>0||r.rev>0);
-
-        html += `<table class="detail-table">
-          <thead><td colspan="2">カテゴリ</td><td colspan="2" style="text-align:right"></td><td style="text-align:right">単位数</td><td style="text-align:right">報酬額</td></thead>`;
-        for (const r of rows) {
-          html += `<tr><td colspan="2" style="padding-left:36px">${r.cat}</td><td></td><td></td><td>${r.units.toLocaleString()}</td><td>¥${r.rev.toLocaleString()}</td></tr>`;
-        }
-        html += `</table><div style="font-size:10px;color:#aaa;padding:4px 12px">※詳細明細を表示するにはCSVを再取込してください</div>`;
-      }
-    }  // 提供月ループ終了
+      html += `</div>`; // provide-block
+    } // 提供月ループ終了
 
     html += `
-        <div class="total-row">
-          <span class="label">請求月合計</span>
-          <span class="amount">${grandTotalUnits.toLocaleString()}　¥${grandTotalAmount.toLocaleString()}</span>
-        </div>
-    </div>`;
+      <div class="total-row">
+        <span class="label">請求月合計</span>
+        <span class="amount">${grandTotalUnits.toLocaleString()}　¥${grandTotalAmount.toLocaleString()}</span>
+      </div>
+    </div>`; // invoice-page
 
     pageIdx++;
   }
 
   area.innerHTML = html || '<div class="empty-msg">対象データがありません</div>';
-};
-</script>
+};</script>
 </body>
 </html>
