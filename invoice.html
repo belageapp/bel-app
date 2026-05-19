@@ -192,9 +192,9 @@ window.loadInvoice = async function() {
   const provideMonth = parseInt(ym.slice(4,6));
   // 提供月から年度計算
   const fiscalYear   = provideMonth >= 4 ? provideYear : provideYear - 1;
-  // 請求月（提供月の2ヶ月後）
-  const billingMonth2 = provideMonth <= 10 ? provideMonth + 2 : provideMonth - 10;
-  const billingYear2  = provideMonth <= 10 ? provideYear : provideYear + 1;
+  // 請求月（提供月の1ヶ月後）
+  const billingMonth2 = provideMonth <= 11 ? provideMonth + 1 : 1;
+  const billingYear2  = provideMonth <= 11 ? provideYear : provideYear + 1;
 
   // 対象事業所リスト
   const targetOffices = office === 'all' ? offices.map(o=>o.name) : [office];
