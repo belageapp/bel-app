@@ -123,17 +123,17 @@ th:last-child,td:last-child{border-right:none}
 
 /* ===== データセル ===== */
 .td-data{padding:0;min-width:40px;line-height:1}
-.cell-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 1px;min-height:15px}
+.cell-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1px;min-height:12px}
 
 /* 目標セル */
 .td-goal{background:#F8FBFF}
-.cell-goal{font-size:10px;color:#5B9BD5;font-weight:500}
+.cell-goal{font-size:9px;color:#5B9BD5;font-weight:500}
 
 /* 実績セル */
 .td-actual{background:#FAFFFE}
-.cell-actual{font-size:12px;font-weight:700;color:#1D9E75}
+.cell-actual{font-size:10px;font-weight:700;color:#1D9E75}
 .cell-actual.under{color:#C0392B}
-.cell-actual.none{color:#CCC;font-weight:400;font-size:10px}
+.cell-actual.none{color:#CCC;font-weight:400;font-size:9px}
 
 /* 閉所セル */
 .td-closed{background:#F8F9FA}
@@ -669,6 +669,16 @@ function catSum(offices, dates, goals, actuals, label, todayStr) {
 }
 
 // -------- 月移動 --------
+window.toggleDetail = function() {
+  detailMode = !detailMode;
+  const btn = document.getElementById('detail-btn');
+  btn.style.background    = detailMode ? '#F0FAF6' : '#fff';
+  btn.style.color         = detailMode ? '#1D9E75' : '#555';
+  btn.style.borderColor   = detailMode ? '#1D9E75' : '#E8EAED';
+  btn.textContent         = detailMode ? '詳細非表示' : '詳細表示';
+  loadMonth(viewYear, viewMonth);
+};
+
 window.shiftMonth = function(dir) {
   viewMonth += dir;
   if (viewMonth > 12) { viewMonth = 1;  viewYear++; }
