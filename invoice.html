@@ -176,6 +176,14 @@ async function init() {
     opt.textContent = `${y}年${m}月`;
     selYM.appendChild(opt);
   });
+
+  // URLパラメータから請求月を自動セットして表示
+  const urlParams = new URLSearchParams(window.location.search);
+  const billingParam = urlParams.get('billing');
+  if (billingParam && ymSet.has(billingParam)) {
+    selYM.value = billingParam;
+    await window.loadInvoice();
+  }
 }
 
 window.loadInvoice = async function() {
