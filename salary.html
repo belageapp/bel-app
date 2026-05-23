@@ -9,7 +9,14 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-  import { firebaseConfig } from "./firebase-config.js";
+  const firebaseConfig = {
+  apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
+  authDomain:"daily-report-b90e8.firebaseapp.com",
+  projectId:"daily-report-b90e8",
+  storageBucket:"daily-report-b90e8.firebasestorage.app",
+  messagingSenderId:"16569831525",
+  appId:"1:16569831525:web:aa250f2061f762dfe1768c"
+};
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
