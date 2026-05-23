@@ -96,8 +96,13 @@
       for (let li = 0; li < textLines.length; li++) {
         const line = textLines[li];
 
-        if (line.includes('部') && line.includes('課') && /\d{3}/.test(line)) {
-          deptCodes = [...line.matchAll(/(\d{3})\s/g)].map(m => m[1]).filter(dc => DEPT_MAP[dc]);
+        if (/\d{3}/.test(line) && (line.includes('部') && line.includes('課') || deptCodes.length > 0 && line.match(/^\s+\d{3}\s/))) {
+          const found = [...line.matchAll(/(\d{3})\s/g)].map(m => m[1]).filter(dc => DEPT_MAP[dc]);
+          if (line.includes('部') && line.includes('課')) {
+            deptCodes = found;
+          } else {
+            deptCodes = [...deptCodes, ...found];
+          }
         }
 
         if (line.includes('支給項目') && line.includes('支給あり')) {
