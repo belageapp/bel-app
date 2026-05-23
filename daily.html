@@ -391,6 +391,16 @@ onAuthStateChanged(auth, async user => {
       el.innerHTML = `<span style="font-size:11px;color:#555;white-space:nowrap">${currentUserData.displayName||user.email}</span>
         <span style="font-size:10px;color:#999;white-space:nowrap">${ROLE_LABELS[currentUserData.role]||currentUserData.role}</span>`;
     }
+
+    // managerロールは自拠点を自動選択・事業所選択ボタンを非表示
+    if (currentUserData.role === 'manager' && currentUserData.officeId) {
+      const officeName = currentUserData.officeId;
+      // 事業所選択エリアを非表示
+      const selector = document.getElementById('office-selector');
+      if (selector) selector.style.display = 'none';
+      // 自拠点を自動選択（loadToday完了後に実行）
+      window._autoSelectOffice = officeName;
+    }
   } catch(e) { console.error(e); }
 });
 
@@ -951,6 +961,15 @@ document.getElementById('month-nav-label').textContent=monthLabel(monthStr);
 await loadGoalsSimple();
 await loadMonthlyTotals();
 await loadToday();
+
+// managerロールの自拠点自動選択
+if (window._autoSelectOffice) {
+  const officeName = window._autoSelectOffice;
+  if (OFFICES.includes(officeName)) {
+    await selectOffice(officeName);
+  }
+}
+
 setInterval(async()=>{await loadMonthlyTotals();await loadToday();},30000);
 </script>
 </body>
