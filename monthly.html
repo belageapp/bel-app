@@ -430,7 +430,6 @@ function render(fiscalYear, year, month, monthStr) {
 
   // ===== ヘッダー行 =====
   html += '<thead><tr>';
-  html += `<th class="th-office" style="min-width:24px;padding:4px 4px;font-size:9px;color:#aaa;border-right:1px solid #E8EAED;position:sticky;left:0;z-index:11;background:#F8F9FA"></th>`;
   html += `<th class="th-office" style="min-width:120px">事業所</th>`;
   dates.forEach(({ d, dateStr, dow }) => {
     const isToday = dateStr === todayStr;
@@ -515,8 +514,6 @@ function officeRows(o, dates, goals, actuals, todayStr) {
 
   // === 予約行 ===
   html += `<tr>`;
-  // ラベル列：予約行に「予」、rowspan=1（実績行で「実」を別途出力）
-  html += `<td class="td-office" style="vertical-align:middle;padding:2px 4px;font-size:9px;color:#5B9BD5;font-weight:600;text-align:right;min-width:24px;border-right:1px solid #E8EAED;border-bottom:none">予</td>`;
   html += `<td class="td-office" rowspan="${rowspan}" style="vertical-align:middle">${o}</td>`;
 
   dates.forEach(({ dateStr, dow }) => {
@@ -536,8 +533,11 @@ function officeRows(o, dates, goals, actuals, todayStr) {
     </td>`;
   });
 
-  // 月計（予約・実績を1列目に上下で表示、他はrowspan）
-  html += `<td class="td-sum planned-sum" rowspan="1" style="vertical-align:bottom;padding-bottom:1px">${monthPlanned||'—'}</td>`;
+  // 月計1列目：予（上）実（下）を1セルに
+  html += `<td class="td-sum" rowspan="1" style="vertical-align:bottom;padding:0 6px 1px;text-align:right">
+    <span style="font-size:9px;color:#5B9BD5;font-weight:600">予</span>
+    <span style="font-size:10px;color:#5B9BD5;font-weight:600;margin-left:2px">${monthPlanned||'—'}</span>
+  </td>`;
   html += `<td class="td-sum goal-sum" rowspan="${rowspan}" style="vertical-align:middle">${monthGoal||'—'}</td>`;
   html += `<td class="td-sum rate-sum" rowspan="${rowspan}" style="vertical-align:middle">${achRate !== null ? achRate+'%' : '—'}</td>`;
   html += `<td class="td-sum days-sum" rowspan="${rowspan}" style="vertical-align:middle">${planDays||'—'}</td>`;
@@ -547,8 +547,6 @@ function officeRows(o, dates, goals, actuals, todayStr) {
 
   // === 実績行 ===
   html += `<tr>`;
-  // ラベル列「実」
-  html += `<td class="td-office" style="vertical-align:middle;padding:2px 4px;font-size:9px;color:#1D9E75;font-weight:600;text-align:right;border-right:1px solid #E8EAED;border-top:none">実</td>`;
   dates.forEach(({ dateStr, dow }) => {
     const g = goals[o][dateStr];
     if (g === null) return;
@@ -570,8 +568,11 @@ function officeRows(o, dates, goals, actuals, todayStr) {
       </td>`;
     }
   });
-  // 実績行の月計1列目（実績値）
-  html += `<td class="td-sum actual-sum${monthActual < monthGoal && monthGoal>0 ? ' under' : ''}" rowspan="1" style="vertical-align:top;padding-top:1px">${monthActual||'—'}</td>`;
+  // 実績行の月計1列目（実ラベル＋実績値）
+  html += `<td class="td-sum" rowspan="1" style="vertical-align:top;padding:1px 6px 0;text-align:right;border-top:none">
+    <span style="font-size:9px;color:#1D9E75;font-weight:600">実</span>
+    <span style="font-size:11px;font-weight:700;margin-left:2px;color:${monthActual < monthGoal && monthGoal>0 ? '#C0392B' : '#1D9E75'}">${monthActual||'—'}</span>
+  </td>`;
   html += `</tr>`;
 
   // === 詳細モード ===
@@ -619,7 +620,6 @@ function officeRows(o, dates, goals, actuals, todayStr) {
 // -------- エリア合計行 --------
 function areaSum(offices, dates, goals, actuals, label, todayStr) {
   let html = `<tr class="tr-area-sum">`;
-  html += `<td class="td-office" style="border-right:1px solid #D6E8F8"></td>`;
   html += `<td class="td-office" style="color:#2471A3;font-weight:600;padding-left:12px;border-right:2px solid #D6E8F8">▸ ${label}　合計</td>`;
 
   let mGoal = 0, mActual = 0, hasActual = false;
@@ -661,7 +661,6 @@ function areaSum(offices, dates, goals, actuals, label, todayStr) {
 // -------- 事業部合計行 --------
 function catSum(offices, dates, goals, actuals, label, todayStr) {
   let html = `<tr class="tr-cat-sum">`;
-  html += `<td class="td-office" style="border-right:1px solid #B2DFDB"></td>`;
   html += `<td class="td-office" style="color:#1D9E75;font-weight:700;border-right:2px solid #B2DFDB">${label}　計</td>`;
 
   let mGoal = 0, mActual = 0, hasActual = false;
