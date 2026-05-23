@@ -441,8 +441,7 @@ function render(fiscalYear, year, month, monthStr) {
       <span class="d-dow">${DOW_JP[dow]}</span>
     </th>`;
   });
-  html += `<th class="th-summary" style="min-width:36px;font-size:9px">予約</th>
-    <th class="th-summary" style="min-width:36px;font-size:9px">実績</th>
+  html += `<th class="th-summary" style="min-width:36px;font-size:9px">予・実</th>
     <th class="th-summary" style="min-width:36px;font-size:9px">目標</th>
     <th class="th-summary" style="min-width:32px;font-size:9px">達成率</th>
     <th class="th-summary" style="min-width:28px;font-size:9px">稼働<br>予定</th>
@@ -516,7 +515,8 @@ function officeRows(o, dates, goals, actuals, todayStr) {
 
   // === 予約行 ===
   html += `<tr>`;
-  html += `<td class="td-office" rowspan="${rowspan}" style="vertical-align:middle;padding:2px 4px;font-size:9px;color:#5B9BD5;font-weight:600;text-align:right;min-width:24px;border-right:1px solid #E8EAED">予</td>`;
+  // ラベル列：予約行に「予」、rowspan=1（実績行で「実」を別途出力）
+  html += `<td class="td-office" style="vertical-align:middle;padding:2px 4px;font-size:9px;color:#5B9BD5;font-weight:600;text-align:right;min-width:24px;border-right:1px solid #E8EAED;border-bottom:none">予</td>`;
   html += `<td class="td-office" rowspan="${rowspan}" style="vertical-align:middle">${o}</td>`;
 
   dates.forEach(({ dateStr, dow }) => {
@@ -536,9 +536,8 @@ function officeRows(o, dates, goals, actuals, todayStr) {
     </td>`;
   });
 
-  // 月計（予約行のrowspan）
-  html += `<td class="td-sum planned-sum" rowspan="1" style="vertical-align:middle">${monthPlanned||'—'}</td>`;
-  html += `<td class="td-sum" rowspan="${rowspan}" style="vertical-align:middle;font-size:11px;font-weight:700;text-align:right;padding:2px 6px;color:${monthActual < monthGoal && monthGoal>0 ? '#C0392B' : '#1D9E75'}">${monthActual||'—'}</td>`;
+  // 月計（予約・実績を1列目に上下で表示、他はrowspan）
+  html += `<td class="td-sum planned-sum" rowspan="1" style="vertical-align:bottom;padding-bottom:1px">${monthPlanned||'—'}</td>`;
   html += `<td class="td-sum goal-sum" rowspan="${rowspan}" style="vertical-align:middle">${monthGoal||'—'}</td>`;
   html += `<td class="td-sum rate-sum" rowspan="${rowspan}" style="vertical-align:middle">${achRate !== null ? achRate+'%' : '—'}</td>`;
   html += `<td class="td-sum days-sum" rowspan="${rowspan}" style="vertical-align:middle">${planDays||'—'}</td>`;
@@ -548,6 +547,8 @@ function officeRows(o, dates, goals, actuals, todayStr) {
 
   // === 実績行 ===
   html += `<tr>`;
+  // ラベル列「実」
+  html += `<td class="td-office" style="vertical-align:middle;padding:2px 4px;font-size:9px;color:#1D9E75;font-weight:600;text-align:right;border-right:1px solid #E8EAED;border-top:none">実</td>`;
   dates.forEach(({ dateStr, dow }) => {
     const g = goals[o][dateStr];
     if (g === null) return;
@@ -569,8 +570,8 @@ function officeRows(o, dates, goals, actuals, todayStr) {
       </td>`;
     }
   });
-  // 実績行の予約月計セル
-  html += `<td class="td-sum actual-sum${monthActual < monthGoal && monthGoal>0 ? ' under' : ''}" rowspan="1" style="vertical-align:middle">${monthActual||'—'}</td>`;
+  // 実績行の月計1列目（実績値）
+  html += `<td class="td-sum actual-sum${monthActual < monthGoal && monthGoal>0 ? ' under' : ''}" rowspan="1" style="vertical-align:top;padding-top:1px">${monthActual||'—'}</td>`;
   html += `</tr>`;
 
   // === 詳細モード ===
