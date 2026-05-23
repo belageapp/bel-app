@@ -106,13 +106,15 @@
         if (inSmall) {
           const nums = [...line.matchAll(/(\d{1,3}(?:,\d{3})+)/g)].map(m => parseInt(m[1].replace(/,/g,'')));
           const big = nums.filter(n => n >= 50000);
-          console.log(`[${deptCode}] inSmall line:`, line, '-> nums:', nums, '-> big:', big);
-          if (big.length > 0) { totalPay = big[0]; break; }
+          if (big.length > 0) { totalPay = Math.max(...big); break; }
         }
       }
 
       if (totalPay === 0) continue;
-      results[deptCode] = { totalPay, headcount, officeName: DEPT_MAP[deptCode] || `部課${deptCode}` };
+      // 既に登録済みの場合は上書きしない（最初のページ＝部課ページを優先）
+      if (!results[deptCode]) {
+        results[deptCode] = { totalPay, headcount, officeName: DEPT_MAP[deptCode] || `部課${deptCode}` };
+      }
     }
 
     return {
