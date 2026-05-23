@@ -6,9 +6,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="貢献人数速報">
+<meta name="apple-mobile-web-app-title" content="貢献速報（日次）">
 <meta name="theme-color" content="#ffffff">
-<title>貢献人数速報</title>
+<title>貢献速報（日次）</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#F4F6F8;min-height:100dvh}
@@ -163,12 +163,12 @@ textarea:focus{border-color:#1D9E75}
       <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
     </div>
     <div class="top-bar-main">
-      <span class="top-bar-title" id="header-title">貢献人数速報</span>
+      <span class="top-bar-title" id="header-title">貢献速報（日次）</span>
       <button class="top-bar-back" id="header-back" onclick="backToSelector()">← 事業所一覧</button>
       <span class="top-bar-date" id="today-lbl"></span>
       <div class="top-bar-divider"></div>
       <a href="daily.html" class="nav-link active">速報入力</a>
-      <a href="monthly.html" class="nav-link">月次カレンダー</a>
+      <a href="monthly.html" class="nav-link">貢献速報（月次）</a>
       <a href="report.html" class="nav-link">実績表</a>
       <a href="import.html" class="nav-link">CSV取込</a>
       <a href="invoice.html" class="nav-link">報酬内容明細</a>
@@ -394,12 +394,7 @@ onAuthStateChanged(auth, async user => {
 
     // officeIdが設定されていれば自拠点を自動選択（ロール問わず）
     if (currentUserData.officeId) {
-  // officeIdからofficesコレクションのnameを取得
-  let officeName = currentUserData.officeId; // fallback
-  try {
-    const offDoc = await getDoc(doc(db,'offices',currentUserData.officeId));
-    if (offDoc.exists()) officeName = offDoc.data().name;
-  } catch(e) {}
+      const officeName = currentUserData.officeId;
       // managerロールは事業所選択ボタンを非表示
       if (currentUserData.role === 'manager') {
         const selector = document.getElementById('office-selector');
@@ -855,7 +850,7 @@ window.backToSelector=function(){
   document.getElementById('office-selector').style.display='block';
   document.getElementById('input-form').style.display='none';
   document.getElementById('header-back').style.display='none';
-  document.getElementById('header-title').textContent='貢献人数速報';
+  document.getElementById('header-title').textContent='貢献速報（日次）';
 };
 
 window.adj=function(type,d){
@@ -954,7 +949,7 @@ window.downloadCSV=async function(){
   });
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download=`貢献人数速報_${dateVal.replace(/-/g,'')}.csv`;a.click();
+  a.download=`貢献速報（日次）_${dateVal.replace(/-/g,'')}.csv`;a.click();
 };
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
