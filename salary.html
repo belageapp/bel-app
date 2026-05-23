@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>給与データ取込 | ベルアージュ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { firebaseConfig } from "./firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const DEPT_MAP = {
+    '101': 'にじのいえ', '102': 'HUGくみのいえ', '103': 'はれのいえ',
+    '104': 'ReadyGO井口', '105': 'ここいろのいえ', '106': 'ReadyGO八木',
+    '107': 'ReadyGO川内', '201': 'まなびあいのいえ', '204': 'ReadyGO黒瀬',
+    '205': 'ReadyGO高屋', '301': 'ラフォーレ高陽', '302': 'ラフォーレ亀山',
+    '401': 'ぐらっちぇ黒瀬', '501': 'レポ白木', '900': '本社',
+  };
+
+  let currentUser = null;
+  let currentRole = null;
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) { location.href = 'login.html'; return; }
+    currentUser = user;
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    currentRole = snap.exists() ? snap.data().role : null;
+    if (!['admin','support'].includes(currentRole)) {
+      document.getElementById('no-permission').style.display = 'flex';
+      document.getElementById('main-content').style.display = 'none';
+      return;
+    }
+    document.getElementById('user-name').textContent = snap.data()?.name || user.email;
+    document.getElementById('main-content').style.display = 'block';
+  });
+
+  // PDF解析（ページ単位でY座標グループ化）
+  async function parsePDFAccurate(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const results = {};
+    let yearMonth = null;
+    let type = 'seishain';
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const content = await page.getTextContent();
+      const items = content.items;
+
+      // Y座標でグループ化
+      const lineMap = {};
+      for (const item of items) {
+        const y = Math.round(item.transform[5]);
+        if (!lineMap[y]) lineMap[y] = [];
+        lineMap[y].push({ text: item.str, x: item.transform[4] });
+      }
+      const textLines = Object.keys(lineMap).map(Number).sort((a,b) => b-a)
+        .map(y => lineMap[y].sort((a,b) => a.x-b.x).map(i => i.text).join(' '));
+      const fullText = textLines.join('\n');
+
+      // 年月（初回のみ）
+      if (!yearMonth) {
+        const m = fullText.match(/令和\s*(\d+)年\s*(\d+)月分/);
+        if (m) {
+          yearMonth = `${2018 + parseInt(m[1])}${String(parseInt(m[2])).padStart(2,'0')}`;
+        }
+      }
+
+      // 体系判定（パート）
+      if (fullText.includes('パートタイマー')) type = 'part';
+
+      // 総合計ページはスキップ
+      if (fullText.includes('*総合計*') && !fullText.includes('部課：')) continue;
+
+      // 部課コード
+      const deptM = fullText.match(/部課：(\d{3})\s/);
+      if (!deptM) continue;
+      const deptCode = deptM[1];
+
+      // 支給あり人数
+      const headM = fullText.match(/支給あり(\d+)人/);
+      const headcount = headM ? parseInt(headM[1]) : 0;
+      if (headcount === 0) continue;
+
+      // 部課小計の支給合計を取得
+      // 「*部課小計*」行以降の最初の5桁以上の数値（カンマ区切り）を支給合計とする
+      let totalPay = 0;
+      let inSmall = false;
+      for (const line of textLines) {
+        if (line.includes('部課小計')) { inSmall = true; continue; }
+        if (inSmall) {
+          const nums = [...line.matchAll(/(\d{1,3}(?:,\d{3})+)/g)].map(m => parseInt(m[1].replace(/,/g,'')));
+          const big = nums.filter(n => n >= 50000);
+          if (big.length > 0) { totalPay = big[0]; break; }
+        }
+      }
+
+      if (totalPay === 0) continue;
+      results[deptCode] = { totalPay, headcount, officeName: DEPT_MAP[deptCode] || `部課${deptCode}` };
+    }
+
+    return {
+      yearMonth,
+      type,
+      entries: Object.entries(results).map(([dc, d]) => ({ deptCode: dc, ...d }))
+    };
+  }
+
+  // ===================== UI =====================
+  let parsedFiles = [];
+
+  window.handleFiles = async function(files) {
+    if (!files || files.length === 0) return;
+    parsedFiles = [];
+    showStep('step-parse');
+    setProgress(0, files.length);
+    const errors = [];
+    for (let i = 0; i < files.length; i++) {
+      setProgress(i, files.length, `解析中: ${files[i].name}`);
+      try {
+        const r = await parsePDFAccurate(files[i]);
+        if (!r.yearMonth) { errors.push(`${files[i].name}: 年月を取得できませんでした`); continue; }
+        if (r.entries.length === 0) { errors.push(`${files[i].name}: データが見つかりませんでした`); continue; }
+        parsedFiles.push(r);
+      } catch(e) { errors.push(`${files[i].name}: エラー (${e.message})`); }
+    }
+    setProgress(files.length, files.length);
+    if (parsedFiles.length === 0) { showError(errors.join('<br>')); showStep('step-upload'); return; }
+    renderPreview(parsedFiles, errors);
+    showStep('step-preview');
+  };
+
+  function setProgress(cur, tot, label) {
+    const pct = tot > 0 ? Math.round(cur/tot*100) : 0;
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('progress-label').textContent = label || `${cur} / ${tot} ファイル処理済`;
+  }
+
+  function renderPreview(results, errors) {
+    const byYM = {};
+    for (const r of results) {
+      if (!byYM[r.yearMonth]) byYM[r.yearMonth] = { seishain: [], part: [] };
+      byYM[r.yearMonth][r.type].push(...r.entries);
+    }
+
+    let html = errors?.length ? `<div class="warn-box">⚠️ ${errors.join('<br>')}</div>` : '';
+
+    for (const [ym, data] of Object.entries(byYM)) {
+      const y = ym.slice(0,4), m = parseInt(ym.slice(4));
+      html += `<div class="ym-header">📅 ${y}年${m}月分</div>`;
+
+      const dm = {};
+      for (const e of data.seishain) {
+        if (!dm[e.deptCode]) dm[e.deptCode] = { officeName: e.officeName };
+        dm[e.deptCode].seishain = e;
+      }
+      for (const e of data.part) {
+        if (!dm[e.deptCode]) dm[e.deptCode] = { officeName: e.officeName };
+        dm[e.deptCode].part = e;
+      }
+
+      html += `<table class="preview-table"><thead><tr>
+        <th>部課</th><th>事業所名</th>
+        <th>正社員 総支給</th><th>人数</th>
+        <th>パート 総支給</th><th>人数</th>
+        <th>合計 総支給</th>
+      </tr></thead><tbody>`;
+
+      for (const [dc, d] of Object.entries(dm).sort((a,b)=>a[0].localeCompare(b[0]))) {
+        const sp = d.seishain?.totalPay || 0, sh = d.seishain?.headcount || 0;
+        const pp = d.part?.totalPay || 0, ph = d.part?.headcount || 0;
+        html += `<tr>
+          <td class="dept-code">${dc}</td>
+          <td class="office-name">${d.officeName}</td>
+          <td class="num">${sp ? sp.toLocaleString() : '－'}</td>
+          <td class="num-s">${sh || '－'}</td>
+          <td class="num">${pp ? pp.toLocaleString() : '－'}</td>
+          <td class="num-s">${ph || '－'}</td>
+          <td class="num total">${(sp+pp).toLocaleString()}</td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+    }
+
+    document.getElementById('preview-content').innerHTML = html;
+    document.getElementById('save-ym').textContent = Object.keys(byYM).map(ym => `${ym.slice(0,4)}年${parseInt(ym.slice(4))}月分`).join('・');
+    window._saveData = byYM;
+  }
+
+  window.doSave = async function() {
+    const byYM = window._saveData;
+    if (!byYM) return;
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true; btn.textContent = '保存中...';
+    try {
+      let count = 0;
+      for (const [ym, data] of Object.entries(byYM)) {
+        const dm = {};
+        for (const e of data.seishain) { if (!dm[e.deptCode]) dm[e.deptCode] = { officeName: e.officeName }; dm[e.deptCode].seishain = { totalPay: e.totalPay, headcount: e.headcount }; }
+        for (const e of data.part)     { if (!dm[e.deptCode]) dm[e.deptCode] = { officeName: e.officeName }; dm[e.deptCode].part     = { totalPay: e.totalPay, headcount: e.headcount }; }
+        for (const [dc, d] of Object.entries(dm)) {
+          const sp = d.seishain?.totalPay || 0, pp = d.part?.totalPay || 0;
+          await setDoc(doc(db, 'salaries', `${ym}_${dc}`), {
+            yearMonth: ym, deptCode: dc, officeName: d.officeName,
+            seishain: d.seishain || null, part: d.part || null,
+            totalPay: sp + pp,
+            updatedAt: serverTimestamp(), updatedBy: currentUser.uid,
+          }, { merge: true });
+          count++;
+        }
+      }
+      document.getElementById('done-count').textContent = count;
+      showStep('step-done');
+    } catch(e) {
+      alert('保存エラー: ' + e.message);
+      btn.disabled = false; btn.textContent = '✅ Firestoreに保存する';
+    }
+  };
+
+  window.reset = function() {
+    parsedFiles = []; window._saveData = null;
+    document.getElementById('file-input').value = '';
+    showStep('step-upload');
+  };
+
+  function showStep(id) {
+    ['step-upload','step-parse','step-preview','step-done'].forEach(s => {
+      document.getElementById(s).style.display = s===id ? 'block' : 'none';
+    });
+    const order = ['step-upload','step-parse','step-preview','step-done'];
+    const ci = order.indexOf(id);
+    document.querySelectorAll('.step-item').forEach((el,i) => {
+      el.classList.toggle('active', i===ci);
+      el.classList.toggle('done', i<ci);
+    });
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.innerHTML = msg; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 8000);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const dz = document.getElementById('drop-zone');
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+    dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+  });
+</script>
+<style>
+  :root { --green:#2E7D55; --green-light:#E8F5EE; --green-mid:#4CAF7D; --border:#E5E7EB; --text:#1F2937; --text-sub:#6B7280; --gray-light:#F3F4F6; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#F8FAFB;color:var(--text);min-height:100vh}
+  .topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .topbar-left{display:flex;align-items:center;gap:16px}
+  .topbar-logo{font-size:15px;font-weight:700;color:var(--green);letter-spacing:.05em}
+  .topbar-title{font-size:14px;color:var(--text-sub)}
+  .topbar-right{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text-sub)}
+  .btn-back{text-decoration:none;color:var(--green);font-size:13px;font-weight:600;padding:6px 14px;border:1px solid var(--green);border-radius:6px;transition:all .15s}
+  .btn-back:hover{background:var(--green-light)}
+  .main{max-width:920px;margin:0 auto;padding:32px 24px}
+  .page-title{font-size:22px;font-weight:700;margin-bottom:6px}
+  .page-sub{font-size:13px;color:var(--text-sub);margin-bottom:32px}
+  .steps{display:flex;align-items:center;margin-bottom:36px}
+  .step-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-sub);flex:1}
+  .step-item:last-child{flex:0}
+  .step-num{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:all .2s}
+  .step-item.active .step-num{border-color:var(--green);background:var(--green);color:#fff}
+  .step-item.done .step-num{border-color:var(--green-mid);background:var(--green-light);color:var(--green)}
+  .step-item.active .step-label{color:var(--green);font-weight:600}
+  .step-item.done .step-label{color:var(--green-mid)}
+  .step-line{flex:1;height:1px;background:var(--border);margin:0 8px}
+  .card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:32px;margin-bottom:20px}
+  .drop-zone{border:2px dashed var(--border);border-radius:10px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s}
+  .drop-zone:hover,.drop-zone.dragover{border-color:var(--green);background:var(--green-light)}
+  .drop-zone-icon{font-size:40px;margin-bottom:12px}
+  .drop-zone-text{font-size:16px;font-weight:600;margin-bottom:6px}
+  .drop-zone-sub{font-size:12px;color:var(--text-sub)}
+  input.hidden{display:none}
+  .hint-box{background:var(--green-light);border:1px solid #B7DEC9;border-radius:8px;padding:14px 16px;font-size:13px;color:var(--green);margin-top:16px;line-height:1.7}
+  .warn-box{background:#FFF8E1;border:1px solid #FFD54F;border-radius:8px;padding:12px 16px;font-size:13px;color:#7B5800;margin-bottom:16px;line-height:1.6}
+  #error-msg{background:#FFF0F0;border:1px solid #FFCDD2;border-radius:8px;padding:12px 16px;font-size:13px;color:#C62828;margin-top:12px;display:none}
+  .progress-wrap{margin:24px 0}
+  .progress-track{height:6px;background:var(--gray-light);border-radius:3px;overflow:hidden}
+  .progress-bar{height:100%;background:var(--green);border-radius:3px;transition:width .3s;width:0}
+  .progress-label{font-size:12px;color:var(--text-sub);margin-top:6px}
+  .ym-header{font-size:15px;font-weight:700;color:var(--green);margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+  .preview-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px}
+  .preview-table th{background:var(--green);color:#fff;padding:8px 12px;text-align:center;font-weight:600;font-size:12px}
+  .preview-table td{padding:8px 12px;border-bottom:1px solid var(--border)}
+  .preview-table tr:hover td{background:var(--green-light)}
+  .dept-code{font-family:monospace;color:var(--text-sub);font-size:12px}
+  .office-name{font-weight:600}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .num-s{text-align:center;color:var(--text-sub);font-size:12px}
+  .num.total{font-weight:700;color:var(--green)}
+  .btn-primary{background:var(--green);color:#fff;border:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s}
+  .btn-primary:hover:not(:disabled){background:#235F40}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+  .btn-secondary{background:#fff;color:var(--text-sub);border:1px solid var(--border);padding:12px 24px;border-radius:8px;font-size:14px;cursor:pointer;transition:all .15s;margin-left:12px}
+  .btn-secondary:hover{background:var(--gray-light)}
+  .action-bar{display:flex;align-items:center;padding-top:20px;border-top:1px solid var(--border);margin-top:20px}
+  .save-label{font-size:13px;color:var(--text-sub);margin-left:16px}
+  .done-box{text-align:center;padding:40px}
+  .done-icon{font-size:56px;margin-bottom:16px}
+  .done-title{font-size:22px;font-weight:700;color:var(--green);margin-bottom:8px}
+  .done-sub{font-size:14px;color:var(--text-sub);margin-bottom:28px}
+  .done-links{display:flex;justify-content:center;gap:24px}
+  .done-link{color:var(--green);text-decoration:none;font-weight:600;font-size:14px}
+  .done-link:hover{text-decoration:underline}
+  #no-permission{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);justify-content:center;align-items:center;z-index:999}
+  .no-perm-box{background:#fff;border-radius:12px;padding:40px;text-align:center}
+  #main-content{display:none}
+</style>
+</head>
+<body>
+
+<div id="no-permission">
+  <div class="no-perm-box">
+    <div style="font-size:40px;margin-bottom:12px">🔒</div>
+    <div style="font-weight:700;margin-bottom:8px">アクセス権限がありません</div>
+    <div style="font-size:13px;color:#6B7280">この画面はadmin・supportのみ利用できます</div>
+    <br><a href="index.html" style="color:#2E7D55;font-weight:600">ポータルに戻る</a>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-logo">BelAge</span>
+    <span class="topbar-title">給与データ取込</span>
+  </div>
+  <div class="topbar-right">
+    <span id="user-name"></span>
+    <a href="index.html" class="btn-back">← ポータル</a>
+  </div>
+</div>
+
+<div id="main-content">
+<div class="main">
+  <div class="page-title">給与データ取込</div>
+  <div class="page-sub">賃金台帳PDF（正社員・パート）を取り込み、貢献実績表の給与比率に反映します</div>
+
+  <div class="steps">
+    <div class="step-item active"><div class="step-num">1</div><div class="step-label">PDFを選択</div></div>
+    <div class="step-line"></div>
+    <div class="step-item"><div class="step-num">2</div><div class="step-label">解析中</div></div>
+    <div class="step-line"></div>
+    <div class="step-item"><div class="step-num">3</div><div class="step-label">内容確認</div></div>
+    <div class="step-line"></div>
+    <div class="step-item"><div class="step-num">4</div><div class="step-label">完了</div></div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div id="step-upload" class="card">
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div class="drop-zone-icon">📂</div>
+      <div class="drop-zone-text">クリックまたはドラッグ＆ドロップでPDFを選択</div>
+      <div class="drop-zone-sub">正社員・パート 両方のPDFを同時に選択できます</div>
+    </div>
+    <input type="file" id="file-input" accept=".pdf" class="hidden" multiple onchange="handleFiles(this.files)">
+    <div id="error-msg"></div>
+    <div class="hint-box">
+      <strong>対応ファイル：</strong>TKC PX4で出力した賃金台帳PDF（支給控除一覧表）<br>
+      <strong>同時選択：</strong>正社員用・パートタイマー用を一度に選択するとまとめて処理できます<br>
+      <strong>上書き保存：</strong>同じ年月・部課のデータは上書きされます
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="step-parse" style="display:none" class="card">
+    <div style="font-size:16px;font-weight:700;margin-bottom:20px">📊 PDFを解析しています...</div>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+      <div class="progress-label" id="progress-label">処理中...</div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="step-preview" style="display:none" class="card">
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">📋 取込内容の確認</div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:20px">内容を確認して保存してください</div>
+    <div id="preview-content"></div>
+    <div class="action-bar">
+      <button class="btn-primary" id="save-btn" onclick="doSave()">✅ Firestoreに保存する</button>
+      <button class="btn-secondary" onclick="reset()">やり直す</button>
+      <span class="save-label" id="save-ym"></span>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div id="step-done" style="display:none" class="card">
+    <div class="done-box">
+      <div class="done-icon">✅</div>
+      <div class="done-title">保存が完了しました</div>
+      <div class="done-sub"><span id="done-count">0</span> 件の事業所データを保存しました</div>
+      <div class="done-links">
+        <a href="report.html" class="done-link">貢献実績表で確認する →</a>
+      </div>
+      <br>
+      <button class="btn-secondary" onclick="reset()">続けて取り込む</button>
+    </div>
+  </div>
+</div>
+</div>
+
+</body>
+</html>
