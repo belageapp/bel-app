@@ -122,22 +122,27 @@ th:last-child,td:last-child{border-right:none}
 }
 
 /* ===== データセル ===== */
-.td-data{padding:0;min-width:40px;line-height:1}
-.cell-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 1px;min-height:16px}
+.td-data{padding:0;min-width:36px;line-height:1}
+.cell-inner{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:2px 4px;min-height:18px}
 
-/* 目標セル */
+/* 予約セル */
 .td-goal{background:#F8FBFF}
-.cell-goal{font-size:9px;color:#5B9BD5;font-weight:500}
+.cell-goal{font-size:10px;color:#5B9BD5;font-weight:500}
 
 /* 実績セル */
 .td-actual{background:#FAFFFE}
-.cell-actual{font-size:10px;font-weight:700;color:#1D9E75}
+.cell-actual{font-size:11px;font-weight:700;color:#1D9E75}
 .cell-actual.under{color:#C0392B}
 .cell-actual.none{color:#CCC;font-weight:400;font-size:9px}
 
 /* 閉所セル */
 .td-closed{background:#F8F9FA}
 .cell-closed{font-size:9px;color:#CCC;letter-spacing:0}
+
+/* 事業所名セル内のラベル */
+.row-label{font-size:9px;font-weight:600;color:#aaa;margin-right:4px;min-width:20px;text-align:right}
+.row-label.planned{color:#5B9BD5}
+.row-label.actual{color:#1D9E75}
 
 /* 土日カラム */
 .col-sun .td-goal{background:#FDF8F8}
@@ -151,26 +156,28 @@ th:last-child,td:last-child{border-right:none}
 .td-sum{
   border-left:2px solid #E8EAED;
   background:#F8F9FA;
+  text-align:right;
+  padding:2px 6px;
+  font-size:11px;
+  white-space:nowrap;
 }
-.td-sum-inner{padding:3px 6px;text-align:center}
-.sum-label{font-size:9px;color:#999;display:block;line-height:1.4}
-.sum-goal{font-size:11px;font-weight:600;color:#5B9BD5;display:block}
-.sum-actual{font-size:12px;font-weight:700;color:#1D9E75;display:block}
-.sum-actual.under{color:#C0392B}
+.td-sum.planned-sum{color:#5B9BD5;font-weight:600}
+.td-sum.actual-sum{color:#1D9E75;font-weight:700}
+.td-sum.actual-sum.under{color:#C0392B}
+.td-sum.goal-sum{color:#888;font-weight:500;font-size:10px}
+.td-sum.rate-sum{color:#555;font-size:10px}
+.td-sum.days-sum{color:#888;font-size:10px}
+.td-sum.avg-sum{color:#555;font-size:10px}
 
 /* ===== エリア合計行 ===== */
 .tr-area-sum td{background:#F0F8FF;border-bottom:2px solid #D6E8F8}
 .tr-area-sum .td-office{background:#F0F8FF;color:#2471A3;font-weight:600;border-right:2px solid #D6E8F8}
 .tr-area-sum .td-sum{background:#E8F4FF;border-left:2px solid #D6E8F8}
-.tr-area-sum .sum-goal{color:#2471A3}
-.tr-area-sum .sum-actual{color:#1D6E3E}
 
 /* ===== 事業部合計行 ===== */
 .tr-cat-sum td{background:#F0FAF6;border-bottom:2px solid #B2DFDB}
 .tr-cat-sum .td-office{background:#F0FAF6;color:#1D9E75;font-weight:700;border-right:2px solid #B2DFDB}
 .tr-cat-sum .td-sum{background:#E0F5ED;border-left:2px solid #B2DFDB}
-.tr-cat-sum .sum-goal{color:#1D9E75}
-.tr-cat-sum .sum-actual{color:#0F6E56}
 
 /* ===== ローディング ===== */
 .loading{text-align:center;padding:60px;color:#aaa;font-size:14px}
@@ -423,7 +430,8 @@ function render(fiscalYear, year, month, monthStr) {
 
   // ===== ヘッダー行 =====
   html += '<thead><tr>';
-  html += `<th class="th-office">事業所</th>`;
+  html += `<th class="th-office" style="min-width:24px;padding:4px 4px;font-size:9px;color:#aaa;border-right:1px solid #E8EAED;position:sticky;left:0;z-index:11;background:#F8F9FA"></th>`;
+  html += `<th class="th-office" style="min-width:120px">事業所</th>`;
   dates.forEach(({ d, dateStr, dow }) => {
     const isToday = dateStr === todayStr;
     const dowCls  = dow === 0 ? 'sun' : dow === 6 ? 'sat' : '';
@@ -433,11 +441,13 @@ function render(fiscalYear, year, month, monthStr) {
       <span class="d-dow">${DOW_JP[dow]}</span>
     </th>`;
   });
-  html += `<th class="th-summary" style="min-width:28px;font-size:9px">目標</th>
-    <th class="th-summary" style="min-width:28px;font-size:9px">予約</th>
-    <th class="th-summary" style="min-width:28px;font-size:9px">実績</th>
+  html += `<th class="th-summary" style="min-width:36px;font-size:9px">予約</th>
+    <th class="th-summary" style="min-width:36px;font-size:9px">実績</th>
+    <th class="th-summary" style="min-width:36px;font-size:9px">目標</th>
     <th class="th-summary" style="min-width:32px;font-size:9px">達成率</th>
-    <th class="th-summary" style="min-width:28px;font-size:9px">平均</th>`;
+    <th class="th-summary" style="min-width:28px;font-size:9px">稼働<br>予定</th>
+    <th class="th-summary" style="min-width:28px;font-size:9px">稼働<br>実績</th>
+    <th class="th-summary" style="min-width:32px;font-size:9px">平均</th>`;
   html += '</tr></thead>';
 
   // ===== ボディ =====
@@ -485,48 +495,55 @@ function render(fiscalYear, year, month, monthStr) {
   document.getElementById('cal-area').innerHTML = html;
 }
 
-// -------- 事業所行（予定・実績・詳細）--------
+// -------- 事業所行（予約・実績・詳細）--------
 function officeRows(o, dates, goals, actuals, todayStr) {
   let html = '';
+  const cap = capacities[o] || 10;
   const rowspan = detailMode ? 4 : 2;
 
-  // === 予定行 ===
-  html += `<tr>`;
-  html += `<td class="td-office" rowspan="${rowspan}" style="vertical-align:middle">${o}</td>`;
+  // 月計事前計算
+  const monthGoal    = dates.reduce((s,{dateStr}) => s + (workdays[o]?.[dateStr]===1 ? cap : 0), 0);
+  const monthPlanned = dates.reduce((s,{dateStr}) => {
+    const g = goals[o][dateStr]; return s + (g !== null ? g : 0);
+  }, 0);
+  const monthActual  = dates.reduce((s,{dateStr}) => s + (actuals[o]?.[dateStr] ?? 0), 0);
+  const achRate      = monthGoal > 0 ? Math.round(monthActual / monthGoal * 100) : null;
+  const planDays     = dates.filter(({dateStr}) => workdays[o]?.[dateStr] === 1).length;
+  const actDays      = dates.filter(({dateStr}) => {
+    const v = actuals[o]?.[dateStr]; return v != null && v > 0;
+  }).length;
+  const avgActual    = actDays > 0 ? (monthActual / actDays).toFixed(1) : null;
 
-  let monthPlanned = 0, monthActual = 0;
-  let monthInquiry = 0, monthVisit = 0, monthContract = 0;
+  // === 予約行 ===
+  html += `<tr>`;
+  html += `<td class="td-office" rowspan="${rowspan}" style="vertical-align:middle;padding:2px 4px;font-size:9px;color:#5B9BD5;font-weight:600;text-align:right;min-width:24px;border-right:1px solid #E8EAED">予</td>`;
+  html += `<td class="td-office" rowspan="${rowspan}" style="vertical-align:middle">${o}</td>`;
 
   dates.forEach(({ dateStr, dow }) => {
     const g = goals[o][dateStr];
-    const isToday = dateStr === todayStr;
     const isSun = dow === 0, isSat = dow === 6;
-    const colBg = isToday ? '#F0FDF8' : isSun ? '#FDF8F8' : isSat ? '#F8FAFD' : '';
+    const isToday = dateStr === todayStr;
+    const colBg = isToday ? '#F5FDF9' : isSun ? '#FDF8F8' : isSat ? '#F8FAFD' : '';
 
     if (g === null) {
       html += `<td class="td-data td-closed" rowspan="${rowspan}" style="${colBg?'background:'+colBg:'background:#F8F9FA'}">
-        <div class="cell-inner"><span class="cell-closed">閉</span></div>
+        <div class="cell-inner" style="align-items:center"><span class="cell-closed">閉</span></div>
       </td>`;
       return;
     }
-    monthPlanned += g;
-    html += `<td class="td-data td-goal" style="${colBg?'background:'+colBg:'background:#EEF4FF'}">
+    html += `<td class="td-data td-goal" style="${colBg?'background:'+colBg:''}">
       <div class="cell-inner"><span class="cell-goal">${g}</span></div>
     </td>`;
   });
 
-  // 月計セル（rowspan）
-  const monthGoal   = dates.reduce((s,{dateStr}) => s + (workdays[o]?.[dateStr]===1 ? (capacities[o]||10) : 0), 0);
-  monthActual       = dates.reduce((s,{dateStr}) => s + (actuals[o]?.[dateStr] ?? 0), 0);
-  const achRate     = monthGoal   > 0 ? Math.round(monthActual  / monthGoal   * 100) : null;
-  const openDays    = dates.filter(({dateStr}) => actuals[o]?.[dateStr] != null && actuals[o]?.[dateStr] > 0).length;
-  const avgActual   = openDays   > 0 ? (monthActual / openDays).toFixed(1) : null;
-  const s = `text-align:center;vertical-align:middle;font-size:10px`;
-  html += `<td class="td-sum" rowspan="${rowspan}" style="${s};font-weight:600;color:#5B9BD5">${monthGoal||'—'}</td>`;
-  html += `<td class="td-sum" rowspan="${rowspan}" style="${s};font-weight:600;color:#7B8FB0">${monthPlanned||'—'}</td>`;
-  html += `<td class="td-sum" rowspan="${rowspan}" style="${s};font-weight:700;color:${monthActual < monthGoal ? '#C0392B' : '#1D9E75'}">${monthActual||'—'}</td>`;
-  html += `<td class="td-sum" rowspan="${rowspan}" style="${s};font-size:9px;color:#888">${achRate !== null ? achRate+'%' : '—'}</td>`;
-  html += `<td class="td-sum" rowspan="${rowspan}" style="${s};font-size:9px;color:#555">${avgActual !== null ? avgActual : '—'}</td>`;
+  // 月計（予約行のrowspan）
+  html += `<td class="td-sum planned-sum" rowspan="1" style="vertical-align:middle">${monthPlanned||'—'}</td>`;
+  html += `<td class="td-sum" rowspan="${rowspan}" style="vertical-align:middle;font-size:11px;font-weight:700;text-align:right;padding:2px 6px;color:${monthActual < monthGoal && monthGoal>0 ? '#C0392B' : '#1D9E75'}">${monthActual||'—'}</td>`;
+  html += `<td class="td-sum goal-sum" rowspan="${rowspan}" style="vertical-align:middle">${monthGoal||'—'}</td>`;
+  html += `<td class="td-sum rate-sum" rowspan="${rowspan}" style="vertical-align:middle">${achRate !== null ? achRate+'%' : '—'}</td>`;
+  html += `<td class="td-sum days-sum" rowspan="${rowspan}" style="vertical-align:middle">${planDays||'—'}</td>`;
+  html += `<td class="td-sum days-sum" rowspan="${rowspan}" style="vertical-align:middle">${actDays||'—'}</td>`;
+  html += `<td class="td-sum avg-sum" rowspan="${rowspan}" style="vertical-align:middle">${avgActual !== null ? avgActual : '—'}</td>`;
   html += `</tr>`;
 
   // === 実績行 ===
@@ -535,12 +552,13 @@ function officeRows(o, dates, goals, actuals, todayStr) {
     const g = goals[o][dateStr];
     if (g === null) return;
     const av = actuals[o][dateStr];
-    const isToday = dateStr === todayStr;
     const isSun = dow === 0, isSat = dow === 6;
-    const colBg = isToday ? '#F0FDF8' : isSun ? '#FDF8F8' : isSat ? '#F8FAFD' : '#FAFFFE';
+    const isToday = dateStr === todayStr;
+    const colBg = isToday ? '#F5FDF9' : isSun ? '#FDF8F8' : isSat ? '#F8FAFD' : '#FAFFFE';
 
     if (av !== null && av !== undefined) {
-      const cls = av < g ? 'under' : '';
+      // 定員に対して赤/緑判定
+      const cls = av < cap ? 'under' : '';
       html += `<td class="td-data td-actual" style="background:${colBg}">
         <div class="cell-inner"><span class="cell-actual ${cls}">${av}</span></div>
       </td>`;
@@ -551,11 +569,13 @@ function officeRows(o, dates, goals, actuals, todayStr) {
       </td>`;
     }
   });
+  // 実績行の予約月計セル
+  html += `<td class="td-sum actual-sum${monthActual < monthGoal && monthGoal>0 ? ' under' : ''}" rowspan="1" style="vertical-align:middle">${monthActual||'—'}</td>`;
   html += `</tr>`;
 
-  // === 詳細モード：問合せ・見学行 ===
+  // === 詳細モード ===
   if (detailMode) {
-    // 問合せ・見学行
+    let monthInquiry = 0, monthVisit = 0, monthContract = 0;
     html += `<tr class="tr-detail">`;
     dates.forEach(({ dateStr }) => {
       const g = goals[o][dateStr];
@@ -563,19 +583,18 @@ function officeRows(o, dates, goals, actuals, todayStr) {
       const r = reports[dateStr]?.[o];
       const inq = r?.inquiry || 0;
       const vis = r?.visit   || 0;
-      monthInquiry += inq;
-      monthVisit   += vis;
+      monthInquiry += inq; monthVisit += vis;
       html += `<td class="td-data" style="background:#FFFEF0;padding:1px">
-        <div class="cell-inner" style="font-size:8px;line-height:1.4">
+        <div class="cell-inner" style="font-size:8px;line-height:1.4;align-items:flex-end">
           ${inq ? `<span style="color:#E67E22">問${inq}</span>` : ''}
           ${vis ? `<span style="color:#8E44AD">見${vis}</span>` : ''}
           ${!inq && !vis ? '<span style="color:#ddd">-</span>' : ''}
         </div>
       </td>`;
     });
+    html += `<td class="td-sum" style="font-size:9px;color:#E67E22;text-align:right;padding:2px 4px">${monthInquiry||'—'}</td>`;
     html += `</tr>`;
 
-    // 契約行
     html += `<tr class="tr-detail">`;
     dates.forEach(({ dateStr }) => {
       const g = goals[o][dateStr];
@@ -584,11 +603,12 @@ function officeRows(o, dates, goals, actuals, todayStr) {
       const con = r?.contract || 0;
       monthContract += con;
       html += `<td class="td-data" style="background:#F0FFF4;padding:1px">
-        <div class="cell-inner" style="font-size:8px">
+        <div class="cell-inner" style="font-size:8px;align-items:flex-end">
           ${con ? `<span style="color:#1D9E75">契${con}</span>` : '<span style="color:#ddd">-</span>'}
         </div>
       </td>`;
     });
+    html += `<td class="td-sum" style="font-size:9px;color:#1D9E75;text-align:right;padding:2px 4px">${monthContract||'—'}</td>`;
     html += `</tr>`;
   }
 
@@ -598,6 +618,7 @@ function officeRows(o, dates, goals, actuals, todayStr) {
 // -------- エリア合計行 --------
 function areaSum(offices, dates, goals, actuals, label, todayStr) {
   let html = `<tr class="tr-area-sum">`;
+  html += `<td class="td-office" style="border-right:1px solid #D6E8F8"></td>`;
   html += `<td class="td-office" style="color:#2471A3;font-weight:600;padding-left:12px;border-right:2px solid #D6E8F8">▸ ${label}　合計</td>`;
 
   let mGoal = 0, mActual = 0, hasActual = false;
@@ -617,18 +638,21 @@ function areaSum(offices, dates, goals, actuals, label, todayStr) {
     mGoal += dayGoal;
     if (anyActual) { mActual += dayActual; hasActual = true; }
     const pctCls = anyActual && dayGoal > 0 && dayActual < dayGoal ? 'color:#C0392B' : 'color:#1D6E3E';
-    html += `<td style="${colBg?'background:'+colBg+';':''}border-right:1px solid #E8EAED;text-align:center;padding:1px 2px">
+    html += `<td style="${colBg?'background:'+colBg+';':''}border-right:1px solid #E8EAED;text-align:right;padding:1px 4px">
       <span style="font-size:10px;color:#5B9BD5;font-weight:500;display:block">${dayGoal}</span>
       <span style="font-size:11px;font-weight:700;display:block;${anyActual?pctCls:'color:#CCC'}">${anyActual ? dayActual : '—'}</span>
     </td>`;
   });
 
-  html += `<td class="td-sum" style="border-left:2px solid #D6E8F8;background:#E8F4FF;text-align:center;font-size:10px;font-weight:600;color:#2471A3">${mGoal}</td>`;
-  html += `<td class="td-sum" style="background:#E8F4FF;text-align:center;font-size:10px;font-weight:600;color:#7B8FB0">—</td>`;
-  html += `<td class="td-sum" style="background:#E8F4FF;text-align:center;font-size:10px;font-weight:700;color:${hasActual && mActual < mGoal ? '#C0392B' : '#1D6E3E'}">${hasActual ? mActual : '—'}</td>`;
   const areRate = mGoal > 0 && hasActual ? Math.round(mActual/mGoal*100)+'%' : '—';
-  html += `<td class="td-sum" style="background:#E8F4FF;text-align:center;font-size:9px;color:#888">${areRate}</td>`;
-  html += `<td class="td-sum" style="background:#E8F4FF;text-align:center;font-size:9px;color:#555">—</td>`;
+  const s = 'background:#E8F4FF;text-align:right;padding:2px 6px;font-size:10px;border-left:1px solid #D6E8F8';
+  html += `<td class="td-sum" style="${s};font-weight:600;color:#5B9BD5;border-left:2px solid #D6E8F8">—</td>`;
+  html += `<td class="td-sum" style="${s};font-weight:700;color:${hasActual && mActual < mGoal ? '#C0392B' : '#1D6E3E'}">${hasActual ? mActual : '—'}</td>`;
+  html += `<td class="td-sum" style="${s};font-weight:600;color:#2471A3">${mGoal}</td>`;
+  html += `<td class="td-sum" style="${s};color:#888">${areRate}</td>`;
+  html += `<td class="td-sum" style="${s};color:#888">—</td>`;
+  html += `<td class="td-sum" style="${s};color:#888">—</td>`;
+  html += `<td class="td-sum" style="${s};color:#555">—</td>`;
   html += `</tr>`;
   return html;
 }
@@ -636,6 +660,7 @@ function areaSum(offices, dates, goals, actuals, label, todayStr) {
 // -------- 事業部合計行 --------
 function catSum(offices, dates, goals, actuals, label, todayStr) {
   let html = `<tr class="tr-cat-sum">`;
+  html += `<td class="td-office" style="border-right:1px solid #B2DFDB"></td>`;
   html += `<td class="td-office" style="color:#1D9E75;font-weight:700;border-right:2px solid #B2DFDB">${label}　計</td>`;
 
   let mGoal = 0, mActual = 0, hasActual = false;
@@ -655,18 +680,21 @@ function catSum(offices, dates, goals, actuals, label, todayStr) {
     mGoal += dayGoal;
     if (anyActual) { mActual += dayActual; hasActual = true; }
     const pctCls = anyActual && dayGoal > 0 && dayActual < dayGoal ? 'color:#C0392B' : 'color:#0F6E56';
-    html += `<td style="${colBg?'background:'+colBg+';':''}border-right:1px solid #d4f4e8;text-align:center;padding:1px 2px">
+    html += `<td style="${colBg?'background:'+colBg+';':''}border-right:1px solid #d4f4e8;text-align:right;padding:1px 4px">
       <span style="font-size:10px;color:#1D9E75;font-weight:500;display:block">${dayGoal}</span>
       <span style="font-size:11px;font-weight:700;display:block;${anyActual?pctCls:'color:#CCC'}">${anyActual ? dayActual : '—'}</span>
     </td>`;
   });
 
-  html += `<td class="td-sum" style="border-left:2px solid #B2DFDB;background:#E0F5ED;text-align:center;font-size:10px;font-weight:600;color:#1D9E75">${mGoal}</td>`;
-  html += `<td class="td-sum" style="background:#E0F5ED;text-align:center;font-size:10px;font-weight:600;color:#7B8FB0">—</td>`;
-  html += `<td class="td-sum" style="background:#E0F5ED;text-align:center;font-size:10px;font-weight:700;color:${hasActual && mActual < mGoal ? '#C0392B' : '#0F6E56'}">${hasActual ? mActual : '—'}</td>`;
   const catRate = mGoal > 0 && hasActual ? Math.round(mActual/mGoal*100)+'%' : '—';
-  html += `<td class="td-sum" style="background:#E0F5ED;text-align:center;font-size:9px;color:#888">${catRate}</td>`;
-  html += `<td class="td-sum" style="background:#E0F5ED;text-align:center;font-size:9px;color:#555">—</td>`;
+  const s2 = 'background:#E0F5ED;text-align:right;padding:2px 6px;font-size:10px;border-left:1px solid #B2DFDB';
+  html += `<td class="td-sum" style="${s2};font-weight:600;color:#5B9BD5;border-left:2px solid #B2DFDB">—</td>`;
+  html += `<td class="td-sum" style="${s2};font-weight:700;color:${hasActual && mActual < mGoal ? '#C0392B' : '#0F6E56'}">${hasActual ? mActual : '—'}</td>`;
+  html += `<td class="td-sum" style="${s2};font-weight:600;color:#1D9E75">${mGoal}</td>`;
+  html += `<td class="td-sum" style="${s2};color:#888">${catRate}</td>`;
+  html += `<td class="td-sum" style="${s2};color:#888">—</td>`;
+  html += `<td class="td-sum" style="${s2};color:#888">—</td>`;
+  html += `<td class="td-sum" style="${s2};color:#555">—</td>`;
   html += `</tr>`;
   return html;
 }
