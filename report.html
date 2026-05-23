@@ -306,7 +306,7 @@ async function loadOfficeData(officeName, year) {
     getDoc(doc(db,'actuals', `${year}_${officeName}`))
   ]);
   const wd  = wdSnap.exists()  ? wdSnap.data().days   || {} : {};
-  const act = await loadActualsMonths(currentYear, o.name);
+  const act = await loadActualsMonths(currentYear, officeName);
   const fy  = getFY(year);
 
   const wdPerMonth = fy.map(([y,m])=>{
