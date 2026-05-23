@@ -136,6 +136,7 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
     <a href="monthly.html" class="nav-link">貢献速報（月次）</a>
     <a href="report.html" class="nav-link active">貢献実績表</a>
     <a href="import.html" class="nav-link">CSV取込</a>
+    <a href="salary.html" class="nav-link">給与取込</a>
       <a href="invoice.html" class="nav-link">報酬内容明細</a>
     <a href="settings.html" class="nav-link">設定</a>
     <a href="index.html" class="nav-link">ポータル</a>
@@ -251,6 +252,32 @@ let offices=[], prices=[], areas=[], currentOffice=null, currentYear=2026;
 let wdData={}, actualData={};
 let viewMode = 'office'; // 'office' | 'area'
 
+// salariesコレクションから部課コードで給与データを取得
+// officesコレクションのdeptCodeフィールドを使う
+// salaries/{YYYYMM}_{deptCode}
+async function loadSalaryData(deptCode, year) {
+  if (!deptCode) return {};
+  const fy = getFY(year);
+  const result = {};
+  await Promise.all(fy.map(async ([y, m]) => {
+    const ym = `${y}${String(m).padStart(2,'0')}`;
+    try {
+      const snap = await getDoc(doc(db, 'salaries', `${ym}_${deptCode}`));
+      if (snap.exists()) {
+        const d = snap.data();
+        result[m] = {
+          salaryStaff: d.seishain?.totalPay || 0,
+          salaryPart:  d.part?.totalPay     || 0,
+          fromSalaries: true,
+        };
+      }
+    } catch(e) { /* salariesなければ無視 */ }
+  }));
+  return result;
+}
+
+let salaryData = {}; // { month: { salaryStaff, salaryPart, fromSalaries } }
+
 // -------- モード切り替え --------
 window.switchMode = function(mode) {
   viewMode = mode;
@@ -358,8 +385,16 @@ async function loadOfficeData(officeName, year) {
   const aActR  = aTotals.map(t=>t.actualRev);
   const aTreat = aTotals.map(t=>t.treatRev);
   const aRev   = aTotals.map(t=>t.totalRev);
-  const aSalS  = MONTHS_ARR.map((_,i)=>parseFloat(act[MONTHS_ARR[i]]?.salaryStaff)||0);
-  const aSalP  = MONTHS_ARR.map((_,i)=>parseFloat(act[MONTHS_ARR[i]]?.salaryPart)||0);
+  const office = offices.find(o=>o.name===officeName);
+  const sd = await loadSalaryData(office?.deptCode, year);
+  const aSalS  = MONTHS_ARR.map((_,i) => {
+    const m = MONTHS_ARR[i];
+    return sd[m]?.salaryStaff ?? parseFloat(act[m]?.salaryStaff) || 0;
+  });
+  const aSalP  = MONTHS_ARR.map((_,i) => {
+    const m = MONTHS_ARR[i];
+    return sd[m]?.salaryPart ?? parseFloat(act[m]?.salaryPart) || 0;
+  });
   const aSal   = MONTHS_ARR.map((_,i)=>aSalS[i]+aSalP[i]);
 
   return { officeName, cap, up, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal };
@@ -647,6 +682,9 @@ window.loadReport = async function(){
 
   actualData = await loadActualsMonths(currentYear, currentOffice.name);
 
+  // salariesコレクションから給与データを取得（deptCodeフィールドを使用）
+  salaryData = await loadSalaryData(currentOffice.deptCode, currentYear);
+
   // reportsコレクションから実績稼働日数を集計してキャッシュ
   if (!window._reportDaysCache) window._reportDaysCache = {};
   window._reportDaysCache[currentOffice.name] = {};
@@ -698,8 +736,14 @@ window.loadReport = async function(){
   const aAct    = aTotals.map(t=>t.actualRev);
   const aTreat  = aTotals.map(t=>t.treatRev);
   const aRev    = aTotals.map(t=>t.totalRev);
-  const aSalaryS= MONTHS_ARR.map((_,i)=>parseFloat(actualData[MONTHS_ARR[i]]?.salaryStaff)||0);
-  const aSalaryP= MONTHS_ARR.map((_,i)=>parseFloat(actualData[MONTHS_ARR[i]]?.salaryPart)||0);
+  const aSalaryS= MONTHS_ARR.map((_,i)=>{
+    const m = MONTHS_ARR[i];
+    return salaryData[m]?.salaryStaff ?? parseFloat(actualData[m]?.salaryStaff) || 0;
+  });
+  const aSalaryP= MONTHS_ARR.map((_,i)=>{
+    const m = MONTHS_ARR[i];
+    return salaryData[m]?.salaryPart ?? parseFloat(actualData[m]?.salaryPart) || 0;
+  });
   const aSalary = MONTHS_ARR.map((_,i)=>aSalaryS[i]+aSalaryP[i]);
 
   const aPpd  = MONTHS_ARR.map((_,i)=>aWd[i]&&aPpl[i]?aPpl[i]/aWd[i]:0);
@@ -949,13 +993,33 @@ window.loadReport = async function(){
         <td class="val-total" id="atsal">${atSal?atSal.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label-sub">正社員</td>
-        ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td>${inp(i,'salaryStaff',actualData[MONTHS_ARR[i]]?.salaryStaff||'')}</td>`).join('')}<td class="val-subtotal">－</td>
-        ${MONTHS_ARR.slice(6).map((_,i)=>`<td>${inp(i+6,'salaryStaff',actualData[MONTHS_ARR[i+6]]?.salaryStaff||'')}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${MONTHS_ARR.slice(0,6).map((_,i)=>{
+          const m=MONTHS_ARR[i];
+          return salaryData[m]?.fromSalaries
+            ? `<td class="val-actual" style="color:#1D9E75;font-size:10px" title="給与データ取込済">${aSalaryS[i].toLocaleString()}<span style="color:#aaa;margin-left:2px">🔒</span></td>`
+            : `<td>${inp(i,'salaryStaff',actualData[m]?.salaryStaff||'')}</td>`;
+        }).join('')}<td class="val-subtotal">－</td>
+        ${MONTHS_ARR.slice(6).map((_,i)=>{
+          const m=MONTHS_ARR[i+6];
+          return salaryData[m]?.fromSalaries
+            ? `<td class="val-actual" style="color:#1D9E75;font-size:10px" title="給与データ取込済">${aSalaryS[i+6].toLocaleString()}<span style="color:#aaa;margin-left:2px">🔒</span></td>`
+            : `<td>${inp(i+6,'salaryStaff',actualData[m]?.salaryStaff||'')}</td>`;
+        }).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atsals">${atSalS?atSalS.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label-sub">パート</td>
-        ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td>${inp(i,'salaryPart',actualData[MONTHS_ARR[i]]?.salaryPart||'')}</td>`).join('')}<td class="val-subtotal">－</td>
-        ${MONTHS_ARR.slice(6).map((_,i)=>`<td>${inp(i+6,'salaryPart',actualData[MONTHS_ARR[i+6]]?.salaryPart||'')}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${MONTHS_ARR.slice(0,6).map((_,i)=>{
+          const m=MONTHS_ARR[i];
+          return salaryData[m]?.fromSalaries
+            ? `<td class="val-actual" style="color:#1D9E75;font-size:10px" title="給与データ取込済">${aSalaryP[i].toLocaleString()}<span style="color:#aaa;margin-left:2px">🔒</span></td>`
+            : `<td>${inp(i,'salaryPart',actualData[m]?.salaryPart||'')}</td>`;
+        }).join('')}<td class="val-subtotal">－</td>
+        ${MONTHS_ARR.slice(6).map((_,i)=>{
+          const m=MONTHS_ARR[i+6];
+          return salaryData[m]?.fromSalaries
+            ? `<td class="val-actual" style="color:#1D9E75;font-size:10px" title="給与データ取込済">${aSalaryP[i+6].toLocaleString()}<span style="color:#aaa;margin-left:2px">🔒</span></td>`
+            : `<td>${inp(i+6,'salaryPart',actualData[m]?.salaryPart||'')}</td>`;
+        }).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atsalp">${atSalP?atSalP.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label">給与比率</td>
