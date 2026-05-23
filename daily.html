@@ -394,7 +394,12 @@ onAuthStateChanged(auth, async user => {
 
     // officeIdが設定されていれば自拠点を自動選択（ロール問わず）
     if (currentUserData.officeId) {
-      const officeName = currentUserData.officeId;
+  // officeIdからofficesコレクションのnameを取得
+  let officeName = currentUserData.officeId; // fallback
+  try {
+    const offDoc = await getDoc(doc(db,'offices',currentUserData.officeId));
+    if (offDoc.exists()) officeName = offDoc.data().name;
+  } catch(e) {}
       // managerロールは事業所選択ボタンを非表示
       if (currentUserData.role === 'manager') {
         const selector = document.getElementById('office-selector');
