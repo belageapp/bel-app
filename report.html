@@ -333,7 +333,7 @@ async function loadOfficeData(officeName, year) {
     getDoc(doc(db,'actuals', `${year}_${officeName}`))
   ]);
   const wd  = wdSnap.exists()  ? wdSnap.data().days   || {} : {};
-  const act = await loadActualsMonths(currentYear, o.name);
+  const act = await loadActualsMonths(currentYear, officeName);
   const fy  = getFY(year);
 
   const wdPerMonth = fy.map(([y,m])=>{
@@ -385,7 +385,6 @@ async function loadOfficeData(officeName, year) {
   const aActR  = aTotals.map(t=>t.actualRev);
   const aTreat = aTotals.map(t=>t.treatRev);
   const aRev   = aTotals.map(t=>t.totalRev);
-  const office = offices.find(o=>o.name===officeName);
   const sd = await loadSalaryData(office?.deptCode, year);
   const aSalS  = MONTHS_ARR.map((_,i) => {
     const m = MONTHS_ARR[i];
