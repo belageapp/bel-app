@@ -992,33 +992,13 @@ window.loadReport = async function(){
         <td class="val-total" id="atsal">${atSal?atSal.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label-sub">正社員</td>
-        ${MONTHS_ARR.slice(0,6).map((_,i)=>{
-          const m=MONTHS_ARR[i];
-          return salaryData[m]?.fromSalaries
-            ? `<td class="val-actual" style="color:#1D9E75;font-size:10px" title="給与データ取込済">${aSalaryS[i].toLocaleString()}<span style="color:#aaa;margin-left:2px">🔒</span></td>`
-            : `<td>${inp(i,'salaryStaff',actualData[m]?.salaryStaff||'')}</td>`;
-        }).join('')}<td class="val-subtotal">－</td>
-        ${MONTHS_ARR.slice(6).map((_,i)=>{
-          const m=MONTHS_ARR[i+6];
-          return salaryData[m]?.fromSalaries
-            ? `<td class="val-actual" style="color:#1D9E75;font-size:10px" title="給与データ取込済">${aSalaryS[i+6].toLocaleString()}<span style="color:#aaa;margin-left:2px">🔒</span></td>`
-            : `<td>${inp(i+6,'salaryStaff',actualData[m]?.salaryStaff||'')}</td>`;
-        }).join('')}<td class="val-subtotal">－</td>
+        ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalaryS[i]?aSalaryS[i].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalaryS[i+6]?aSalaryS[i+6].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atsals">${atSalS?atSalS.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label-sub">パート</td>
-        ${MONTHS_ARR.slice(0,6).map((_,i)=>{
-          const m=MONTHS_ARR[i];
-          return salaryData[m]?.fromSalaries
-            ? `<td class="val-actual" style="color:#1D9E75;font-size:10px" title="給与データ取込済">${aSalaryP[i].toLocaleString()}<span style="color:#aaa;margin-left:2px">🔒</span></td>`
-            : `<td>${inp(i,'salaryPart',actualData[m]?.salaryPart||'')}</td>`;
-        }).join('')}<td class="val-subtotal">－</td>
-        ${MONTHS_ARR.slice(6).map((_,i)=>{
-          const m=MONTHS_ARR[i+6];
-          return salaryData[m]?.fromSalaries
-            ? `<td class="val-actual" style="color:#1D9E75;font-size:10px" title="給与データ取込済">${aSalaryP[i+6].toLocaleString()}<span style="color:#aaa;margin-left:2px">🔒</span></td>`
-            : `<td>${inp(i+6,'salaryPart',actualData[m]?.salaryPart||'')}</td>`;
-        }).join('')}<td class="val-subtotal">－</td>
+        ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalaryP[i]?aSalaryP[i].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalaryP[i+6]?aSalaryP[i+6].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atsalp">${atSalP?atSalP.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label">給与比率</td>
@@ -1068,8 +1048,7 @@ window.loadReport = async function(){
 // -------- リアルタイム再計算 --------
 window.recalc = function(mi) {
   const wd   = parseFloat(document.getElementById(`inp-${mi}-wd`)?.value)||0;
-  const salS = parseFloat(document.getElementById(`inp-${mi}-salaryStaff`)?.value)||0;
-  const salP = parseFloat(document.getElementById(`inp-${mi}-salaryPart`)?.value)||0;
+  
 
   // 実績はCSV取込値から取得（手動入力は稼働日・給与のみ）
   const tot = getMonthTotals(MONTHS_ARR[mi]);
@@ -1079,6 +1058,8 @@ window.recalc = function(mi) {
   const ppd = wd&&ppl?ppl/wd:0;
   const pdef= cap&&ppd?ppd/cap:0;
   const unitp=ppl&&rev?rev/ppl:0;
+  const salS = (salaryData[MONTHS_ARR[mi]] && salaryData[MONTHS_ARR[mi]].salaryStaff) || 0;
+  const salP = (salaryData[MONTHS_ARR[mi]] && salaryData[MONTHS_ARR[mi]].salaryPart) || 0;
   const sal = salS+salP;
   const gr  = rev&&sal?sal/rev:0;
 
@@ -1090,15 +1071,13 @@ window.recalc = function(mi) {
   // 入力値をactualDataに反映してから合計再計算
   if(!actualData[MONTHS_ARR[mi]]) actualData[MONTHS_ARR[mi]]={};
   actualData[MONTHS_ARR[mi]].wd = wd||null;
-  actualData[MONTHS_ARR[mi]].salaryStaff = salS||null;
-  actualData[MONTHS_ARR[mi]].salaryPart  = salP||null;
+  
   recalcTotals();
 };
 
 window.recalcTotals = function(){
   const aWd  = MONTHS_ARR.map((_,i)=>parseFloat(document.getElementById(`inp-${i}-wd`)?.value)||0);
-  const aSS  = MONTHS_ARR.map((_,i)=>parseFloat(document.getElementById(`inp-${i}-salaryStaff`)?.value)||0);
-  const aSP  = MONTHS_ARR.map((_,i)=>parseFloat(document.getElementById(`inp-${i}-salaryPart`)?.value)||0);
+  
   const tots = MONTHS_ARR.map((_,i)=>getMonthTotals(MONTHS_ARR[i]));
   const aPpl = tots.map(t=>t.people);
   const aRev = tots.map(t=>t.totalRev);
@@ -1157,9 +1136,7 @@ window.saveActual = async function(){
     const g=k=>parseFloat(document.getElementById(`inp-${i}-${k}`)?.value)||null;
     months[m]={
       ...existing[m],        // CSV取込データ（services等）を保持
-      wd:          g('wd'),
-      salaryStaff: g('salaryStaff'),
-      salaryPart:  g('salaryPart'),
+      wd: g('wd'),
     };
   });
 
