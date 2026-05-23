@@ -222,7 +222,7 @@ th:last-child,td:last-child{border-right:none}
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, doc, getDoc, getDocs, query, where, setDoc, addDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const firebaseConfig = {
@@ -253,6 +253,7 @@ onAuthStateChanged(auth, async user => {
       await signOut(auth); location.href = 'login.html'; return;
     }
     currentUserData = snap.data();
+    canEdit = ['admin','support'].includes(currentUserData.role);
     // ユーザー表示
     const el = document.getElementById('top-bar-user-info');
     if (el) {
@@ -291,6 +292,74 @@ let workdays   = {};   // office → { "YYYY-MM-DD": 0|1 }
 let reports    = {};   // "YYYY-MM-DD" → { office → {kids, care, work} }
 let dailyPlanned = {}; // office → { "YYYY-MM-DD": 予定人数 }
 let detailMode   = false;
+let canEdit      = false; // admin・supportのみtrue
+
+// -------- セル手入力 --------
+window.editCell = async function(type, office, dateStr, currentVal) {
+  if (!canEdit) return;
+  const val = prompt(
+    `${office}　${dateStr}\n${type === 'planned' ? '予約人数' : '実績人数'}を入力`,
+    currentVal ?? ''
+  );
+  if (val === null) return; // キャンセル
+  const num = val === '' ? null : parseInt(val);
+  if (val !== '' && (isNaN(num) || num < 0)) { alert('正しい数値を入力してください'); return; }
+
+  const month = dateStr.slice(0, 7); // "YYYY-MM"
+  const year  = parseInt(dateStr.slice(0, 4));
+  const mon   = parseInt(dateStr.slice(5, 7));
+  const fiscalYear = mon >= 4 ? year : year - 1;
+
+  try {
+    if (type === 'planned') {
+      // dailyPlannedコレクションに保存
+      const docId = `${year}_${mon}_${office}`;
+      const ref   = doc(db, 'dailyPlanned', docId);
+      const snap  = await getDoc(ref);
+      const daily = snap.exists() ? snap.data().daily || {} : {};
+      if (num === null) {
+        delete daily[dateStr];
+      } else {
+        daily[dateStr] = num;
+      }
+      const total = Object.values(daily).reduce((s,v)=>s+v,0);
+      await setDoc(ref, { year, month:mon, office, daily, total, updatedAt:new Date().toISOString() });
+      // キャッシュ更新
+      if (!dailyPlanned[office]) dailyPlanned[office] = {};
+      if (num === null) delete dailyPlanned[office][dateStr];
+      else dailyPlanned[office][dateStr] = num;
+
+    } else {
+      // reportsコレクションに保存（既存を上書き）
+      const q = query(collection(db,'reports'),
+        where('office','==',office),
+        where('date','==',dateStr),
+        where('source','==','manual')
+      );
+      const snap = await getDocs(q);
+      // 既存のmanualデータを削除
+      for (const d of snap.docs) await deleteDoc(d.ref);
+      if (num !== null) {
+        await addDoc(collection(db,'reports'), {
+          office, date:dateStr, month,
+          kids: num, serviceType: null,
+          source: 'manual',
+          time: new Date().toISOString(),
+          comment: '',
+        });
+      }
+      // キャッシュ更新
+      if (!reports[dateStr]) reports[dateStr] = {};
+      if (num === null) delete reports[dateStr][office];
+      else reports[dateStr][office] = { kids: num };
+    }
+    // 再描画
+    const fiscYear = mon >= 4 ? year : year - 1;
+    render(fiscYear, year, mon, `${year}-${String(mon).padStart(2,'0')}`);
+  } catch(e) {
+    alert('保存に失敗しました: ' + e.message);
+  }
+};
 
 // -------- 初期化 --------
 async function init() {
@@ -529,7 +598,7 @@ function officeRows(o, dates, goals, actuals, todayStr) {
       </td>`;
       return;
     }
-    html += `<td class="td-data td-goal" style="${colBg?'background:'+colBg:''}">
+    html += `<td class="td-data td-goal" style="${colBg?'background:'+colBg:''}" ${canEdit?`onclick="editCell('planned','${o}','${dateStr}',${g})" style="${colBg?'background:'+colBg:''}cursor:pointer" title="クリックして編集"`:''}">
       <div class="cell-inner"><span class="cell-goal">${g}</span></div>
     </td>`;
   });
@@ -556,14 +625,13 @@ function officeRows(o, dates, goals, actuals, todayStr) {
     const colBg = isToday ? '#F5FDF9' : isSun ? '#FDF8F8' : isSat ? '#F8FAFD' : '#FAFFFE';
 
     if (av !== null && av !== undefined) {
-      // 定員に対して赤/緑判定
       const cls = av < cap ? 'under' : '';
-      html += `<td class="td-data td-actual" style="background:${colBg}">
+      html += `<td class="td-data td-actual" style="background:${colBg}" ${canEdit?`onclick="editCell('actual','${o}','${dateStr}',${av})" style="background:${colBg};cursor:pointer" title="クリックして編集"`:''}">
         <div class="cell-inner"><span class="cell-actual ${cls}">${av}</span></div>
       </td>`;
     } else {
       const isPast = new Date(dateStr) < new Date(todayStr);
-      html += `<td class="td-data td-actual" style="background:${colBg}">
+      html += `<td class="td-data td-actual" style="background:${colBg}" ${canEdit?`onclick="editCell('actual','${o}','${dateStr}',null)" style="background:${colBg};cursor:pointer" title="クリックして入力"`:''}">
         <div class="cell-inner"><span class="cell-actual none">${isPast ? '—' : ''}</span></div>
       </td>`;
     }
