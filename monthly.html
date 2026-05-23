@@ -440,7 +440,8 @@ function render(fiscalYear, year, month, monthStr) {
       <span class="d-dow">${DOW_JP[dow]}</span>
     </th>`;
   });
-  html += `<th class="th-summary" style="min-width:36px;font-size:9px">予・実</th>
+  html += `<th class="th-summary" style="min-width:20px;font-size:9px"></th>
+    <th class="th-summary" style="min-width:36px;font-size:9px">予実</th>
     <th class="th-summary" style="min-width:36px;font-size:9px">目標</th>
     <th class="th-summary" style="min-width:32px;font-size:9px">達成率</th>
     <th class="th-summary" style="min-width:28px;font-size:9px">稼働<br>予定</th>
@@ -533,11 +534,10 @@ function officeRows(o, dates, goals, actuals, todayStr) {
     </td>`;
   });
 
-  // 月計1列目：予（上）実（下）を1セルに
-  html += `<td class="td-sum" rowspan="1" style="vertical-align:bottom;padding:0 6px 1px;text-align:right">
-    <span style="font-size:9px;color:#5B9BD5;font-weight:600">予</span>
-    <span style="font-size:10px;color:#5B9BD5;font-weight:600;margin-left:2px">${monthPlanned||'—'}</span>
-  </td>`;
+  // 月計1列目：予ラベル（予約行）
+  html += `<td class="td-sum" rowspan="1" style="vertical-align:middle;text-align:center;padding:0 4px;font-size:9px;color:#5B9BD5;font-weight:700;border-right:1px solid #E8EAED">予</td>`;
+  // 月計2列目以降：予約値（予約行rowspan=1）
+  html += `<td class="td-sum planned-sum" rowspan="1" style="vertical-align:middle">${monthPlanned||'—'}</td>`;
   html += `<td class="td-sum goal-sum" rowspan="${rowspan}" style="vertical-align:middle">${monthGoal||'—'}</td>`;
   html += `<td class="td-sum rate-sum" rowspan="${rowspan}" style="vertical-align:middle">${achRate !== null ? achRate+'%' : '—'}</td>`;
   html += `<td class="td-sum days-sum" rowspan="${rowspan}" style="vertical-align:middle">${planDays||'—'}</td>`;
@@ -568,11 +568,9 @@ function officeRows(o, dates, goals, actuals, todayStr) {
       </td>`;
     }
   });
-  // 実績行の月計1列目（実ラベル＋実績値）
-  html += `<td class="td-sum" rowspan="1" style="vertical-align:top;padding:1px 6px 0;text-align:right;border-top:none">
-    <span style="font-size:9px;color:#1D9E75;font-weight:600">実</span>
-    <span style="font-size:11px;font-weight:700;margin-left:2px;color:${monthActual < monthGoal && monthGoal>0 ? '#C0392B' : '#1D9E75'}">${monthActual||'—'}</span>
-  </td>`;
+  // 実績行の月計：実ラベル＋実績値
+  html += `<td class="td-sum" rowspan="1" style="vertical-align:middle;text-align:center;padding:0 4px;font-size:9px;color:#1D9E75;font-weight:700;border-right:1px solid #E8EAED">実</td>`;
+  html += `<td class="td-sum actual-sum${monthActual < monthGoal && monthGoal>0 ? ' under' : ''}" rowspan="1" style="vertical-align:middle">${monthActual||'—'}</td>`;
   html += `</tr>`;
 
   // === 詳細モード ===
@@ -647,7 +645,7 @@ function areaSum(offices, dates, goals, actuals, label, todayStr) {
 
   const areRate = mGoal > 0 && hasActual ? Math.round(mActual/mGoal*100)+'%' : '—';
   const s = 'background:#E8F4FF;text-align:right;padding:2px 6px;font-size:10px;border-left:1px solid #D6E8F8';
-  html += `<td class="td-sum" style="${s};font-weight:600;color:#5B9BD5;border-left:2px solid #D6E8F8">—</td>`;
+  html += `<td class="td-sum" rowspan="1" style="${s};border-left:2px solid #D6E8F8;text-align:center;font-size:9px;color:#aaa"></td>`;
   html += `<td class="td-sum" style="${s};font-weight:700;color:${hasActual && mActual < mGoal ? '#C0392B' : '#1D6E3E'}">${hasActual ? mActual : '—'}</td>`;
   html += `<td class="td-sum" style="${s};font-weight:600;color:#2471A3">${mGoal}</td>`;
   html += `<td class="td-sum" style="${s};color:#888">${areRate}</td>`;
@@ -688,7 +686,7 @@ function catSum(offices, dates, goals, actuals, label, todayStr) {
 
   const catRate = mGoal > 0 && hasActual ? Math.round(mActual/mGoal*100)+'%' : '—';
   const s2 = 'background:#E0F5ED;text-align:right;padding:2px 6px;font-size:10px;border-left:1px solid #B2DFDB';
-  html += `<td class="td-sum" style="${s2};font-weight:600;color:#5B9BD5;border-left:2px solid #B2DFDB">—</td>`;
+  html += `<td class="td-sum" style="${s2};border-left:2px solid #B2DFDB;text-align:center;font-size:9px;color:#aaa"></td>`;
   html += `<td class="td-sum" style="${s2};font-weight:700;color:${hasActual && mActual < mGoal ? '#C0392B' : '#0F6E56'}">${hasActual ? mActual : '—'}</td>`;
   html += `<td class="td-sum" style="${s2};font-weight:600;color:#1D9E75">${mGoal}</td>`;
   html += `<td class="td-sum" style="${s2};color:#888">${catRate}</td>`;
