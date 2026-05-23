@@ -272,7 +272,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
         </div>
         <div class="card-body">
           <div class="data-table-wrap"><table class="data-table">
-            <thead><tr><th>事業所名</th><th>事業者番号</th><th>部署</th><th>エリア</th><th>種別／定員</th><th>単価</th></tr></thead>
+            <thead><tr><th>事業所名</th><th>事業者番号</th><th>部課コード</th><th>部署</th><th>エリア</th><th>種別／定員</th><th>単価</th></tr></thead>
             <tbody id="office-tbody"><tr><td colspan="6" class="empty">読み込み中...</td></tr></tbody>
           </table></div>
         </div>
@@ -726,6 +726,11 @@ function renderOfficeTable(){
         >
       </td>
       <td>
+        <input type="text" value="${o.deptCode||''}" onchange="updateOfficeDeptCode('${o.id}',this.value)"
+          style="width:64px;padding:5px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;text-align:center"
+          placeholder="101">
+      </td>
+      <td>
         <select class="office-price-select" id="dept-${o.id}" onchange="updateOfficeDept('${o.id}',this.value)">
           ${cache.depts.map(d=>`<option value="${d.name}"${o.dept===d.name?' selected':''}>${d.name}</option>`).join('')}
         </select>
@@ -750,6 +755,10 @@ window.updateOfficeProviderNumber = function(id, val){
   if(o) o.providerNumber = val.trim();
 };
 
+window.updateOfficeDeptCode = function(id, val){
+  const o = cache.offices.find(x=>x.id===id);
+  if(o) o.deptCode = val.trim();
+};
 window.updateOfficeDept = function(id, dept){
   const o = cache.offices.find(x=>x.id===id);
   if(o) o.dept = dept;
@@ -773,6 +782,7 @@ window.saveOffices = async function(){
       area:        o.area||'',
       priceId:     o.priceId||'',
       price:       o.price||null,
+      deptCode:    o.deptCode||'',
       order:       o.order||99,
       createdAt:   o.createdAt||''
     });
