@@ -127,9 +127,12 @@
           inSikyuGokei = false;
           collectingDepts = false;
           const nums = [...line.matchAll(/(\d{1,3}(?:,\d{3})+)/g)].map(m => parseInt(m[1].replace(/,/g,'')));
-          deptCodes.forEach((dc, idx) => {
+          // 部課コードを昇順にソートして金額と対応
+          const sortedCodes = [...deptCodes].sort((a,b) => a.localeCompare(b));
+          sortedCodes.forEach((dc, idx) => {
             if (!results[dc] && nums[idx] && headcounts[idx] > 0) {
-              results[dc] = { totalPay: nums[idx], headcount: headcounts[idx], officeName: DEPT_MAP[dc] };
+              const hcIdx = deptCodes.indexOf(dc);
+              results[dc] = { totalPay: nums[idx], headcount: headcounts[hcIdx >= 0 ? hcIdx : idx], officeName: DEPT_MAP[dc] };
             }
           });
           deptCodes = [];
