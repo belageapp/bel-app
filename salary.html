@@ -90,6 +90,7 @@
 
       // 集計ページから部課コードと支給合計を抽出
       for (const line of textLines) {
+        console.log('集計行:', JSON.stringify(line));
         // 「101 にじのいえ *部課合計*」のような行を探す
         const dcMatch = line.match(/(\d{3})\s.+\*部課合計\*/);
         if (!dcMatch) continue;
