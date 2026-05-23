@@ -385,14 +385,14 @@ async function loadOfficeData(officeName, year) {
   const aActR  = aTotals.map(t=>t.actualRev);
   const aTreat = aTotals.map(t=>t.treatRev);
   const aRev   = aTotals.map(t=>t.totalRev);
-  const sd = await loadSalaryData(office?.deptCode, year);
+  const sd = await loadSalaryData(office ? office.deptCode : null, year);
   const aSalS  = MONTHS_ARR.map((_,i) => {
     const m = MONTHS_ARR[i];
-    return sd[m]?.salaryStaff ?? parseFloat(act[m]?.salaryStaff) || 0;
+    return (sd[m] && sd[m].salaryStaff) ? sd[m].salaryStaff : (parseFloat(act[m] && act[m].salaryStaff) || 0);
   });
   const aSalP  = MONTHS_ARR.map((_,i) => {
     const m = MONTHS_ARR[i];
-    return sd[m]?.salaryPart ?? parseFloat(act[m]?.salaryPart) || 0;
+    return (sd[m] && sd[m].salaryPart) ? sd[m].salaryPart : (parseFloat(act[m] && act[m].salaryPart) || 0);
   });
   const aSal   = MONTHS_ARR.map((_,i)=>aSalS[i]+aSalP[i]);
 
@@ -737,11 +737,11 @@ window.loadReport = async function(){
   const aRev    = aTotals.map(t=>t.totalRev);
   const aSalaryS= MONTHS_ARR.map((_,i)=>{
     const m = MONTHS_ARR[i];
-    return salaryData[m]?.salaryStaff ?? parseFloat(actualData[m]?.salaryStaff) || 0;
+    return (salaryData[m] && salaryData[m].salaryStaff) ? salaryData[m].salaryStaff : (parseFloat(actualData[m] && actualData[m].salaryStaff) || 0);
   });
   const aSalaryP= MONTHS_ARR.map((_,i)=>{
     const m = MONTHS_ARR[i];
-    return salaryData[m]?.salaryPart ?? parseFloat(actualData[m]?.salaryPart) || 0;
+    return (salaryData[m] && salaryData[m].salaryPart) ? salaryData[m].salaryPart : (parseFloat(actualData[m] && actualData[m].salaryPart) || 0);
   });
   const aSalary = MONTHS_ARR.map((_,i)=>aSalaryS[i]+aSalaryP[i]);
 
