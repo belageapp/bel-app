@@ -104,6 +104,7 @@
       for (const line of textLines) {
         if (line.includes('部課小計')) { inSmall = true; continue; }
         if (inSmall) {
+          console.log(`[${deptCode}] line:`, JSON.stringify(line));
           const nums = [...line.matchAll(/(\d{1,3}(?:,\d{3})+)/g)].map(m => parseInt(m[1].replace(/,/g,'')));
           const big = nums.filter(n => n >= 50000);
           if (big.length > 0) { totalPay = Math.max(...big); break; }
