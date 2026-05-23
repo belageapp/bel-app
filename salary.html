@@ -85,8 +85,8 @@
       if (fullText.includes('パートタイマー')) type = 'part';
 
       // 個別ページはスキップ、集計ページのみ処理
-      if (!fullText.includes('*部課合計*') && !fullText.includes('*総合計*')) continue;
-      if (fullText.includes('*総合計*') && !fullText.includes('*部課合計*')) continue;
+      if (!fullText.includes('*部課合計*')) continue;
+      
 
       // 集計ページから部課コードと支給合計を抽出
       for (const line of textLines) {
