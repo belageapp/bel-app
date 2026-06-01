@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ユーザー一覧エクスポート</title>
+<style>
+body{font-family:-apple-system,sans-serif;background:#F4F6F8;padding:24px}
+.card{background:#fff;border-radius:12px;border:1px solid #E8EAED;padding:24px;max-width:560px;margin:0 auto}
+h2{font-size:18px;font-weight:700;margin-bottom:16px}
+button{padding:10px 20px;background:#F0FAF6;color:#1D9E75;border:1px solid #A8D5BE;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+#log{margin-top:16px;padding:12px;background:#f5f5f5;border-radius:8px;font-size:12px;font-family:monospace;white-space:pre-wrap;max-height:400px;overflow-y:auto}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>👥 ユーザー一覧エクスポート</h2>
+  <button onclick="run()">Firestoreから取得してCSVダウンロード</button>
+  <div id="log">ボタンを押すと開始します</div>
+</div>
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getFirestore,collection,getDocs}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+const cfg={apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",authDomain:"daily-report-b90e8.firebaseapp.com",projectId:"daily-report-b90e8",storageBucket:"daily-report-b90e8.firebasestorage.app",messagingSenderId:"16569831525",appId:"1:16569831525:web:aa250f2061f762dfe1768c"};
+const app=initializeApp(cfg);
+const db=getFirestore(app);
+const ROLES={admin:'Administrator',support:'事業支援課',area_manager:'エリアマネジャー',unit_manager:'ユニットマネジャー',manager:'事業所管理者'};
+const L=document.getElementById('log');
+const log=m=>{L.textContent+=m+'\n';L.scrollTop=L.scrollHeight;};
+
+window.run=async function(){
+  L.textContent='';
+  log('🔄 取得中...');
+  const snap=await getDocs(collection(db,'users'));
+  const users=[];
+  snap.forEach(d=>users.push(d.data()));
+  users.sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+  log(`✅ ${users.length}件取得`);
+
+  // CSV生成
+  let csv='\uFEFF氏名,メールアドレス,ロール,担当事業所,loginId,初期パスワード,状態,登録日\n';
+  users.forEach(u=>{
+    const row=[
+      u.displayName||'',
+      u.email||'',
+      ROLES[u.role]||u.role||'',
+      u.officeId||'',
+      u.loginId||'',
+      '',  // 初期パスワードは空欄
+      u.disabled?'無効':'有効',
+      (u.createdAt||'').slice(0,10),
+    ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',');
+    csv+=row+'\n';
+    log(`  ${u.displayName||u.email} / ${u.role}`);
+  });
+
+  // ダウンロード
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='belage_users.csv';
+  a.click();
+  log('\n✅ CSVダウンロード完了');
+};
+</script>
+</body>
+</html>
