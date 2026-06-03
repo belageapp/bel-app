@@ -43,11 +43,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .office-btn .dot{width:8px;height:8px;border-radius:50%;background:#e0e0e0;flex-shrink:0}
 .office-btn.done .dot{background:#1D9E75}
 .office-btn.partial .dot{background:#EF9F27}
-.form-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.form-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .form-title{font-size:16px;font-weight:600}
 .status-pill{font-size:11px;padding:3px 10px;border-radius:20px;background:#F4F6F8;color:#888}
 .status-pill.done{background:#d4f4e8;color:#0F6E56}
 .status-pill.partial{background:#FAEEDA;color:#854F0B}
+.form-date-label{font-size:11px;color:#888;margin-left:auto;white-space:nowrap}
 .date-select-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #f0f0f0;margin-bottom:4px}
 .date-select-label{font-size:13px;color:#888;white-space:nowrap}
 .date-input{flex:1;padding:8px 10px;border:1px solid #E8EAED;border-radius:8px;font-size:14px;font-family:inherit;color:#333;background:#fff;outline:none}
@@ -68,6 +69,7 @@ textarea{width:100%;font-size:15px;padding:10px 12px;border:1px solid #E8EAED;bo
 textarea:focus{border-color:#1D9E75}
 .submit-btn{width:100%;padding:14px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;margin-top:14px;font-family:inherit}
 .submit-btn:active{background:#0F6E56}
+.success-msg{display:none;background:#d4f4e8;color:#0F6E56;padding:10px 14px;border-radius:8px;margin-top:10px;font-size:14px;font-weight:600;text-align:center}
 .input-progress-card{background:#f0faf6;border:1px solid #d4f4e8;border-radius:10px;padding:12px;margin-top:10px}
 .input-progress-title{font-size:12px;color:#0F6E56;margin-bottom:8px;font-weight:500}
 .input-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
@@ -77,6 +79,14 @@ textarea:focus{border-color:#1D9E75}
 .input-progress-bar{height:100%;border-radius:3px;background:#1D9E75;transition:width 0.3s}
 .input-progress-bar.over{background:#E24B4A}
 .input-progress-pct{font-size:11px;color:#0F6E56;margin-top:4px;text-align:right}
+/* ラフォーレ サービスセクション */
+.svc-section{border-bottom:1px solid #f0f0f0;padding-bottom:12px;margin-bottom:12px}
+.svc-section:last-of-type{border-bottom:none;padding-bottom:0}
+.svc-header{font-size:12px;font-weight:600;color:#185FA5;margin-bottom:6px;padding:4px 8px;background:#EBF3FB;border-radius:6px;display:flex;align-items:center;gap:6px}
+.svc-header.work{color:#6B3FA0;background:#F3E8FF}
+.svc-cap{font-size:11px;font-weight:400;color:#888}
+.svc-count-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.svc-count-row:last-child{border-bottom:none}
 /* 月次履歴 */
 .history-card{background:#fff;border-radius:12px;padding:14px;margin-top:10px;border:1px solid #E8EAED}
 .history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -196,10 +206,11 @@ textarea:focus{border-color:#1D9E75}
         <div class="form-header">
           <span class="form-title" id="form-name"></span>
           <span class="status-pill" id="form-badge">未報告</span>
+          <span class="form-date-label" id="form-date-label"></span>
         </div>
         <div class="date-select-row">
           <span class="date-select-label">日付</span>
-          <input type="date" class="date-input" id="report-date">
+          <input type="date" class="date-input" id="report-date" onchange="onReportDateChange()">
         </div>
 
         <!-- 通常事業所の入力 -->
@@ -215,7 +226,7 @@ textarea:focus{border-color:#1D9E75}
           <!-- 追加入力欄 -->
           <div class="extra-inputs">
             <div class="extra-row">
-              <span class="extra-label">予約人数</span>
+              <span class="extra-label">予定人数</span>
               <div class="count-ctrl">
                 <button class="cnt-btn" onclick="adjExtra('planned',-1)">−</button>
                 <span class="cnt-num" id="planned-num">0</span>
@@ -264,6 +275,7 @@ textarea:focus{border-color:#1D9E75}
             <textarea id="comment-in" rows="3" placeholder="体調不良の児童あり、行事など…"></textarea>
           </div>
           <button class="submit-btn" onclick="submitReport()">報告する</button>
+          <div class="success-msg" id="success-msg">✅ 報告しました</div>
           <div class="history-card" id="history-area" style="display:none">
             <div class="history-header">
               <span class="history-title">稼働日・入力履歴</span>
@@ -273,33 +285,104 @@ textarea:focus{border-color:#1D9E75}
           </div>
         </div>
 
-        <!-- ラフォーレ用の入力 -->
+        <!-- ラフォーレ用の入力（サービス種別ごと5項目） -->
         <div id="lafore-input" style="display:none">
-          <div style="border-bottom:1px solid #f0f0f0;padding-bottom:12px;margin-bottom:12px">
-            <div style="font-size:12px;font-weight:500;color:#185FA5;margin-bottom:6px">生活介護　<span style="font-size:11px;font-weight:400;color:#888">定員10名</span></div>
-            <div class="count-row" style="border-bottom:none;padding:0">
-              <span class="count-label">貢献人数</span>
+          <!-- 生活介護 -->
+          <div class="svc-section">
+            <div class="svc-header">生活介護　<span class="svc-cap">定員10名</span></div>
+            <div class="svc-count-row">
+              <span class="count-label">実績人数</span>
               <div class="count-ctrl">
-                <button class="cnt-btn" onclick="adj('care',-1)">−</button>
-                <span class="cnt-num" id="kids-care">0</span>
-                <button class="cnt-btn" onclick="adj('care',1)">＋</button>
+                <button class="cnt-btn" onclick="adjLafore('care','actual',-1)">−</button>
+                <span class="cnt-num" id="care-actual">0</span>
+                <button class="cnt-btn" onclick="adjLafore('care','actual',1)">＋</button>
+              </div>
+            </div>
+            <div class="extra-inputs" style="margin-top:0">
+              <div class="extra-row">
+                <span class="extra-label">予定人数</span>
+                <div class="count-ctrl">
+                  <button class="cnt-btn" onclick="adjLafore('care','reservations',-1)">−</button>
+                  <span class="cnt-num" id="care-reservations">0</span>
+                  <button class="cnt-btn" onclick="adjLafore('care','reservations',1)">＋</button>
+                </div>
+              </div>
+              <div class="extra-row">
+                <span class="extra-label">問合せ</span>
+                <div class="count-ctrl">
+                  <button class="cnt-btn" onclick="adjLafore('care','inquiries',-1)">−</button>
+                  <span class="cnt-num" id="care-inquiries">0</span>
+                  <button class="cnt-btn" onclick="adjLafore('care','inquiries',1)">＋</button>
+                </div>
+              </div>
+              <div class="extra-row">
+                <span class="extra-label">見学</span>
+                <div class="count-ctrl">
+                  <button class="cnt-btn" onclick="adjLafore('care','visits',-1)">−</button>
+                  <span class="cnt-num" id="care-visits">0</span>
+                  <button class="cnt-btn" onclick="adjLafore('care','visits',1)">＋</button>
+                </div>
+              </div>
+              <div class="extra-row">
+                <span class="extra-label">契約人数</span>
+                <div class="count-ctrl">
+                  <button class="cnt-btn" onclick="adjLafore('care','contracts',-1)">−</button>
+                  <span class="cnt-num" id="care-contracts">0</span>
+                  <button class="cnt-btn" onclick="adjLafore('care','contracts',1)">＋</button>
+                </div>
               </div>
             </div>
           </div>
-          <div style="padding-bottom:4px">
-            <div style="font-size:12px;font-weight:500;color:#185FA5;margin-bottom:6px">就労B　<span style="font-size:11px;font-weight:400;color:#888">定員10名</span></div>
-            <div class="count-row" style="border-bottom:none;padding:0 0 8px">
-              <span class="count-label">貢献人数</span>
+          <!-- 就労B型 -->
+          <div class="svc-section">
+            <div class="svc-header work">就労B型　<span class="svc-cap">定員10名</span></div>
+            <div class="svc-count-row">
+              <span class="count-label">実績人数</span>
               <div class="count-ctrl">
-                <button class="cnt-btn" onclick="adj('work',-1)">−</button>
-                <span class="cnt-num" id="kids-work">0</span>
-                <button class="cnt-btn" onclick="adj('work',1)">＋</button>
+                <button class="cnt-btn" onclick="adjLafore('work','actual',-1)">−</button>
+                <span class="cnt-num" id="work-actual">0</span>
+                <button class="cnt-btn" onclick="adjLafore('work','actual',1)">＋</button>
+              </div>
+            </div>
+            <div class="extra-inputs" style="margin-top:0">
+              <div class="extra-row">
+                <span class="extra-label">予定人数</span>
+                <div class="count-ctrl">
+                  <button class="cnt-btn" onclick="adjLafore('work','reservations',-1)">−</button>
+                  <span class="cnt-num" id="work-reservations">0</span>
+                  <button class="cnt-btn" onclick="adjLafore('work','reservations',1)">＋</button>
+                </div>
+              </div>
+              <div class="extra-row">
+                <span class="extra-label">問合せ</span>
+                <div class="count-ctrl">
+                  <button class="cnt-btn" onclick="adjLafore('work','inquiries',-1)">−</button>
+                  <span class="cnt-num" id="work-inquiries">0</span>
+                  <button class="cnt-btn" onclick="adjLafore('work','inquiries',1)">＋</button>
+                </div>
+              </div>
+              <div class="extra-row">
+                <span class="extra-label">見学</span>
+                <div class="count-ctrl">
+                  <button class="cnt-btn" onclick="adjLafore('work','visits',-1)">−</button>
+                  <span class="cnt-num" id="work-visits">0</span>
+                  <button class="cnt-btn" onclick="adjLafore('work','visits',1)">＋</button>
+                </div>
+              </div>
+              <div class="extra-row">
+                <span class="extra-label">契約人数</span>
+                <div class="count-ctrl">
+                  <button class="cnt-btn" onclick="adjLafore('work','contracts',-1)">−</button>
+                  <span class="cnt-num" id="work-contracts">0</span>
+                  <button class="cnt-btn" onclick="adjLafore('work','contracts',1)">＋</button>
+                </div>
               </div>
             </div>
           </div>
+
           <div class="comment-field" style="margin-top:4px">
             <label>特記事項・コメント（任意）</label>
-            <textarea id="comment-care" rows="3" placeholder="体調不良の児童あり、行事など…"></textarea>
+            <textarea id="comment-care" rows="3" placeholder="体調不良など…"></textarea>
           </div>
           <div id="lafore-progress-area" style="display:none">
             <div class="input-progress-card">
@@ -313,6 +396,7 @@ textarea:focus{border-color:#1D9E75}
             </div>
           </div>
           <button class="submit-btn" onclick="submitLafore()">報告する</button>
+          <div class="success-msg" id="lafore-success-msg">✅ 報告しました</div>
           <div class="history-card" id="lafore-history-area" style="display:none">
             <div class="history-header">
               <span class="history-title">稼働日・入力履歴</span>
@@ -354,7 +438,7 @@ textarea:focus{border-color:#1D9E75}
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, doc, getDoc, setDoc, addDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, doc, getDoc, setDoc, addDoc, deleteDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const firebaseConfig = {
@@ -385,17 +469,13 @@ onAuthStateChanged(auth, async user => {
       await signOut(auth); location.href = 'login.html'; return;
     }
     currentUserData = snap.data();
-    // ユーザー表示
     const el = document.getElementById('top-bar-user-info');
     if (el) {
       el.innerHTML = `<span style="font-size:11px;color:#555;white-space:nowrap">${currentUserData.displayName||user.email}</span>
         <span style="font-size:10px;color:#999;white-space:nowrap">${ROLE_LABELS[currentUserData.role]||currentUserData.role}</span>`;
     }
-
-    // officeIdが設定されていれば自拠点を自動選択（ロール問わず）
     if (currentUserData.officeId) {
       const officeName = currentUserData.officeId;
-      // managerロールは事業所選択ボタンを非表示
       if (currentUserData.role === 'manager') {
         const selector = document.getElementById('office-selector');
         if (selector) selector.style.display = 'none';
@@ -435,10 +515,19 @@ const monthStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0'
 
 const state = {
   reports:{}, goals:{}, monthlyTotals:{},
-  cur:null, kids:0, kidsCare:0, kidsWork:0,
+  cur:null, kids:0,
   hqDate:todayStr, viewMonth:monthStr,
-  workdays:{}, historyMonth:monthStr
+  workdays:{}, historyMonth:monthStr,
+  formDate:todayStr
 };
+
+// ラフォーレのサービス別入力状態
+const laforeState = {
+  care: { actual:0, reservations:0, inquiries:0, visits:0, contracts:0 },
+  work: { actual:0, reservations:0, inquiries:0, visits:0, contracts:0 }
+};
+
+const LAFORE_FIELDS = ['actual','reservations','inquiries','visits','contracts'];
 
 function getToday(){const d=new Date();return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+['日','月','火','水','木','金','土'][d.getDay()]+"）";}
 function getTime(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
@@ -446,9 +535,22 @@ function dateToMonth(s){return s.substring(0,7);}
 function monthLabel(m){const[y,mo]=m.split('-');return `${y}年${parseInt(mo)}月`;}
 function isLafore(name){return LAFORE_OFFICES.includes(name);}
 
+function dateStrToLabel(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-');
+  return `${y}年${parseInt(m)}月${parseInt(d)}日`;
+}
+
 function showConn(id,ok,msg){
   const el=document.getElementById(id);if(!el)return;
   el.style.display='block';el.className='conn-status '+(ok?'conn-ok':'conn-ng');el.textContent=msg;
+}
+
+function showSuccessMsg(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
 }
 
 function buildMonthOptions(selId){
@@ -495,10 +597,22 @@ window.loadHistory=async function(){
   snap.forEach(d=>{
     const r=d.data();
     if(!reports[r.date])reports[r.date]={kids:0,care:null,work:null};
-    if(r.serviceType==='care')reports[r.date].care=r.kids;
-    else if(r.serviceType==='work')reports[r.date].work=r.kids;
-    else reports[r.date].kids=r.kids;
-    if(r.care!=null&&r.work!=null)reports[r.date].kids=r.care+r.work;
+    if (r.services) {
+      // 新フォーマット
+      const careActual = r.services["生活介護"]?.actual ?? 0;
+      const workActual = r.services["就労B型"]?.actual ?? 0;
+      reports[r.date].care = careActual;
+      reports[r.date].work = workActual;
+      reports[r.date].kids = careActual + workActual;
+    } else if(r.serviceType==='care') {
+      reports[r.date].care=r.kids;
+      reports[r.date].kids+=r.kids;
+    } else if(r.serviceType==='work') {
+      reports[r.date].work=r.kids;
+      reports[r.date].kids+=r.kids;
+    } else {
+      reports[r.date].kids=r.kids;
+    }
   });
   const [y,m]=month.split('-').map(Number);
   const daysInMonth=new Date(y,m,0).getDate();
@@ -511,10 +625,10 @@ window.loadHistory=async function(){
     const isWd=wdays[dateStr]===1;
     const rep=reports[dateStr];
     if(isWd)totalWd++;
-    if(rep){totalReported++;totalKids+=isLaf?(rep.care||0)+(rep.work||0):rep.kids;}
+    if(rep&&rep.kids>0){totalReported++;totalKids+=isLaf?(rep.care||0)+(rep.work||0):rep.kids;}
     const trCls=isWd?'wd':'hol';
     let kidsCell='';
-    if(rep){
+    if(rep&&rep.kids>=0&&(isLaf?rep.care!==null:rep.kids!==null)){
       if(isLaf) kidsCell=`<span style="color:#1D9E75;font-weight:600">${(rep.care||0)+(rep.work||0)}</span><span style="font-size:10px;color:#888"> (介護${rep.care??'-'}/就労${rep.work??'-'})</span>`;
       else kidsCell=`<span style="color:#1D9E75;font-weight:600">${rep.kids}</span>`;
     }else if(isWd){
@@ -590,17 +704,36 @@ function monthlyProgressHTML(current,goal){
   return `<div class="monthly-progress-wrap"><div class="monthly-progress-bar${over?' over':''}" style="width:${pct}%"></div></div><span class="monthly-achieve">${Math.round(current/goal*100)}%（目標${goal}名）</span>`;
 }
 
+// reports行を集計してoffice別オブジェクトに変換
 function aggregateReports(rows){
   const reps={};
   rows.forEach(r=>{
     const o=r.office;
-    if(r.serviceType==='care'||r.serviceType==='work'){
+    if (r.services) {
+      // 新フォーマット（servicesオブジェクトあり）
+      const careData = r.services["生活介護"] || {};
+      const workData = r.services["就労B型"] || {};
+      const careKids = careData.actual ?? 0;
+      const workKids = workData.actual ?? 0;
+      reps[o] = {
+        kids: careKids + workKids,
+        care: careKids,
+        work: workKids,
+        comment: r.comment || '',
+        time: r.time,
+        docId: r._id,
+        services: r.services
+      };
+    } else if(r.serviceType==='care'||r.serviceType==='work'){
+      // 旧ラフォーレフォーマット（serviceType分割）
       if(!reps[o])reps[o]={kids:0,care:null,work:null,comment:'',time:r.time};
       if(r.serviceType==='care'){reps[o].care=r.kids;reps[o].kids+=r.kids;reps[o].careDocId=r._id;}
       if(r.serviceType==='work'){reps[o].work=r.kids;reps[o].kids+=r.kids;reps[o].workDocId=r._id;}
       if(r.comment)reps[o].comment+=r.comment;
     }else{
-      reps[o]={kids:r.kids,comment:r.comment||'  ',time:r.time,docId:r._id};
+      // 通常事業所フォーマット
+      reps[o]={kids:r.kids,comment:r.comment||'',time:r.time,docId:r._id,
+        planned:r.planned||0, inquiry:r.inquiry||0, visit:r.visit||0, contract:r.contract||0};
     }
   });
   return reps;
@@ -638,27 +771,21 @@ async function loadMonthlyTotals(){
     const q=query(collection(db,'reports'),where('month','==',monthStr));
     const snap=await getDocs(q);
     const allRows=[];snap.forEach(d=>allRows.push({...d.data(),_id:d.id}));
-
-    // 日付×事業所ごとに速報優先・Excel補完で集計
-    // key: "date__office" -> kids
     const byDateOffice={};
-    // まずExcelデータを登録
     allRows.filter(r=>r.source==='excel').forEach(r=>{
       const key=r.date+'__'+r.office;
       if(!byDateOffice[key]) byDateOffice[key]={office:r.office,kids:0};
       byDateOffice[key].kids+=r.kids||0;
       byDateOffice[key].fromExcel=true;
     });
-    // 速報入力で上書き（同じ日は速報値に置き換え）
     const dailyInput={};
     allRows.filter(r=>r.source!=='excel').forEach(r=>{
       const key=r.date+'__'+r.office;
       if(!dailyInput[key]) dailyInput[key]={office:r.office,kids:0};
-      dailyInput[key].kids+=r.kids||0;
+      // servicesフォーマットの場合はkidsフィールドを利用（後方互換フィールド）
+      dailyInput[key].kids+=(r.kids||0);
     });
     Object.entries(dailyInput).forEach(([key,v])=>{byDateOffice[key]=v;});
-
-    // 事業所ごとに合計
     state.monthlyTotals={};
     Object.values(byDateOffice).forEach(v=>{
       if(!state.monthlyTotals[v.office]) state.monthlyTotals[v.office]=0;
@@ -713,7 +840,7 @@ async function loadMonthly(){
     raw.forEach(r=>{
       const key=`${r.office}__${r.date}`;
       if(!dayReps[key])dayReps[key]={office:r.office,date:r.date,kids:0};
-      dayReps[key].kids+=r.kids;
+      dayReps[key].kids+=r.kids||0;
     });
     const totals={},days={};
     Object.values(dayReps).forEach(dr=>{
@@ -783,23 +910,60 @@ function renderBtns(){
   }).join('');
 }
 
+// ラフォーレのフォームDOMを更新
+function updateLaforeForm(){
+  LAFORE_FIELDS.forEach(f=>{
+    document.getElementById(`care-${f}`).textContent=laforeState.care[f];
+    document.getElementById(`work-${f}`).textContent=laforeState.work[f];
+  });
+}
+
+// ラフォーレデータをstateにセット
+function applyLafore(r){
+  const svcCare=r?.services?.["生活介護"]||{};
+  const svcWork=r?.services?.["就労B型"]||{};
+  laforeState.care.actual       = svcCare.actual       ?? r?.care ?? 0;
+  laforeState.care.reservations = svcCare.reservations || 0;
+  laforeState.care.inquiries    = svcCare.inquiries    || 0;
+  laforeState.care.visits       = svcCare.visits       || 0;
+  laforeState.care.contracts    = svcCare.contracts    || 0;
+  laforeState.work.actual       = svcWork.actual       ?? r?.work ?? 0;
+  laforeState.work.reservations = svcWork.reservations || 0;
+  laforeState.work.inquiries    = svcWork.inquiries    || 0;
+  laforeState.work.visits       = svcWork.visits       || 0;
+  laforeState.work.contracts    = svcWork.contracts    || 0;
+}
+
+function updateFormBadge(r, isLaf){
+  const b=document.getElementById('form-badge');
+  if(isLaf){
+    const hasCare=r&&r.care!=null, hasWork=r&&r.work!=null;
+    const done=hasCare&&hasWork;
+    const partial=!done&&(hasCare||hasWork);
+    b.textContent=done?'報告済':partial?'一部報告':'未報告';
+    b.className='status-pill'+(done?' done':partial?' partial':'');
+  }else{
+    b.textContent=r?'報告済':'未報告';
+    b.className='status-pill'+(r?' done':'');
+  }
+}
+
 window.selectOffice=async function(name){
   state.cur=name;
+  state.formDate=todayStr;
   const r=state.reports[name];
   document.getElementById('form-name').textContent=name;
+  document.getElementById('report-date').value=todayStr;
+  document.getElementById('report-date').max=todayStr;
+  document.getElementById('form-date-label').textContent=dateStrToLabel(todayStr);
+
   if(isLafore(name)){
     document.getElementById('normal-input').style.display='none';
     document.getElementById('lafore-input').style.display='block';
-    state.kidsCare=r&&r.care!=null?r.care:0;
-    state.kidsWork=r&&r.work!=null?r.work:0;
-    document.getElementById('kids-care').textContent=state.kidsCare;
-    document.getElementById('kids-work').textContent=state.kidsWork;
-    document.getElementById('comment-care').value=r&&r.commentCare||r&&r.commentWork||'  ';
-    const done=r&&r.care!=null&&r.work!=null;
-    const partial=r&&(r.care!=null||r.work!=null)&&!done;
-    const b=document.getElementById('form-badge');
-    b.textContent=done?'報告済':partial?'一部報告':'未報告';
-    b.className='status-pill'+(done?' done':partial?' partial':'');
+    applyLafore(r);
+    updateLaforeForm();
+    document.getElementById('comment-care').value=r?.comment||'';
+    updateFormBadge(r, true);
     const goal=state.goals[name],mt=state.monthlyTotals[name]||0;
     if(goal){
       document.getElementById('lafore-progress-area').style.display='block';
@@ -819,13 +983,11 @@ window.selectOffice=async function(name){
     state.kids=r?r.kids:0;
     document.getElementById('kids-num').textContent=state.kids;
     document.getElementById('comment-in').value=r?r.comment:'';
-    // 追加入力欄の既存データを反映
     ['planned','inquiry','visit','contract'].forEach(f=>{
       extraState[f]=r?parseInt(r[f]||0):0;
       document.getElementById(f+'-num').textContent=extraState[f];
     });
-    const done=!!r;
-    const b=document.getElementById('form-badge');b.textContent=done?'報告済':'未報告';b.className='status-pill'+(done?' done':'');
+    updateFormBadge(r, false);
     const goal=state.goals[name],mt=state.monthlyTotals[name]||0;
     if(goal){
       document.getElementById('input-progress-area').style.display='block';
@@ -846,6 +1008,36 @@ window.selectOffice=async function(name){
   document.getElementById('header-title').textContent=name;
 };
 
+// 日付切り替え時：選択日付のデータを再読み込みしてフォームを更新
+window.onReportDateChange=async function(){
+  const dateVal=document.getElementById('report-date').value;
+  if(!state.cur||!dateVal)return;
+  state.formDate=dateVal;
+  document.getElementById('form-date-label').textContent=dateStrToLabel(dateVal);
+  try{
+    const q=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',dateVal));
+    const snap=await getDocs(q);
+    const raw=[];snap.forEach(d=>raw.push({...d.data(),_id:d.id}));
+    const reps=aggregateReports(raw);
+    const r=reps[state.cur];
+    if(isLafore(state.cur)){
+      applyLafore(r);
+      updateLaforeForm();
+      document.getElementById('comment-care').value=r?.comment||'';
+      updateFormBadge(r, true);
+    }else{
+      state.kids=r?.kids||0;
+      document.getElementById('kids-num').textContent=state.kids;
+      document.getElementById('comment-in').value=r?.comment||'';
+      ['planned','inquiry','visit','contract'].forEach(f=>{
+        extraState[f]=r?parseInt(r[f]||0):0;
+        document.getElementById(f+'-num').textContent=extraState[f];
+      });
+      updateFormBadge(r, false);
+    }
+  }catch(e){showToast('データ取得エラー: '+e.message);}
+};
+
 window.backToSelector=function(){
   document.getElementById('office-selector').style.display='block';
   document.getElementById('input-form').style.display='none';
@@ -855,8 +1047,11 @@ window.backToSelector=function(){
 
 window.adj=function(type,d){
   if(type==='normal'){state.kids=Math.max(0,state.kids+d);document.getElementById('kids-num').textContent=state.kids;}
-  else if(type==='care'){state.kidsCare=Math.max(0,state.kidsCare+d);document.getElementById('kids-care').textContent=state.kidsCare;}
-  else if(type==='work'){state.kidsWork=Math.max(0,state.kidsWork+d);document.getElementById('kids-work').textContent=state.kidsWork;}
+};
+
+window.adjLafore=function(service,field,delta){
+  laforeState[service][field]=Math.max(0,(laforeState[service][field]||0)+delta);
+  document.getElementById(`${service}-${field}`).textContent=laforeState[service][field];
 };
 
 const extraState={planned:0,inquiry:0,visit:0,contract:0};
@@ -874,18 +1069,24 @@ window.submitReport=async function(){
     planned:extraState.planned||0,inquiry:extraState.inquiry||0,
     visit:extraState.visit||0,contract:extraState.contract||0};
   try{
-    const r=state.reports[state.cur];
-    if(r&&r.docId&&selectedDate===todayStr){await setDoc(doc(db,'reports',r.docId),data);}
-    else{
-      const q=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate));
-      const snap=await getDocs(q);
-      if(!snap.empty)await setDoc(doc(db,'reports',snap.docs[0].id),data);
-      else await addDoc(collection(db,'reports'),data);
+    const q=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate));
+    const snap=await getDocs(q);
+    let savedDocId;
+    if(!snap.empty){
+      savedDocId=snap.docs[0].id;
+      await setDoc(doc(db,'reports',savedDocId),data);
+    }else{
+      const ref=await addDoc(collection(db,'reports'),data);
+      savedDocId=ref.id;
     }
-    showToast('報告しました ✓');
-    await loadMonthlyTotals();await loadToday();
+    // ローカル状態を更新して表示を維持（リダイレクトしない）
+    const saved={...data,docId:savedDocId};
+    if(selectedDate===todayStr)state.reports[state.cur]=saved;
+    updateFormBadge(saved, false);
+    renderBtns();
+    showSuccessMsg('success-msg');
+    loadMonthlyTotals();
     await window.loadHistory();
-    setTimeout(window.backToSelector,700);
   }catch(e){showToast('エラー: '+e.message);}
 };
 
@@ -893,29 +1094,64 @@ window.submitLafore=async function(){
   const selectedDate=document.getElementById('report-date').value||todayStr;
   const selectedMonth=dateToMonth(selectedDate);
   const time=getTime();
-  const commentCare=document.getElementById('comment-care').value.trim();
+  const comment=document.getElementById('comment-care').value.trim();
+  const data={
+    office:state.cur,
+    date:selectedDate,
+    month:selectedMonth,
+    time,
+    comment,
+    kids:laforeState.care.actual+laforeState.work.actual,
+    services:{
+      "生活介護":{
+        actual:laforeState.care.actual,
+        reservations:laforeState.care.reservations,
+        inquiries:laforeState.care.inquiries,
+        visits:laforeState.care.visits,
+        contracts:laforeState.care.contracts,
+        capacity:10
+      },
+      "就労B型":{
+        actual:laforeState.work.actual,
+        reservations:laforeState.work.reservations,
+        inquiries:laforeState.work.inquiries,
+        visits:laforeState.work.visits,
+        contracts:laforeState.work.contracts,
+        capacity:10
+      }
+    }
+  };
   try{
-    const dataCare={office:state.cur,kids:state.kidsCare,comment:commentCare,time,date:selectedDate,month:selectedMonth,serviceType:'care'};
-    const r=state.reports[state.cur];
-    if(r&&r.careDocId&&selectedDate===todayStr){await setDoc(doc(db,'reports',r.careDocId),dataCare);}
-    else{
-      const qc=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate),where('serviceType','==','care'));
-      const sc=await getDocs(qc);
-      if(!sc.empty)await setDoc(doc(db,'reports',sc.docs[0].id),dataCare);
-      else await addDoc(collection(db,'reports'),dataCare);
+    // 旧フォーマット（2ドキュメント）→新フォーマット（1ドキュメント）に統合して保存
+    const q=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate));
+    const snap=await getDocs(q);
+    let savedDocId;
+    if(!snap.empty){
+      savedDocId=snap.docs[0].id;
+      await setDoc(doc(db,'reports',savedDocId),data);
+      // 旧フォーマットの場合は余分なドキュメントを削除
+      for(let i=1;i<snap.docs.length;i++){
+        await deleteDoc(doc(db,'reports',snap.docs[i].id));
+      }
+    }else{
+      const ref=await addDoc(collection(db,'reports'),data);
+      savedDocId=ref.id;
     }
-    const dataWork={office:state.cur,kids:state.kidsWork,comment:commentCare,time,date:selectedDate,month:selectedMonth,serviceType:'work'};
-    if(r&&r.workDocId&&selectedDate===todayStr){await setDoc(doc(db,'reports',r.workDocId),dataWork);}
-    else{
-      const qw=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate),where('serviceType','==','work'));
-      const sw=await getDocs(qw);
-      if(!sw.empty)await setDoc(doc(db,'reports',sw.docs[0].id),dataWork);
-      else await addDoc(collection(db,'reports'),dataWork);
-    }
-    showToast('報告しました ✓');
-    await loadMonthlyTotals();await loadToday();
+    // ローカル状態を更新（リダイレクトしない）
+    const aggregated={
+      kids:data.kids,
+      care:laforeState.care.actual,
+      work:laforeState.work.actual,
+      comment,time,
+      docId:savedDocId,
+      services:data.services
+    };
+    if(selectedDate===todayStr)state.reports[state.cur]=aggregated;
+    updateFormBadge(aggregated, true);
+    renderBtns();
+    showSuccessMsg('lafore-success-msg');
+    loadMonthlyTotals();
     await window.loadHistory();
-    setTimeout(window.backToSelector,700);
   }catch(e){showToast('エラー: '+e.message);}
 };
 
@@ -948,7 +1184,7 @@ window.downloadCSV=async function(){
     csv+=`${o},${r?r.kids:''},${cap},${rate},${r?r.time:'未報告'},"${comment}"\n`;
   });
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
   a.download=`貢献速報（日次）_${dateVal.replace(/-/g,'')}.csv`;a.click();
 };
 
@@ -963,7 +1199,6 @@ await loadGoalsSimple();
 await loadMonthlyTotals();
 await loadToday();
 
-// managerロールの自拠点自動選択
 if (window._autoSelectOffice) {
   const officeName = window._autoSelectOffice;
   if (OFFICES.includes(officeName)) {

@@ -298,7 +298,7 @@ let canEdit      = false; // admin・supportのみtrue
 window.editCell = async function(type, office, dateStr, currentVal) {
   if (!canEdit) return;
   const val = prompt(
-    `${office}　${dateStr}\n${type === 'planned' ? '予約人数' : '実績人数'}を入力`,
+    `${office}　${dateStr}\n${type === 'planned' ? '予定人数' : '実績人数'}を入力`,
     currentVal ?? ''
   );
   if (val === null) return; // キャンセル
