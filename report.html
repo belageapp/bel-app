@@ -433,15 +433,15 @@ function renderAreaTable(data, title, isSummary=false, officeCount=0) {
     return `${h1}<td class="td-area-h1">${fmt(sh1)}</td>${h2}<td class="td-area-h2">${fmt(sh2)}</td><td class="td-area-tot">${fmt(tot)}</td>`;
   }
   function colsPeriodRatio(fmt, cls='') {
-    // 貢献人数／定員: 月次はaPdef, 小計・通期は sum(aPpl)/(cap*sum(aWd)) で加重平均
+    // 貢献人数／定員: 月次はaPdef, 小計・通期は sum(実績) / sum(目標tpm) で集計
     const h1 = aPdef.slice(0,6).map(v=>`<td class="${cls}">${fmt(v||null)}</td>`).join('');
-    const h1ppl=sum(aPpl.slice(0,6)), h1wd_=sum(aWd.slice(0,6));
-    const sh1 = cap && h1wd_ ? h1ppl/(cap*h1wd_) : null;
+    const h1ppl=sum(aPpl.slice(0,6)), h1tpm=sum(tpm.slice(0,6));
+    const sh1 = h1tpm ? h1ppl/h1tpm : null;
     const h2 = aPdef.slice(6).map(v=>`<td class="${cls}">${fmt(v||null)}</td>`).join('');
-    const h2ppl=sum(aPpl.slice(6)), h2wd_=sum(aWd.slice(6));
-    const sh2 = cap && h2wd_ ? h2ppl/(cap*h2wd_) : null;
-    const totPpl=sum(aPpl), totWd=sum(aWd);
-    const tot = cap && totWd ? totPpl/(cap*totWd) : null;
+    const h2ppl=sum(aPpl.slice(6)), h2tpm=sum(tpm.slice(6));
+    const sh2 = h2tpm ? h2ppl/h2tpm : null;
+    const totPpl=sum(aPpl), totTpm=sum(tpm);
+    const tot = totTpm ? totPpl/totTpm : null;
     return `${h1}<td class="td-area-h1">${fmt(sh1)}</td>${h2}<td class="td-area-h2">${fmt(sh2)}</td><td class="td-area-tot">${fmt(tot)}</td>`;
   }
   function colsAch(arr) {
@@ -770,9 +770,10 @@ window.loadReport = async function(){
   const ah2ppd=avg(aPpd.slice(6).filter(v=>v>0));
   const atPpd=avg(aPpd.filter(v=>v>0));
   const h1ppl=sum(aPpl.slice(0,6)), h2ppl=sum(aPpl.slice(6));
-  const ah1pdef = capacity && ah1wd ? h1ppl/(capacity*ah1wd) : null;
-  const ah2pdef = capacity && ah2wd ? h2ppl/(capacity*ah2wd) : null;
-  const atPdef  = capacity && atWd  ? atPpl/(capacity*atWd)  : null;
+  const h1tpm=sum(tpm.slice(0,6)), h2tpm=sum(tpm.slice(6)), totTpm=sum(tpm);
+  const ah1pdef = h1tpm ? h1ppl/h1tpm : null;
+  const ah2pdef = h2tpm ? h2ppl/h2tpm : null;
+  const atPdef  = totTpm ? atPpl/totTpm : null;
   const ah1unit=avg(aUnit.slice(0,6).filter(v=>v>0));
   const ah2unit=avg(aUnit.slice(6).filter(v=>v>0));
   const atUnit=avg(aUnit.filter(v=>v>0));
@@ -1121,11 +1122,12 @@ window.recalcTotals = function(){
   const ah2ppd=avg(aPpd.slice(6).filter(v=>v>0));
   const atPpd=avg(aPpd.filter(v=>v>0));
   set('ah1ppd',ah1ppd?ah1ppd.toFixed(1):'－'); set('ah2ppd',ah2ppd?ah2ppd.toFixed(1):'－'); set('atppd',atPpd?atPpd.toFixed(1):'－');
-  const rH1wd=sum(aWd.slice(0,6)), rH2wd=sum(aWd.slice(6)), rTWd=rH1wd+rH2wd;
+  const tpm_=window._tpm||[];
   const rH1ppl=sum(aPpl.slice(0,6)), rH2ppl=sum(aPpl.slice(6)), rTPpl=sum(aPpl);
-  const ah1pdef = cap && rH1wd ? rH1ppl/(cap*rH1wd) : null;
-  const ah2pdef = cap && rH2wd ? rH2ppl/(cap*rH2wd) : null;
-  const atPdef  = cap && rTWd  ? rTPpl/(cap*rTWd)   : null;
+  const rH1tpm=sum(tpm_.slice(0,6)), rH2tpm=sum(tpm_.slice(6)), rTtpm=sum(tpm_);
+  const ah1pdef = rH1tpm ? rH1ppl/rH1tpm : null;
+  const ah2pdef = rH2tpm ? rH2ppl/rH2tpm : null;
+  const atPdef  = rTtpm  ? rTPpl/rTtpm   : null;
   set('ah1pdef',ah1pdef?(ah1pdef*100).toFixed(1)+'%':'－'); set('ah2pdef',ah2pdef?(ah2pdef*100).toFixed(1)+'%':'－'); set('atpdef',atPdef?(atPdef*100).toFixed(1)+'%':'－');
   const ah1unit=avg(aUnit.slice(0,6).filter(v=>v>0));
   const ah2unit=avg(aUnit.slice(6).filter(v=>v>0));
