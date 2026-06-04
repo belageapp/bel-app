@@ -403,8 +403,7 @@ async function loadOfficeData(officeName, year) {
 function renderAreaTable(data, title, isSummary=false, officeCount=0) {
   const { wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, cap } = data;
 
-  const aPpd  = MONTHS_ARR.map((_,i)=>aWd[i]&&aPpl[i]?aPpl[i]/aWd[i]:0);
-  const aPdef = MONTHS_ARR.map((_,i)=>cap&&aPpd[i]?aPpd[i]/cap:0);
+  const aPdef = MONTHS_ARR.map((_,i)=>tpm[i]?aPpl[i]/tpm[i]:null);
   const aGr   = MONTHS_ARR.map((_,i)=>aRev[i]&&aSal[i]?aSal[i]/aRev[i]:0);
 
   const achWd  = MONTHS_ARR.map((_,i)=>wdPerMonth[i]&&aWd[i]   ?aWd[i]/wdPerMonth[i]:null);
@@ -433,11 +432,11 @@ function renderAreaTable(data, title, isSummary=false, officeCount=0) {
     return `${h1}<td class="td-area-h1">${fmt(sh1)}</td>${h2}<td class="td-area-h2">${fmt(sh2)}</td><td class="td-area-tot">${fmt(tot)}</td>`;
   }
   function colsPeriodRatio(fmt, cls='') {
-    // 貢献人数／定員: 月次はaPdef, 小計・通期は sum(実績) / sum(目標tpm) で集計
-    const h1 = aPdef.slice(0,6).map(v=>`<td class="${cls}">${fmt(v||null)}</td>`).join('');
+    // 貢献人数／定員: 全セル sum(実績) / sum(目標tpm)。月次はaPdef(=aPpl/tpm)を使用
+    const h1 = aPdef.slice(0,6).map(v=>`<td class="${cls}">${fmt(v)}</td>`).join('');
     const h1ppl=sum(aPpl.slice(0,6)), h1tpm=sum(tpm.slice(0,6));
     const sh1 = h1tpm ? h1ppl/h1tpm : null;
-    const h2 = aPdef.slice(6).map(v=>`<td class="${cls}">${fmt(v||null)}</td>`).join('');
+    const h2 = aPdef.slice(6).map(v=>`<td class="${cls}">${fmt(v)}</td>`).join('');
     const h2ppl=sum(aPpl.slice(6)), h2tpm=sum(tpm.slice(6));
     const sh2 = h2tpm ? h2ppl/h2tpm : null;
     const totPpl=sum(aPpl), totTpm=sum(tpm);
