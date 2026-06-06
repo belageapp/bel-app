@@ -477,12 +477,11 @@ onAuthStateChanged(auth, async user => {
         <span style="font-size:10px;color:#999;white-space:nowrap">${ROLE_LABELS[currentUserData.role]||currentUserData.role}</span>`;
     }
     if (currentUserData.officeId) {
-      const officeName = currentUserData.officeId;
-      if (currentUserData.role === 'manager') {
+      if (['manager','area_manager'].includes(currentUserData.role)) {
         const selector = document.getElementById('office-selector');
         if (selector) selector.style.display = 'none';
       }
-      window._autoSelectOffice = officeName;
+      window._autoSelectOffice = currentUserData.officeId;
     }
   } catch(e) { console.error(e); }
 });
@@ -501,6 +500,7 @@ async function loadMasterData() {
     if (!data.name) return;
     const price = prices[data.priceId] || {};
     CAPACITY[data.name] = price.capacity || data.capacity || 10;
+    OFFICE_ID_TO_NAME[d.id] = data.name;
   });
 }
 
@@ -512,6 +512,7 @@ const OFFICES = [
   "ラフォーレ高陽","ラフォーレ亀山","レポ白木"
 ];
 let CAPACITY = {}; // Firestoreのoffices+pricesから起動時に動的構築
+let OFFICE_ID_TO_NAME = {};
 const STRUCTURE = [
   {cat:"発達支援事業部", summaryLabel:"発達支援事業部　貢献率", areas:[
     {label:"広島エリア", offices:["HUGくみのいえ","ReadyGO井口","ReadyGO八木","ReadyGO川内","ここいろのいえ"]},
@@ -1050,7 +1051,7 @@ window.selectOffice=async function(name){
   }
   document.getElementById('office-selector').style.display='none';
   document.getElementById('input-form').style.display='block';
-  document.getElementById('header-back').style.display='inline-block';
+  document.getElementById('header-back').style.display=window._autoSelectOffice?'none':'inline-block';
   document.getElementById('header-title').textContent=name;
 };
 
@@ -1246,9 +1247,9 @@ await loadMonthlyTotals();
 await loadToday();
 
 if (window._autoSelectOffice) {
-  const officeName = window._autoSelectOffice;
-  if (OFFICES.includes(officeName)) {
-    await selectOffice(officeName);
+  const resolvedName = OFFICE_ID_TO_NAME[window._autoSelectOffice] || window._autoSelectOffice;
+  if (OFFICES.includes(resolvedName)) {
+    await selectOffice(resolvedName);
   }
 }
 
