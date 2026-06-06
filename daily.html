@@ -666,6 +666,7 @@ window.loadHistory=async function(){
       reports[r.date].work = workActual;
       reports[r.date].kids = careActual + workActual;
       reports[r.date].planned += (r.services["生活介護"]?.reservations ?? 0) + (r.services["就労B型"]?.reservations ?? 0);
+      reports[r.date].contract += (r.services["生活介護"]?.contracts ?? 0) + (r.services["就労B型"]?.contracts ?? 0);
     } else if(r.serviceType==='care') {
       reports[r.date].care=r.kids;
       reports[r.date].kids+=r.kids;
@@ -694,10 +695,13 @@ window.loadHistory=async function(){
     if(isWd)totalWd++;
     if(rep&&isWd&&(isLaf?(rep.care!==null||rep.kids>0):(rep.reported||rep.kids>0))){totalReported++;totalKids+=isLaf?(rep.care||0)+(rep.work||0):rep.kids||0;}
     const trCls=isWd?'wd':'hol';
-    let kidsCell='';
+    let kidsCell='', careCell='', workCell='';
     if(rep&&(isLaf?(rep.care!==null||rep.kids>0):(rep.reported||rep.kids>0))){
-      if(isLaf&&rep.care!==null) kidsCell=`<span style="color:#1D9E75;font-weight:600">${(rep.care||0)+(rep.work||0)}</span><span style="font-size:10px;color:#888"> (介護${rep.care??'-'}/就労${rep.work??'-'})</span>`;
-      else kidsCell=`<span style="color:#1D9E75;font-weight:600">${rep.kids}</span>`;
+      if(isLaf&&rep.care!==null){
+        kidsCell=`<span style="color:#1D9E75;font-weight:600">${(rep.care||0)+(rep.work||0)}</span>`;
+        careCell=`<span style="color:#1D9E75">${rep.care??'-'}</span>`;
+        workCell=`<span style="color:#1D9E75">${rep.work??'-'}</span>`;
+      }else kidsCell=`<span style="color:#1D9E75;font-weight:600">${rep.kids}</span>`;
     }else if(isWd){
       kidsCell='<span style="color:#bbb;font-size:11px">未</span>';
     }else{
@@ -710,7 +714,15 @@ window.loadHistory=async function(){
     const cmtEsc=cmt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const cmtAttr=cmt.replace(/'/g,'&apos;').replace(/"/g,'&quot;');
     const cmtCell=cmt?`<td style="text-align:left;max-width:80px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer" onclick="showCmt('${cmtAttr}')" title="${cmtAttr}"><span style="font-size:10px;color:#1a73e8;text-decoration:underline dotted">${cmtEsc}</span></td>`:`<td></td>`;
-    rows+=`<tr>
+    rows+=isLaf?`<tr>
+      <td class="${trCls}">${d}(${DOW[dow]})</td>
+      <td>${plannedVal}</td>
+      <td>${kidsCell}</td>
+      <td style="font-size:11px;color:#888;padding:5px 2px">${careCell}</td>
+      <td style="font-size:11px;color:#888;padding:5px 2px">${workCell}</td>
+      <td>${rep?rep.contract||'':''}</td>
+      ${cmtCell}
+    </tr>`:`<tr>
       <td class="${trCls}">${d}(${DOW[dow]})</td>
       <td>${plannedVal}</td>
       <td>${kidsCell}</td>
@@ -720,9 +732,12 @@ window.loadHistory=async function(){
       ${cmtCell}
     </tr>`;
   }
+  const thead=isLaf
+    ?`<tr><th>日付</th><th>予</th><th>実</th><th style="font-size:10px;padding:5px 2px">生</th><th style="font-size:10px;padding:5px 2px">B</th><th>契</th><th>特記</th></tr>`
+    :`<tr><th>日付</th><th>予</th><th>実</th><th>問</th><th>見</th><th>契</th><th>特記</th></tr>`;
   body.innerHTML=`
     <div style="overflow-x:auto"><table class="history-table">
-      <thead><tr><th>日付</th><th>予</th><th>実</th><th>問</th><th>見</th><th>契</th><th>特記</th></tr></thead>
+      <thead>${thead}</thead>
       <tbody>${rows}</tbody>
     </table></div>
     <div class="history-summary">
