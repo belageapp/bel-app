@@ -574,7 +574,8 @@ const state = {
   hqDate:todayStr, viewMonth:monthStr,
   workdays:{}, historyMonth:monthStr,
   formDate:todayStr,
-  dirty:false
+  dirty:false,
+  kidsEdited:false
 };
 
 // ラフォーレのサービス別入力状態
@@ -1075,6 +1076,7 @@ window.selectOffice=async function(name){
     document.getElementById('normal-input').style.display='block';
     document.getElementById('lafore-input').style.display='none';
     state.kids=r?r.kids:0;
+    state.kidsEdited=r?.reported||false;
     document.getElementById('kids-num').textContent=state.kids;
     document.getElementById('comment-in').value=r?r.comment:'';
     ['planned','inquiry','visit','contract'].forEach(f=>{
@@ -1151,6 +1153,7 @@ window.onReportDateChange=async function(){
       updateFormBadge(r, true);
     }else{
       state.kids=r?.kids||0;
+      state.kidsEdited=r?.reported||false;
       document.getElementById('kids-num').textContent=state.kids;
       document.getElementById('comment-in').value=r?.comment||'';
       ['planned','inquiry','visit','contract'].forEach(f=>{
@@ -1193,7 +1196,7 @@ window.submitReport=async function(){
   const time=getTime();
   const data={office:state.cur,kids:state.kids,comment,time,date:selectedDate,month:selectedMonth,
     planned:extraState.planned||0,inquiry:extraState.inquiry||0,
-    visit:extraState.visit||0,contract:extraState.contract||0,reported:true};
+    visit:extraState.visit||0,contract:extraState.contract||0,reported:state.kidsEdited};
   try{
     const q=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate));
     const snap=await getDocs(q);
@@ -1451,6 +1454,7 @@ function numpadConfirm(advance){
       document.getElementById(`${service}-${field}`).textContent=laforeState[service][field];
     }else if(field==='kids'){
       state.kids=Math.max(0,v);
+      state.kidsEdited=true;
       document.getElementById('kids-num').textContent=state.kids;
     }else{
       extraState[field]=Math.max(0,v);
