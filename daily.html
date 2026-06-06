@@ -208,9 +208,10 @@ textarea:focus{border-color:#1D9E75}
           <span class="status-pill" id="form-badge">未報告</span>
           <span class="form-date-label" id="form-date-label"></span>
         </div>
-        <div class="date-select-row">
-          <span class="date-select-label">日付</span>
-          <input type="date" class="date-input" id="report-date" onchange="onReportDateChange()">
+        <div class="date-nav" style="margin-bottom:10px;">
+          <button class="date-nav-btn" onclick="shiftReportDate(-1)">‹</button>
+          <input type="date" class="date-nav-input" id="report-date" onchange="onReportDateChange()">
+          <button class="date-nav-btn" onclick="shiftReportDate(1)">›</button>
         </div>
 
         <!-- 通常事業所の入力 -->
@@ -837,6 +838,15 @@ window.shiftDate=function(dir){
   const s=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   document.getElementById('hq-date-input').value=s;
   window.loadHqDate();
+};
+
+window.shiftReportDate=function(dir){
+  const cur=document.getElementById('report-date').value||todayStr;
+  const d=new Date(cur+'T00:00:00');d.setDate(d.getDate()+dir);
+  const s=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('report-date').value=s;
+  state.formDate=s;
+  window.onReportDateChange();
 };
 
 async function loadMonthly(){
