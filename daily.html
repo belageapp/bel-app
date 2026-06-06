@@ -1062,7 +1062,19 @@ function applyPaceDisplay(prefix, office, mt){
   if(elapsed===0)return;
   const expectedPace=Math.round(goal*elapsed/info.total);
   const markerPct=Math.min(Math.round(elapsed/info.total*100),100);
+  const pct=Math.min(Math.round(mt/goal*100),100);
   const diff=mt-expectedPace;
+  // バー：ペースライン前=オレンジ、超えた部分=ブルー
+  const bar=document.getElementById(prefix+'bar');
+  if(bar){
+    bar.style.width='100%';
+    bar.className='input-progress-bar';
+    if(pct<=markerPct){
+      bar.style.background=`linear-gradient(to right,#EF9F27 0%,#EF9F27 ${pct}%,transparent ${pct}%,transparent 100%)`;
+    }else{
+      bar.style.background=`linear-gradient(to right,#EF9F27 0%,#EF9F27 ${markerPct}%,#1976D2 ${markerPct}%,#1976D2 ${pct}%,transparent ${pct}%,transparent 100%)`;
+    }
+  }
   const line=document.getElementById(prefix+'pace-line');
   if(line){line.style.display='block';line.style.left=markerPct+'%';}
   const txt=document.getElementById(prefix+'pace-text');
