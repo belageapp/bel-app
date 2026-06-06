@@ -608,7 +608,7 @@ window.loadHistory=async function(){
   const reports={};
   snap.forEach(d=>{
     const r=d.data();
-    if(!reports[r.date])reports[r.date]={kids:0,care:null,work:null};
+    if(!reports[r.date])reports[r.date]={kids:0,care:null,work:null,planned:0,inquiry:0,visit:0,contract:0,comment:''};
     if (r.services) {
       // 新フォーマット
       const careActual = r.services["生活介護"]?.actual ?? 0;
@@ -624,6 +624,11 @@ window.loadHistory=async function(){
       reports[r.date].kids+=r.kids;
     } else {
       reports[r.date].kids=r.kids;
+      reports[r.date].planned+=(r.planned||0);
+      reports[r.date].inquiry+=(r.inquiry||0);
+      reports[r.date].visit+=(r.visit||0);
+      reports[r.date].contract+=(r.contract||0);
+      if(r.comment)reports[r.date].comment=r.comment;
     }
   });
   const [y,m]=month.split('-').map(Number);
@@ -648,13 +653,22 @@ window.loadHistory=async function(){
     }else{
       kidsCell='<span style="color:#ddd;font-size:11px">休</span>';
     }
-    rows+=`<tr><td class="${trCls}">${d}(${DOW[dow]})</td><td>${isWd?'●':''}</td><td>${kidsCell}</td></tr>`;
+    const cmt=(rep&&rep.comment||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    rows+=`<tr>
+      <td class="${trCls}">${d}(${DOW[dow]})</td>
+      <td>${rep?rep.planned||'':''}</td>
+      <td>${kidsCell}</td>
+      <td>${rep?rep.inquiry||'':''}</td>
+      <td>${rep?rep.visit||'':''}</td>
+      <td>${rep?rep.contract||'':''}</td>
+      <td style="text-align:left;max-width:90px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis"><span style="font-size:10px;color:#555">${cmt}</span></td>
+    </tr>`;
   }
   body.innerHTML=`
-    <table class="history-table">
-      <thead><tr><th>日付</th><th>稼働</th><th>貢献人数</th></tr></thead>
+    <div style="overflow-x:auto"><table class="history-table">
+      <thead><tr><th>日付</th><th>予定人数</th><th>貢献人数</th><th>問合せ</th><th>見学</th><th>契約</th><th>特記事項</th></tr></thead>
       <tbody>${rows}</tbody>
-    </table>
+    </table></div>
     <div class="history-summary">
       <span>稼働日数: <strong>${totalWd}日</strong></span>
       <span>入力済: <strong>${totalReported}日</strong></span>
