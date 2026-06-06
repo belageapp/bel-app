@@ -436,6 +436,13 @@ textarea:focus{border-color:#1D9E75}
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<div id="cmt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:flex-end" onclick="document.getElementById('cmt-modal').style.display='none'">
+  <div style="background:#fff;padding:16px 16px 24px;border-radius:12px 12px 0 0;width:100%;max-height:50vh;overflow-y:auto;box-sizing:border-box" onclick="event.stopPropagation()">
+    <div style="font-size:11px;color:#888;margin-bottom:8px">特記事項</div>
+    <div id="cmt-modal-text" style="font-size:14px;color:#333;line-height:1.7;white-space:pre-wrap"></div>
+    <div style="text-align:center;margin-top:16px"><button onclick="document.getElementById('cmt-modal').style.display='none'" style="padding:8px 24px;border:1px solid #ccc;border-radius:6px;background:#fff;font-size:14px;color:#555">閉じる</button></div>
+  </div>
+</div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -531,7 +538,8 @@ const state = {
   cur:null, kids:0,
   hqDate:todayStr, viewMonth:monthStr,
   workdays:{}, historyMonth:monthStr,
-  formDate:todayStr
+  formDate:todayStr,
+  dirty:false
 };
 
 // ラフォーレのサービス別入力状態
@@ -651,7 +659,7 @@ window.loadHistory=async function(){
     const isWd=wdays[dateStr]===1;
     const rep=reports[dateStr];
     if(isWd)totalWd++;
-    if(rep&&rep.kids>0){totalReported++;totalKids+=isLaf?(rep.care||0)+(rep.work||0):rep.kids;}
+    if(rep&&isWd){totalReported++;totalKids+=isLaf?(rep.care||0)+(rep.work||0):rep.kids||0;}
     const trCls=isWd?'wd':'hol';
     let kidsCell='';
     if(rep&&rep.kids>=0&&(isLaf?(rep.care!==null||rep.kids>0):(rep.kids!==null))){
@@ -665,7 +673,10 @@ window.loadHistory=async function(){
     const officeCap=CAPACITY[state.cur]||10;
     const plannedNum=(rep&&rep.planned>0?rep.planned:0)||(dpPlanned[dateStr]||0);
     const plannedVal=isWd?(plannedNum>0?`${plannedNum}`:`<span style="color:#bbb">${officeCap}</span>`):'';
-    const cmt=(rep&&rep.comment||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const cmt=(rep&&rep.comment||'');
+    const cmtEsc=cmt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const cmtAttr=cmt.replace(/'/g,'&apos;').replace(/"/g,'&quot;');
+    const cmtCell=cmt?`<td style="text-align:left;max-width:80px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer" onclick="showCmt('${cmtAttr}')" title="${cmtAttr}"><span style="font-size:10px;color:#1a73e8;text-decoration:underline dotted">${cmtEsc}</span></td>`:`<td></td>`;
     rows+=`<tr>
       <td class="${trCls}">${d}(${DOW[dow]})</td>
       <td>${plannedVal}</td>
@@ -673,12 +684,12 @@ window.loadHistory=async function(){
       <td>${rep?rep.inquiry||'':''}</td>
       <td>${rep?rep.visit||'':''}</td>
       <td>${rep?rep.contract||'':''}</td>
-      <td style="text-align:left;max-width:90px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis"><span style="font-size:10px;color:#555">${cmt}</span></td>
+      ${cmtCell}
     </tr>`;
   }
   body.innerHTML=`
     <div style="overflow-x:auto"><table class="history-table">
-      <thead><tr><th>日付</th><th>予定人数</th><th>貢献人数</th><th>問合せ</th><th>見学</th><th>契約</th><th>特記事項</th></tr></thead>
+      <thead><tr><th>日付</th><th>予</th><th>実</th><th>問</th><th>見</th><th>契</th><th>特記</th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
     <div class="history-summary">
@@ -871,7 +882,6 @@ window.shiftReportDate=function(dir){
   const d=new Date(cur+'T00:00:00');d.setDate(d.getDate()+dir);
   const s=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   document.getElementById('report-date').value=s;
-  state.formDate=s;
   window.onReportDateChange();
 };
 
@@ -1059,6 +1069,14 @@ window.selectOffice=async function(name){
 window.onReportDateChange=async function(){
   const dateVal=document.getElementById('report-date').value;
   if(!state.cur||!dateVal)return;
+  if(dateVal===state.formDate){state.dirty=false;} // 保存後の再読み込み時はスキップ
+  if(state.dirty&&dateVal!==state.formDate){
+    if(!confirm('未保存のデータがあります。\n日付を変更すると入力内容が失われます。\n変更しますか？')){
+      document.getElementById('report-date').value=state.formDate;
+      return;
+    }
+  }
+  state.dirty=false;
   state.formDate=dateVal;
   document.getElementById('form-date-label').textContent=dateStrToLabel(dateVal);
   try{
@@ -1093,18 +1111,20 @@ window.backToSelector=function(){
 };
 
 window.adj=function(type,d){
-  if(type==='normal'){state.kids=Math.max(0,state.kids+d);document.getElementById('kids-num').textContent=state.kids;}
+  if(type==='normal'){state.kids=Math.max(0,state.kids+d);document.getElementById('kids-num').textContent=state.kids;state.dirty=true;}
 };
 
 window.adjLafore=function(service,field,delta){
   laforeState[service][field]=Math.max(0,(laforeState[service][field]||0)+delta);
   document.getElementById(`${service}-${field}`).textContent=laforeState[service][field];
+  state.dirty=true;
 };
 
 const extraState={planned:0,inquiry:0,visit:0,contract:0};
 window.adjExtra=function(field,delta){
   extraState[field]=Math.max(0,(extraState[field]||0)+delta);
   document.getElementById(field+'-num').textContent=extraState[field];
+  state.dirty=true;
 };
 
 window.submitReport=async function(){
@@ -1122,11 +1142,15 @@ window.submitReport=async function(){
     if(!snap.empty){
       savedDocId=snap.docs[0].id;
       await setDoc(doc(db,'reports',savedDocId),data);
+      for(let i=1;i<snap.docs.length;i++){
+        await deleteDoc(doc(db,'reports',snap.docs[i].id));
+      }
     }else{
       const ref=await addDoc(collection(db,'reports'),data);
       savedDocId=ref.id;
     }
     // ローカル状態を更新して表示を維持（リダイレクトしない）
+    state.dirty=false;
     const saved={...data,docId:savedDocId};
     if(selectedDate===todayStr)state.reports[state.cur]=saved;
     updateFormBadge(saved, false);
@@ -1134,7 +1158,8 @@ window.submitReport=async function(){
     showSuccessMsg('success-msg');
     loadMonthlyTotals();
     await window.loadHistory();
-  }catch(e){showToast('エラー: '+e.message);}
+    await window.onReportDateChange();
+  }catch(e){console.error('保存エラー:',e);showToast('保存エラー: '+e.message);}
 };
 
 window.submitLafore=async function(){
@@ -1185,6 +1210,7 @@ window.submitLafore=async function(){
       savedDocId=ref.id;
     }
     // ローカル状態を更新（リダイレクトしない）
+    state.dirty=false;
     const aggregated={
       kids:data.kids,
       care:laforeState.care.actual,
@@ -1236,6 +1262,7 @@ window.downloadCSV=async function(){
 };
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+window.showCmt=function(text){const m=document.getElementById('cmt-modal');document.getElementById('cmt-modal-text').textContent=text;m.style.display='flex';};
 
 document.getElementById('today-lbl').textContent=getToday();
 document.getElementById('report-date').value=todayStr;
