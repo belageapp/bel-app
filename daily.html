@@ -79,7 +79,8 @@ textarea:focus{border-color:#1D9E75}
 .input-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .input-progress-num{font-size:18px;font-weight:700;color:#0F6E56}
 .input-progress-goal{font-size:12px;color:#888}
-.input-progress-wrap{height:6px;background:#d4f4e8;border-radius:3px;overflow:hidden;margin-top:4px}
+.input-progress-wrap{position:relative;height:6px;background:#d4f4e8;border-radius:3px;overflow:hidden;margin-top:4px}
+.pace-line{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(60,60,60,0.45);pointer-events:none}
 .input-progress-bar{height:100%;border-radius:3px;background:#1D9E75;transition:width 0.3s}
 .input-progress-bar.over{background:#E24B4A}
 .input-progress-pct{font-size:11px;color:#0F6E56;margin-top:4px;text-align:right}
@@ -285,8 +286,14 @@ textarea:focus{border-color:#1D9E75}
                 <span class="input-progress-num" id="ip-current">0</span>
                 <span class="input-progress-goal" id="ip-goal"></span>
               </div>
-              <div class="input-progress-wrap"><div class="input-progress-bar" id="ip-bar" style="width:0%"></div></div>
-              <div class="input-progress-pct" id="ip-pct"></div>
+              <div class="input-progress-wrap">
+                <div class="input-progress-bar" id="ip-bar" style="width:0%"></div>
+                <div class="pace-line" id="ip-pace-line" style="display:none"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+                <div class="input-progress-pct" id="ip-pct" style="margin-top:0"></div>
+                <div id="ip-pace-text" style="font-size:11px"></div>
+              </div>
             </div>
           </div>
           <div class="comment-field">
@@ -404,8 +411,14 @@ textarea:focus{border-color:#1D9E75}
                 <span class="input-progress-num" id="lp-current">0</span>
                 <span class="input-progress-goal" id="lp-goal"></span>
               </div>
-              <div class="input-progress-wrap"><div class="input-progress-bar" id="lp-bar" style="width:0%"></div></div>
-              <div class="input-progress-pct" id="lp-pct"></div>
+              <div class="input-progress-wrap">
+                <div class="input-progress-bar" id="lp-bar" style="width:0%"></div>
+                <div class="pace-line" id="lp-pace-line" style="display:none"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+                <div class="input-progress-pct" id="lp-pct" style="margin-top:0"></div>
+                <div id="lp-pace-text" style="font-size:11px"></div>
+              </div>
             </div>
           </div>
           <button class="submit-btn" onclick="submitLafore()">報告する</button>
@@ -575,7 +588,8 @@ const state = {
   workdays:{}, historyMonth:monthStr,
   formDate:todayStr,
   dirty:false,
-  kidsEdited:false
+  kidsEdited:false,
+  wdInfo:{}
 };
 
 // ラフォーレのサービス別入力状態
@@ -843,8 +857,9 @@ async function loadGoalsSimple(){
       const wdSnap=await getDoc(doc(db,'workdays',wdDocId));
       const wdays=wdSnap.exists()?wdSnap.data().days||{}:{};
       const wdCount=Object.entries(wdays).filter(([k,v])=>k.startsWith(monthStr)&&v===1).length;
+      const wdElapsed=Object.entries(wdays).filter(([k,v])=>k.startsWith(monthStr)&&v===1&&k<=todayStr).length;
       const goal=wdCount*price.capacity;
-      if(goal>0)state.goals[office]=goal;
+      if(goal>0){state.goals[office]=goal;state.wdInfo[office]={elapsed:wdElapsed,total:wdCount};}
     }
     showConn('conn-banner',true,'Firebaseに接続済み');
   }catch(e){
@@ -1028,6 +1043,22 @@ function applyLafore(r){
   laforeState.work.contracts    = svcWork.contracts    || 0;
 }
 
+function applyPaceDisplay(prefix, office, mt){
+  const info=state.wdInfo[office];
+  const goal=state.goals[office];
+  if(!info||!goal||info.total===0)return;
+  const expectedPace=Math.round(goal*info.elapsed/info.total);
+  const markerPct=Math.min(Math.round(info.elapsed/info.total*100),100);
+  const diff=mt-expectedPace;
+  const line=document.getElementById(prefix+'pace-line');
+  if(line){line.style.display='block';line.style.left=markerPct+'%';}
+  const txt=document.getElementById(prefix+'pace-text');
+  if(txt){
+    if(diff>=0){txt.textContent=`${diff}名分 順調`;txt.style.color='#0F6E56';}
+    else{txt.textContent=`${Math.abs(diff)}名の貢献に遅れ`;txt.style.color='#E65100';}
+  }
+}
+
 function updateFormBadge(r, isLaf){
   const b=document.getElementById('form-badge');
   if(isLaf){
@@ -1068,6 +1099,7 @@ window.selectOffice=async function(name){
       const bar=document.getElementById('lp-bar');bar.style.width=pct+'%';
       bar.className='input-progress-bar'+(mt>=goal?' over':'');
       document.getElementById('lp-pct').textContent=`${Math.round(mt/goal*100)}%`;
+      applyPaceDisplay('lp-',name,mt);
     }else document.getElementById('lafore-progress-area').style.display='none';
     buildMonthOptions('lafore-history-month-sel');
     document.getElementById('lafore-history-area').style.display='block';
@@ -1093,6 +1125,7 @@ window.selectOffice=async function(name){
       const bar=document.getElementById('ip-bar');bar.style.width=pct+'%';
       bar.className='input-progress-bar'+(mt>=goal?' over':'');
       document.getElementById('ip-pct').textContent=`${Math.round(mt/goal*100)}%`;
+      applyPaceDisplay('ip-',name,mt);
     }else document.getElementById('input-progress-area').style.display='none';
     buildMonthOptions('history-month-sel');
     document.getElementById('history-area').style.display='block';
