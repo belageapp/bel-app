@@ -667,12 +667,15 @@ window.loadHistory=async function(){
       reports[r.date].kids = careActual + workActual;
       reports[r.date].planned += (r.services["生活介護"]?.reservations ?? 0) + (r.services["就労B型"]?.reservations ?? 0);
       reports[r.date].contract += (r.services["生活介護"]?.contracts ?? 0) + (r.services["就労B型"]?.contracts ?? 0);
+      if(r.comment)reports[r.date].comment=r.comment;
     } else if(r.serviceType==='care') {
       reports[r.date].care=r.kids;
       reports[r.date].kids+=r.kids;
+      if(r.comment)reports[r.date].comment=r.comment;
     } else if(r.serviceType==='work') {
       reports[r.date].work=r.kids;
       reports[r.date].kids+=r.kids;
+      if(r.comment)reports[r.date].comment=r.comment;
     } else {
       reports[r.date].kids=r.kids;
       reports[r.date].planned+=(r.planned||0);
