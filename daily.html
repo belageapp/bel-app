@@ -666,7 +666,7 @@ window.loadHistory=async function(){
       if(isLaf&&rep.care!==null) kidsCell=`<span style="color:#1D9E75;font-weight:600">${(rep.care||0)+(rep.work||0)}</span><span style="font-size:10px;color:#888"> (介護${rep.care??'-'}/就労${rep.work??'-'})</span>`;
       else kidsCell=`<span style="color:#1D9E75;font-weight:600">${rep.kids}</span>`;
     }else if(isWd){
-      kidsCell='<span style="color:#bbb;font-size:11px">未入力</span>';
+      kidsCell='<span style="color:#bbb;font-size:11px">未</span>';
     }else{
       kidsCell='<span style="color:#ddd;font-size:11px">休</span>';
     }
