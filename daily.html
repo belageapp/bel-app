@@ -661,7 +661,7 @@ window.loadHistory=async function(){
       kidsCell='<span style="color:#ddd;font-size:11px">休</span>';
     }
     const officeCap=CAPACITY[state.cur]||10;
-    const plannedNum=dpPlanned[dateStr]||(rep&&rep.planned>0?rep.planned:0);
+    const plannedNum=(rep&&rep.planned>0?rep.planned:0)||(dpPlanned[dateStr]||0);
     const plannedVal=isWd?(plannedNum>0?`${plannedNum}`:`<span style="color:#bbb">${officeCap}</span>`):'';
     const cmt=(rep&&rep.comment||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     rows+=`<tr>
