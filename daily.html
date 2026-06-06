@@ -469,6 +469,7 @@ onAuthStateChanged(auth, async user => {
       await signOut(auth); location.href = 'login.html'; return;
     }
     currentUserData = snap.data();
+    await loadMasterData();
     const el = document.getElementById('top-bar-user-info');
     if (el) {
       el.innerHTML = `<span style="font-size:11px;color:#555;white-space:nowrap">${currentUserData.displayName||user.email}</span>
@@ -487,6 +488,21 @@ onAuthStateChanged(auth, async user => {
 
 window._logout = async function() { await signOut(auth); location.href = 'login.html'; };
 
+async function loadMasterData() {
+  const [offSnap, prSnap] = await Promise.all([
+    getDocs(collection(db, 'offices')),
+    getDocs(collection(db, 'prices'))
+  ]);
+  const prices = {};
+  prSnap.forEach(d => prices[d.id] = d.data());
+  offSnap.forEach(d => {
+    const data = d.data();
+    if (!data.name) return;
+    const price = prices[data.priceId] || {};
+    CAPACITY[data.name] = price.capacity || data.capacity || 10;
+  });
+}
+
 const LAFORE_OFFICES = ["ラフォーレ高陽","ラフォーレ亀山"];
 const OFFICES = [
   "HUGくみのいえ","ReadyGO井口","ReadyGO八木","ReadyGO川内","ここいろのいえ",
@@ -494,12 +510,7 @@ const OFFICES = [
   "にじのいえ","はれのいえ",
   "ラフォーレ高陽","ラフォーレ亀山","レポ白木"
 ];
-const CAPACITY = {
-  "HUGくみのいえ":10,"ReadyGO井口":10,"ReadyGO八木":10,"ReadyGO川内":10,"ここいろのいえ":10,
-  "まなびあいのいえ":10,"ReadyGO高屋":10,"ReadyGO黒瀬":10,"ぐらっちぇ黒瀬":10,
-  "にじのいえ":10,"はれのいえ":10,
-  "ラフォーレ高陽":20,"ラフォーレ亀山":20,"レポ白木":4
-};
+let CAPACITY = {}; // Firestoreのoffices+pricesから起動時に動的構築
 const STRUCTURE = [
   {cat:"発達支援事業部", summaryLabel:"発達支援事業部　貢献率", areas:[
     {label:"広島エリア", offices:["HUGくみのいえ","ReadyGO井口","ReadyGO八木","ReadyGO川内","ここいろのいえ"]},
