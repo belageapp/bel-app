@@ -96,6 +96,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .ocr-key{color:#999;flex-shrink:0;min-width:36px}
 .ocr-val{color:#333;line-height:1.5;white-space:pre-wrap;word-break:break-word}
 
+/* ===== 注意書き ===== */
+.notice-box{background:#FFFBF0;border:1px solid #F5E0A0;border-radius:10px;margin-bottom:12px;overflow:hidden}
+.notice-box-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;user-select:none}
+.notice-box-title{font-size:12px;font-weight:600;color:#92400E;display:flex;align-items:center;gap:6px}
+.notice-box-toggle{font-size:11px;color:#B45309;white-space:nowrap}
+.notice-box-body{padding:0 14px 12px;display:none}
+.notice-box-body.open{display:block}
+.notice-section{margin-bottom:10px}
+.notice-section:last-child{margin-bottom:0}
+.notice-section-title{font-size:11px;font-weight:600;color:#92400E;margin-bottom:4px}
+.notice-item{font-size:11px;color:#78350F;line-height:1.7;padding-left:10px;position:relative}
+.notice-item::before{content:"・";position:absolute;left:0}
+.notice-tag{display:inline-block;font-size:10px;font-weight:600;background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:4px;margin-right:4px}
+
 /* ===== 共通 ===== */
 .no-data{text-align:center;padding:24px;color:#aaa;font-size:13px}
 .loading{text-align:center;padding:24px;color:#888;font-size:13px}
@@ -142,6 +156,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 
   <!-- 入力タブ -->
   <div class="section active" id="tab-input">
+
+    <!-- 記入上の注意 -->
+    <div class="notice-box">
+      <div class="notice-box-header" onclick="toggleNotice()">
+        <span class="notice-box-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          記入上の注意・報告区分
+        </span>
+        <span class="notice-box-toggle" id="notice-toggle-lbl">▼ 開く</span>
+      </div>
+      <div class="notice-box-body" id="notice-box-body">
+        <div class="notice-section">
+          <div class="notice-section-title">記入上の注意</div>
+          <div class="notice-item">週平均人数：金曜日の報告のため、実績＋見込み（金・土）の数値を合算し、該当事業所の総開所日数で割った数値</div>
+          <div class="notice-item">目標設定：数値達成に関する具体的な目標を設定</div>
+          <div class="notice-item">取り組み内容：マネジャーが事業所に対して、または自ら行った具体的な行動や言動を記載</div>
+        </div>
+        <div class="notice-section">
+          <div class="notice-section-title">報告区分</div>
+          <div class="notice-item"><span class="notice-tag">特記</span>当週の重要事項・変更点</div>
+          <div class="notice-item"><span class="notice-tag">運営</span>運営上の課題や改善事項</div>
+          <div class="notice-item"><span class="notice-tag">人事</span>人事異動・採用・退職等の情報</div>
+        </div>
+      </div>
+    </div>
+
     <div id="input-content"><div class="loading">読み込み中...</div></div>
   </div>
 
@@ -247,6 +287,13 @@ onAuthStateChanged(auth, async user => {
 });
 
 window._logout = async function() { await signOut(auth); location.href = 'login.html'; };
+
+window.toggleNotice = function() {
+  const body = document.getElementById('notice-box-body');
+  const lbl  = document.getElementById('notice-toggle-lbl');
+  const open = body.classList.toggle('open');
+  lbl.textContent = open ? '▲ 閉じる' : '▼ 開く';
+};
 
 // ===== 初期化 =====
 async function initPage() {
