@@ -322,32 +322,20 @@ textarea:focus{border-color:#1D9E75}
           <div class="svc-section">
             <div class="svc-header">生活介護　<span class="svc-cap">定員10名</span></div>
             <div class="svc-count-row">
-              <span class="count-label">実績人数</span>
+              <span class="count-label">貢献実績人数</span>
               <div class="count-ctrl">
                 <span class="cnt-num tap-num" id="care-actual" onclick="numpadOpenDaily('actual','care')">0</span>
               </div>
             </div>
             <div class="extra-inputs" style="margin-top:0">
               <div class="extra-row">
-                <span class="extra-label">予定人数</span>
+                <span class="extra-label">貢献予定人数</span>
                 <div class="count-ctrl">
                   <span class="cnt-num tap-num" id="care-reservations" onclick="numpadOpenDaily('reservations','care')">0</span>
                 </div>
               </div>
               <div class="extra-row">
-                <span class="extra-label">問合せ</span>
-                <div class="count-ctrl">
-                  <span class="cnt-num tap-num" id="care-inquiries" onclick="numpadOpenDaily('inquiries','care')">0</span>
-                </div>
-              </div>
-              <div class="extra-row">
-                <span class="extra-label">見学</span>
-                <div class="count-ctrl">
-                  <span class="cnt-num tap-num" id="care-visits" onclick="numpadOpenDaily('visits','care')">0</span>
-                </div>
-              </div>
-              <div class="extra-row">
-                <span class="extra-label">契約人数</span>
+                <span class="extra-label">契約</span>
                 <div class="count-ctrl">
                   <span class="cnt-num tap-num" id="care-contracts" onclick="numpadOpenDaily('contracts','care')">0</span>
                 </div>
@@ -358,32 +346,20 @@ textarea:focus{border-color:#1D9E75}
           <div class="svc-section">
             <div class="svc-header work">就労B型　<span class="svc-cap">定員10名</span></div>
             <div class="svc-count-row">
-              <span class="count-label">実績人数</span>
+              <span class="count-label">貢献実績人数</span>
               <div class="count-ctrl">
                 <span class="cnt-num tap-num" id="work-actual" onclick="numpadOpenDaily('actual','work')">0</span>
               </div>
             </div>
             <div class="extra-inputs" style="margin-top:0">
               <div class="extra-row">
-                <span class="extra-label">予定人数</span>
+                <span class="extra-label">貢献予定人数</span>
                 <div class="count-ctrl">
                   <span class="cnt-num tap-num" id="work-reservations" onclick="numpadOpenDaily('reservations','work')">0</span>
                 </div>
               </div>
               <div class="extra-row">
-                <span class="extra-label">問合せ</span>
-                <div class="count-ctrl">
-                  <span class="cnt-num tap-num" id="work-inquiries" onclick="numpadOpenDaily('inquiries','work')">0</span>
-                </div>
-              </div>
-              <div class="extra-row">
-                <span class="extra-label">見学</span>
-                <div class="count-ctrl">
-                  <span class="cnt-num tap-num" id="work-visits" onclick="numpadOpenDaily('visits','work')">0</span>
-                </div>
-              </div>
-              <div class="extra-row">
-                <span class="extra-label">契約人数</span>
+                <span class="extra-label">契約</span>
                 <div class="count-ctrl">
                   <span class="cnt-num tap-num" id="work-contracts" onclick="numpadOpenDaily('contracts','work')">0</span>
                 </div>
@@ -605,7 +581,7 @@ const laforeState = {
   work: { actual:0, reservations:0, inquiries:0, visits:0, contracts:0 }
 };
 
-const LAFORE_FIELDS = ['actual','reservations','inquiries','visits','contracts'];
+const LAFORE_FIELDS = ['actual','reservations','contracts'];
 
 function getToday(){const d=new Date();return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+['日','月','火','水','木','金','土'][d.getDay()]+"）";}
 function getTime(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
@@ -1399,15 +1375,11 @@ const DAILY_FIELDS=[
   {field:'contract',label:'契約',service:null},
 ];
 const LAFORE_DAILY_FIELDS=[
-  {field:'actual',label:'生活介護 実績',service:'care'},
-  {field:'reservations',label:'生活介護 予定',service:'care'},
-  {field:'inquiries',label:'生活介護 問合せ',service:'care'},
-  {field:'visits',label:'生活介護 見学',service:'care'},
+  {field:'actual',label:'生活介護 貢献実績人数',service:'care'},
+  {field:'reservations',label:'生活介護 貢献予定人数',service:'care'},
   {field:'contracts',label:'生活介護 契約',service:'care'},
-  {field:'actual',label:'就労B型 実績',service:'work'},
-  {field:'reservations',label:'就労B型 予定',service:'work'},
-  {field:'inquiries',label:'就労B型 問合せ',service:'work'},
-  {field:'visits',label:'就労B型 見学',service:'work'},
+  {field:'actual',label:'就労B型 貢献実績人数',service:'work'},
+  {field:'reservations',label:'就労B型 貢献予定人数',service:'work'},
   {field:'contracts',label:'就労B型 契約',service:'work'},
 ];
 let numpadMode='weekly';
