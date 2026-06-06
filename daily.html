@@ -245,7 +245,7 @@ textarea:focus{border-color:#1D9E75}
         <!-- 通常事業所の入力 -->
         <div id="normal-input">
           <div class="count-row">
-            <span class="count-label">貢献人数</span>
+            <span class="count-label">貢献実績人数</span>
             <div class="count-ctrl">
               <span class="cnt-num tap-num" id="kids-num" onclick="numpadOpenDaily('kids',null)">0</span>
             </div>
@@ -253,7 +253,7 @@ textarea:focus{border-color:#1D9E75}
           <!-- 追加入力欄 -->
           <div class="extra-inputs">
             <div class="extra-row">
-              <span class="extra-label">予定人数</span>
+              <span class="extra-label">貢献予定人数</span>
               <div class="count-ctrl">
                 <span class="cnt-num tap-num" id="planned-num" onclick="numpadOpenDaily('planned',null)">0</span>
               </div>
@@ -730,7 +730,7 @@ window.loadHistory=async function(){
     </table></div>
     <div class="history-summary">
       <span>稼働日数: <strong>${totalWd}日</strong></span>
-      <span>入力済: <strong>${totalReported}日</strong></span>
+      <span>報告済: <strong>${totalReported}日</strong></span>
       <span>合計: <strong>${totalKids}名</strong></span>
     </div>`;
 };
@@ -1325,8 +1325,8 @@ window.downloadCSV=async function(){
 
 // ===== 日次テンキー入力 =====
 const DAILY_FIELDS=[
-  {field:'kids',label:'貢献人数',service:null},
-  {field:'planned',label:'予定人数',service:null},
+  {field:'kids',label:'貢献実績人数',service:null},
+  {field:'planned',label:'貢献予定人数',service:null},
   {field:'inquiry',label:'問合せ',service:null},
   {field:'visit',label:'見学',service:null},
   {field:'contract',label:'契約',service:null},
