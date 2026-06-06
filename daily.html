@@ -1070,9 +1070,11 @@ function applyPaceDisplay(prefix, office, mt){
     bar.style.width='100%';
     bar.className='input-progress-bar';
     if(pct<=markerPct){
-      bar.style.background=`linear-gradient(to right,#EF9F27 0%,#EF9F27 ${pct}%,transparent ${pct}%,transparent 100%)`;
+      // 実績まで緑、実績〜ペースラインまでオレンジ
+      bar.style.background=`linear-gradient(to right,#1D9E75 0%,#1D9E75 ${pct}%,#EF9F27 ${pct}%,#EF9F27 ${markerPct}%,transparent ${markerPct}%,transparent 100%)`;
     }else{
-      bar.style.background=`linear-gradient(to right,#EF9F27 0%,#EF9F27 ${markerPct}%,#1976D2 ${markerPct}%,#1976D2 ${pct}%,transparent ${pct}%,transparent 100%)`;
+      // ペースラインまで緑、ペースライン〜実績までブルー
+      bar.style.background=`linear-gradient(to right,#1D9E75 0%,#1D9E75 ${markerPct}%,#1976D2 ${markerPct}%,#1976D2 ${pct}%,transparent ${pct}%,transparent 100%)`;
     }
   }
   const line=document.getElementById(prefix+'pace-line');
