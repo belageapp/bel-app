@@ -653,10 +653,12 @@ window.loadHistory=async function(){
     }else{
       kidsCell='<span style="color:#ddd;font-size:11px">休</span>';
     }
+    const officeCap=CAPACITY[state.cur]||10;
+    const plannedVal=rep&&rep.planned>0?`${rep.planned}`:(isWd?`<span style="color:#bbb">${officeCap}</span>`:'');
     const cmt=(rep&&rep.comment||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     rows+=`<tr>
       <td class="${trCls}">${d}(${DOW[dow]})</td>
-      <td>${rep?rep.planned||'':''}</td>
+      <td>${plannedVal}</td>
       <td>${kidsCell}</td>
       <td>${rep?rep.inquiry||'':''}</td>
       <td>${rep?rep.visit||'':''}</td>
