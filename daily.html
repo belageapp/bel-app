@@ -593,7 +593,8 @@ const state = {
   formDate:todayStr,
   dirty:false,
   kidsEdited:false,
-  wdInfo:{}
+  wdInfo:{},
+  lastActualDate:{}
 };
 
 // ラフォーレのサービス別入力状態
@@ -860,10 +861,9 @@ async function loadGoalsSimple(){
       const wdDocId=`${fiscalYear}_${office}`;
       const wdSnap=await getDoc(doc(db,'workdays',wdDocId));
       const wdays=wdSnap.exists()?wdSnap.data().days||{}:{};
-      const wdCount=Object.entries(wdays).filter(([k,v])=>k.startsWith(monthStr)&&v===1).length;
-      const wdElapsed=Object.entries(wdays).filter(([k,v])=>k.startsWith(monthStr)&&v===1&&k<=todayStr).length;
-      const goal=wdCount*price.capacity;
-      if(goal>0){state.goals[office]=goal;state.wdInfo[office]={elapsed:wdElapsed,total:wdCount};}
+      const wdDates=Object.entries(wdays).filter(([k,v])=>k.startsWith(monthStr)&&v===1).map(([k])=>k).sort();
+      const goal=wdDates.length*price.capacity;
+      if(goal>0){state.goals[office]=goal;state.wdInfo[office]={total:wdDates.length,wdDates};}
     }
     showConn('conn-banner',true,'Firebaseに接続済み');
   }catch(e){
@@ -895,6 +895,11 @@ async function loadMonthlyTotals(){
     Object.values(byDateOffice).forEach(v=>{
       if(!state.monthlyTotals[v.office]) state.monthlyTotals[v.office]=0;
       state.monthlyTotals[v.office]+=v.kids||0;
+    });
+    state.lastActualDate={};
+    allRows.filter(r=>r.source!=='excel'&&(r.reported||((r.kids||0)>0))).forEach(r=>{
+      if(!state.lastActualDate[r.office]||r.date>state.lastActualDate[r.office])
+        state.lastActualDate[r.office]=r.date;
     });
   }catch(e){}
 }
@@ -1051,8 +1056,12 @@ function applyPaceDisplay(prefix, office, mt){
   const info=state.wdInfo[office];
   const goal=state.goals[office];
   if(!info||!goal||info.total===0)return;
-  const expectedPace=Math.round(goal*info.elapsed/info.total);
-  const markerPct=Math.min(Math.round(info.elapsed/info.total*100),100);
+  const lastDate=state.lastActualDate[office];
+  if(!lastDate)return;
+  const elapsed=info.wdDates.filter(d=>d<=lastDate).length;
+  if(elapsed===0)return;
+  const expectedPace=Math.round(goal*elapsed/info.total);
+  const markerPct=Math.min(Math.round(elapsed/info.total*100),100);
   const diff=mt-expectedPace;
   const line=document.getElementById(prefix+'pace-line');
   if(line){line.style.display='block';line.style.left=markerPct+'%';}
