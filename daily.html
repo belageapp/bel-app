@@ -335,6 +335,18 @@ textarea:focus{border-color:#1D9E75}
                 </div>
               </div>
               <div class="extra-row">
+                <span class="extra-label">問合せ</span>
+                <div class="count-ctrl">
+                  <span class="cnt-num tap-num" id="care-inquiries" onclick="numpadOpenDaily('inquiries','care')">0</span>
+                </div>
+              </div>
+              <div class="extra-row">
+                <span class="extra-label">見学</span>
+                <div class="count-ctrl">
+                  <span class="cnt-num tap-num" id="care-visits" onclick="numpadOpenDaily('visits','care')">0</span>
+                </div>
+              </div>
+              <div class="extra-row">
                 <span class="extra-label">契約</span>
                 <div class="count-ctrl">
                   <span class="cnt-num tap-num" id="care-contracts" onclick="numpadOpenDaily('contracts','care')">0</span>
@@ -356,6 +368,18 @@ textarea:focus{border-color:#1D9E75}
                 <span class="extra-label">貢献予定人数</span>
                 <div class="count-ctrl">
                   <span class="cnt-num tap-num" id="work-reservations" onclick="numpadOpenDaily('reservations','work')">0</span>
+                </div>
+              </div>
+              <div class="extra-row">
+                <span class="extra-label">問合せ</span>
+                <div class="count-ctrl">
+                  <span class="cnt-num tap-num" id="work-inquiries" onclick="numpadOpenDaily('inquiries','work')">0</span>
+                </div>
+              </div>
+              <div class="extra-row">
+                <span class="extra-label">見学</span>
+                <div class="count-ctrl">
+                  <span class="cnt-num tap-num" id="work-visits" onclick="numpadOpenDaily('visits','work')">0</span>
                 </div>
               </div>
               <div class="extra-row">
@@ -581,7 +605,7 @@ const laforeState = {
   work: { actual:0, reservations:0, inquiries:0, visits:0, contracts:0 }
 };
 
-const LAFORE_FIELDS = ['actual','reservations','contracts'];
+const LAFORE_FIELDS = ['actual','reservations','inquiries','visits','contracts'];
 
 function getToday(){const d=new Date();return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+['日','月','火','水','木','金','土'][d.getDay()]+"）";}
 function getTime(){const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
@@ -666,6 +690,8 @@ window.loadHistory=async function(){
       reports[r.date].work = workActual;
       reports[r.date].kids = careActual + workActual;
       reports[r.date].planned += (r.services["生活介護"]?.reservations ?? 0) + (r.services["就労B型"]?.reservations ?? 0);
+      reports[r.date].inquiry += (r.services["生活介護"]?.inquiries ?? 0) + (r.services["就労B型"]?.inquiries ?? 0);
+      reports[r.date].visit += (r.services["生活介護"]?.visits ?? 0) + (r.services["就労B型"]?.visits ?? 0);
       reports[r.date].contract += (r.services["生活介護"]?.contracts ?? 0) + (r.services["就労B型"]?.contracts ?? 0);
       if(r.comment)reports[r.date].comment=r.comment;
     } else if(r.serviceType==='care') {
@@ -1397,9 +1423,13 @@ const DAILY_FIELDS=[
 const LAFORE_DAILY_FIELDS=[
   {field:'actual',label:'生活介護 貢献実績人数',service:'care'},
   {field:'reservations',label:'生活介護 貢献予定人数',service:'care'},
+  {field:'inquiries',label:'生活介護 問合せ',service:'care'},
+  {field:'visits',label:'生活介護 見学',service:'care'},
   {field:'contracts',label:'生活介護 契約',service:'care'},
   {field:'actual',label:'就労B型 貢献実績人数',service:'work'},
   {field:'reservations',label:'就労B型 貢献予定人数',service:'work'},
+  {field:'inquiries',label:'就労B型 問合せ',service:'work'},
+  {field:'visits',label:'就労B型 見学',service:'work'},
   {field:'contracts',label:'就労B型 契約',service:'work'},
 ];
 let numpadMode='weekly';
