@@ -652,8 +652,8 @@ window.loadHistory=async function(){
     if(rep&&rep.kids>0){totalReported++;totalKids+=isLaf?(rep.care||0)+(rep.work||0):rep.kids;}
     const trCls=isWd?'wd':'hol';
     let kidsCell='';
-    if(rep&&rep.kids>=0&&(isLaf?rep.care!==null:rep.kids!==null)){
-      if(isLaf) kidsCell=`<span style="color:#1D9E75;font-weight:600">${(rep.care||0)+(rep.work||0)}</span><span style="font-size:10px;color:#888"> (介護${rep.care??'-'}/就労${rep.work??'-'})</span>`;
+    if(rep&&rep.kids>=0&&(isLaf?(rep.care!==null||rep.kids>0):(rep.kids!==null))){
+      if(isLaf&&rep.care!==null) kidsCell=`<span style="color:#1D9E75;font-weight:600">${(rep.care||0)+(rep.work||0)}</span><span style="font-size:10px;color:#888"> (介護${rep.care??'-'}/就労${rep.work??'-'})</span>`;
       else kidsCell=`<span style="color:#1D9E75;font-weight:600">${rep.kids}</span>`;
     }else if(isWd){
       kidsCell='<span style="color:#bbb;font-size:11px">未入力</span>';
