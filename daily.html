@@ -723,6 +723,8 @@ window.loadHistory=async function(){
       <td>${kidsCell}</td>
       <td style="font-size:11px;color:#888;padding:5px 2px">${careCell}</td>
       <td style="font-size:11px;color:#888;padding:5px 2px">${workCell}</td>
+      <td>${rep?rep.inquiry||'':''}</td>
+      <td>${rep?rep.visit||'':''}</td>
       <td>${rep?rep.contract||'':''}</td>
       ${cmtCell}
     </tr>`:`<tr>
@@ -736,7 +738,7 @@ window.loadHistory=async function(){
     </tr>`;
   }
   const thead=isLaf
-    ?`<tr><th>日付</th><th>予</th><th>実</th><th style="font-size:10px;padding:5px 2px">生</th><th style="font-size:10px;padding:5px 2px">B</th><th>契</th><th>特記</th></tr>`
+    ?`<tr><th>日付</th><th>予</th><th>実</th><th style="font-size:10px;padding:5px 2px">生</th><th style="font-size:10px;padding:5px 2px">B</th><th>問</th><th>見</th><th>契</th><th>特記</th></tr>`
     :`<tr><th>日付</th><th>予</th><th>実</th><th>問</th><th>見</th><th>契</th><th>特記</th></tr>`;
   body.innerHTML=`
     <div style="overflow-x:auto"><table class="history-table">
