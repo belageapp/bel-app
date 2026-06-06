@@ -817,7 +817,8 @@ function aggregateReports(rows){
     }else{
       // 通常事業所フォーマット
       reps[o]={kids:r.kids,comment:r.comment||'',time:r.time,docId:r._id,
-        planned:r.planned||0, inquiry:r.inquiry||0, visit:r.visit||0, contract:r.contract||0};
+        planned:r.planned||0, inquiry:r.inquiry||0, visit:r.visit||0, contract:r.contract||0,
+        reported:r.reported||false};
     }
   });
   return reps;
@@ -996,7 +997,7 @@ function renderBtns(){
       if(hasCare&&hasWork)cls+=' done';
       else if(hasCare||hasWork)cls+=' partial';
     }else{
-      if(r)cls+=' done';
+      if(r&&(r.reported||r.kids>0))cls+=' done';
     }
     return`<button class="${cls}" onclick="selectOffice('${o}')"><span style="font-size:13px">${o}</span><span class="dot"></span></button>`;
   }).join('');
@@ -1035,8 +1036,9 @@ function updateFormBadge(r, isLaf){
     b.textContent=done?'報告済':partial?'一部報告':'未報告';
     b.className='status-pill'+(done?' done':partial?' partial':'');
   }else{
-    b.textContent=r?'報告済':'未報告';
-    b.className='status-pill'+(r?' done':'');
+    const isReported=r&&(r.reported||r.kids>0);
+    b.textContent=isReported?'報告済':'未報告';
+    b.className='status-pill'+(isReported?' done':'');
   }
 }
 
@@ -1191,7 +1193,7 @@ window.submitReport=async function(){
   const time=getTime();
   const data={office:state.cur,kids:state.kids,comment,time,date:selectedDate,month:selectedMonth,
     planned:extraState.planned||0,inquiry:extraState.inquiry||0,
-    visit:extraState.visit||0,contract:extraState.contract||0};
+    visit:extraState.visit||0,contract:extraState.contract||0,reported:true};
   try{
     const q=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate));
     const snap=await getDocs(q);
