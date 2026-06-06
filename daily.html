@@ -80,7 +80,7 @@ textarea:focus{border-color:#1D9E75}
 .input-progress-num{font-size:18px;font-weight:700;color:#0F6E56}
 .input-progress-goal{font-size:12px;color:#888}
 .input-progress-wrap{position:relative;height:6px;background:#d4f4e8;border-radius:3px;overflow:hidden;margin-top:4px}
-.pace-line{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(60,60,60,0.45);pointer-events:none}
+.pace-line{position:absolute;top:-5px;bottom:-5px;width:3px;margin-left:-1.5px;background:#555;border-radius:2px;pointer-events:none;z-index:1}
 .input-progress-bar{height:100%;border-radius:3px;background:#1D9E75;transition:width 0.3s}
 .input-progress-bar.over{background:#E24B4A}
 .input-progress-pct{font-size:11px;color:#0F6E56;margin-top:4px;text-align:right}
@@ -286,8 +286,10 @@ textarea:focus{border-color:#1D9E75}
                 <span class="input-progress-num" id="ip-current">0</span>
                 <span class="input-progress-goal" id="ip-goal"></span>
               </div>
-              <div class="input-progress-wrap">
-                <div class="input-progress-bar" id="ip-bar" style="width:0%"></div>
+              <div style="position:relative">
+                <div class="input-progress-wrap">
+                  <div class="input-progress-bar" id="ip-bar" style="width:0%"></div>
+                </div>
                 <div class="pace-line" id="ip-pace-line" style="display:none"></div>
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
@@ -411,8 +413,10 @@ textarea:focus{border-color:#1D9E75}
                 <span class="input-progress-num" id="lp-current">0</span>
                 <span class="input-progress-goal" id="lp-goal"></span>
               </div>
-              <div class="input-progress-wrap">
-                <div class="input-progress-bar" id="lp-bar" style="width:0%"></div>
+              <div style="position:relative">
+                <div class="input-progress-wrap">
+                  <div class="input-progress-bar" id="lp-bar" style="width:0%"></div>
+                </div>
                 <div class="pace-line" id="lp-pace-line" style="display:none"></div>
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
@@ -1054,7 +1058,8 @@ function applyPaceDisplay(prefix, office, mt){
   if(line){line.style.display='block';line.style.left=markerPct+'%';}
   const txt=document.getElementById(prefix+'pace-text');
   if(txt){
-    if(diff>=0){txt.textContent=`${diff}名分 順調`;txt.style.color='#0F6E56';}
+    if(diff>0){txt.textContent=`${diff}名分 順調に貢献できています`;txt.style.color='#0F6E56';}
+    else if(diff===0){txt.textContent=`順調に貢献できています`;txt.style.color='#0F6E56';}
     else{txt.textContent=`${Math.abs(diff)}名の貢献に遅れ`;txt.style.color='#E65100';}
   }
 }
