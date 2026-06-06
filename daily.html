@@ -695,10 +695,10 @@ window.loadHistory=async function(){
     const isWd=wdays[dateStr]===1;
     const rep=reports[dateStr];
     if(isWd)totalWd++;
-    if(rep&&isWd){totalReported++;totalKids+=isLaf?(rep.care||0)+(rep.work||0):rep.kids||0;}
+    if(rep&&isWd&&(isLaf?(rep.care!==null||rep.kids>0):(rep.reported||rep.kids>0))){totalReported++;totalKids+=isLaf?(rep.care||0)+(rep.work||0):rep.kids||0;}
     const trCls=isWd?'wd':'hol';
     let kidsCell='';
-    if(rep&&rep.kids>=0&&(isLaf?(rep.care!==null||rep.kids>0):(rep.kids!==null))){
+    if(rep&&(isLaf?(rep.care!==null||rep.kids>0):(rep.reported||rep.kids>0))){
       if(isLaf&&rep.care!==null) kidsCell=`<span style="color:#1D9E75;font-weight:600">${(rep.care||0)+(rep.work||0)}</span><span style="font-size:10px;color:#888"> (介護${rep.care??'-'}/就労${rep.work??'-'})</span>`;
       else kidsCell=`<span style="color:#1D9E75;font-weight:600">${rep.kids}</span>`;
     }else if(isWd){
