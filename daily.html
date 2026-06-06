@@ -182,6 +182,8 @@ textarea:focus{border-color:#1D9E75}
 .nk:active{opacity:.6}
 .nk.ndel{background:#aeaeb2;color:#fff;font-size:18px}
 .nk.nok{background:#1D9E75;color:#fff;font-size:20px;font-weight:700}
+.tap-num{cursor:pointer;min-width:60px;padding:4px 14px;border-radius:8px;background:#F0FAF6;border:2px solid #d4f4e8;-webkit-tap-highlight-color:transparent}
+.tap-num:active{background:#d4f4e8}
 </style>
 </head>
 <body>
@@ -232,15 +234,16 @@ textarea:focus{border-color:#1D9E75}
           <input type="date" class="date-nav-input" id="report-date" onchange="onReportDateChange()">
           <button class="date-nav-btn" onclick="shiftReportDate(1)">›</button>
         </div>
+        <div id="closed-day-banner" style="display:none;background:#FFF3E0;border:1px solid #FFB74D;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#E65100;text-align:center;font-weight:500">
+          この日は閉所日のため入力できません
+        </div>
 
         <!-- 通常事業所の入力 -->
         <div id="normal-input">
           <div class="count-row">
             <span class="count-label">貢献人数</span>
             <div class="count-ctrl">
-              <button class="cnt-btn" onclick="adj('normal',-1)">−</button>
-              <span class="cnt-num" id="kids-num">0</span>
-              <button class="cnt-btn" onclick="adj('normal',1)">＋</button>
+              <span class="cnt-num tap-num" id="kids-num" onclick="numpadOpenDaily('kids',null)">0</span>
             </div>
           </div>
           <!-- 追加入力欄 -->
@@ -248,33 +251,25 @@ textarea:focus{border-color:#1D9E75}
             <div class="extra-row">
               <span class="extra-label">予定人数</span>
               <div class="count-ctrl">
-                <button class="cnt-btn" onclick="adjExtra('planned',-1)">−</button>
-                <span class="cnt-num" id="planned-num">0</span>
-                <button class="cnt-btn" onclick="adjExtra('planned',1)">＋</button>
+                <span class="cnt-num tap-num" id="planned-num" onclick="numpadOpenDaily('planned',null)">0</span>
               </div>
             </div>
             <div class="extra-row">
               <span class="extra-label">問合せ</span>
               <div class="count-ctrl">
-                <button class="cnt-btn" onclick="adjExtra('inquiry',-1)">−</button>
-                <span class="cnt-num" id="inquiry-num">0</span>
-                <button class="cnt-btn" onclick="adjExtra('inquiry',1)">＋</button>
+                <span class="cnt-num tap-num" id="inquiry-num" onclick="numpadOpenDaily('inquiry',null)">0</span>
               </div>
             </div>
             <div class="extra-row">
               <span class="extra-label">見学</span>
               <div class="count-ctrl">
-                <button class="cnt-btn" onclick="adjExtra('visit',-1)">−</button>
-                <span class="cnt-num" id="visit-num">0</span>
-                <button class="cnt-btn" onclick="adjExtra('visit',1)">＋</button>
+                <span class="cnt-num tap-num" id="visit-num" onclick="numpadOpenDaily('visit',null)">0</span>
               </div>
             </div>
             <div class="extra-row">
               <span class="extra-label">契約</span>
               <div class="count-ctrl">
-                <button class="cnt-btn" onclick="adjExtra('contract',-1)">−</button>
-                <span class="cnt-num" id="contract-num">0</span>
-                <button class="cnt-btn" onclick="adjExtra('contract',1)">＋</button>
+                <span class="cnt-num tap-num" id="contract-num" onclick="numpadOpenDaily('contract',null)">0</span>
               </div>
             </div>
           </div>
@@ -296,8 +291,9 @@ textarea:focus{border-color:#1D9E75}
           </div>
           <button class="submit-btn" onclick="submitReport()">報告する</button>
           <div class="success-msg" id="success-msg">✅ 報告しました</div>
-          <div id="weekly-planned-area" style="display:none;margin-top:10px">
-            <button class="csv-btn" onclick="toggleWeeklyPlanned()" style="margin-bottom:0;font-size:14px;color:#1D9E75;border-color:#1D9E75">週次予定を入力</button>
+          <div id="weekly-planned-area" style="display:none;margin-top:20px;padding-top:16px;border-top:2px dashed #E8EAED">
+            <div style="font-size:11px;color:#aaa;text-align:center;margin-bottom:8px;letter-spacing:.05em">── 週次予定入力 ──</div>
+            <button class="csv-btn" onclick="toggleWeeklyPlanned()" style="margin-bottom:0;font-size:14px;color:#185FA5;border-color:#185FA5;background:#EBF3FB">週次予定を入力</button>
             <div id="weekly-plan-panel" style="display:none;background:#fff;border-radius:12px;padding:14px;border:1px solid #E8EAED;margin-top:6px">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                 <button onclick="shiftWeek(-1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">◀ 前週</button>
@@ -326,42 +322,32 @@ textarea:focus{border-color:#1D9E75}
             <div class="svc-count-row">
               <span class="count-label">実績人数</span>
               <div class="count-ctrl">
-                <button class="cnt-btn" onclick="adjLafore('care','actual',-1)">−</button>
-                <span class="cnt-num" id="care-actual">0</span>
-                <button class="cnt-btn" onclick="adjLafore('care','actual',1)">＋</button>
+                <span class="cnt-num tap-num" id="care-actual" onclick="numpadOpenDaily('actual','care')">0</span>
               </div>
             </div>
             <div class="extra-inputs" style="margin-top:0">
               <div class="extra-row">
                 <span class="extra-label">予定人数</span>
                 <div class="count-ctrl">
-                  <button class="cnt-btn" onclick="adjLafore('care','reservations',-1)">−</button>
-                  <span class="cnt-num" id="care-reservations">0</span>
-                  <button class="cnt-btn" onclick="adjLafore('care','reservations',1)">＋</button>
+                  <span class="cnt-num tap-num" id="care-reservations" onclick="numpadOpenDaily('reservations','care')">0</span>
                 </div>
               </div>
               <div class="extra-row">
                 <span class="extra-label">問合せ</span>
                 <div class="count-ctrl">
-                  <button class="cnt-btn" onclick="adjLafore('care','inquiries',-1)">−</button>
-                  <span class="cnt-num" id="care-inquiries">0</span>
-                  <button class="cnt-btn" onclick="adjLafore('care','inquiries',1)">＋</button>
+                  <span class="cnt-num tap-num" id="care-inquiries" onclick="numpadOpenDaily('inquiries','care')">0</span>
                 </div>
               </div>
               <div class="extra-row">
                 <span class="extra-label">見学</span>
                 <div class="count-ctrl">
-                  <button class="cnt-btn" onclick="adjLafore('care','visits',-1)">−</button>
-                  <span class="cnt-num" id="care-visits">0</span>
-                  <button class="cnt-btn" onclick="adjLafore('care','visits',1)">＋</button>
+                  <span class="cnt-num tap-num" id="care-visits" onclick="numpadOpenDaily('visits','care')">0</span>
                 </div>
               </div>
               <div class="extra-row">
                 <span class="extra-label">契約人数</span>
                 <div class="count-ctrl">
-                  <button class="cnt-btn" onclick="adjLafore('care','contracts',-1)">−</button>
-                  <span class="cnt-num" id="care-contracts">0</span>
-                  <button class="cnt-btn" onclick="adjLafore('care','contracts',1)">＋</button>
+                  <span class="cnt-num tap-num" id="care-contracts" onclick="numpadOpenDaily('contracts','care')">0</span>
                 </div>
               </div>
             </div>
@@ -372,42 +358,32 @@ textarea:focus{border-color:#1D9E75}
             <div class="svc-count-row">
               <span class="count-label">実績人数</span>
               <div class="count-ctrl">
-                <button class="cnt-btn" onclick="adjLafore('work','actual',-1)">−</button>
-                <span class="cnt-num" id="work-actual">0</span>
-                <button class="cnt-btn" onclick="adjLafore('work','actual',1)">＋</button>
+                <span class="cnt-num tap-num" id="work-actual" onclick="numpadOpenDaily('actual','work')">0</span>
               </div>
             </div>
             <div class="extra-inputs" style="margin-top:0">
               <div class="extra-row">
                 <span class="extra-label">予定人数</span>
                 <div class="count-ctrl">
-                  <button class="cnt-btn" onclick="adjLafore('work','reservations',-1)">−</button>
-                  <span class="cnt-num" id="work-reservations">0</span>
-                  <button class="cnt-btn" onclick="adjLafore('work','reservations',1)">＋</button>
+                  <span class="cnt-num tap-num" id="work-reservations" onclick="numpadOpenDaily('reservations','work')">0</span>
                 </div>
               </div>
               <div class="extra-row">
                 <span class="extra-label">問合せ</span>
                 <div class="count-ctrl">
-                  <button class="cnt-btn" onclick="adjLafore('work','inquiries',-1)">−</button>
-                  <span class="cnt-num" id="work-inquiries">0</span>
-                  <button class="cnt-btn" onclick="adjLafore('work','inquiries',1)">＋</button>
+                  <span class="cnt-num tap-num" id="work-inquiries" onclick="numpadOpenDaily('inquiries','work')">0</span>
                 </div>
               </div>
               <div class="extra-row">
                 <span class="extra-label">見学</span>
                 <div class="count-ctrl">
-                  <button class="cnt-btn" onclick="adjLafore('work','visits',-1)">−</button>
-                  <span class="cnt-num" id="work-visits">0</span>
-                  <button class="cnt-btn" onclick="adjLafore('work','visits',1)">＋</button>
+                  <span class="cnt-num tap-num" id="work-visits" onclick="numpadOpenDaily('visits','work')">0</span>
                 </div>
               </div>
               <div class="extra-row">
                 <span class="extra-label">契約人数</span>
                 <div class="count-ctrl">
-                  <button class="cnt-btn" onclick="adjLafore('work','contracts',-1)">−</button>
-                  <span class="cnt-num" id="work-contracts">0</span>
-                  <button class="cnt-btn" onclick="adjLafore('work','contracts',1)">＋</button>
+                  <span class="cnt-num tap-num" id="work-contracts" onclick="numpadOpenDaily('contracts','work')">0</span>
                 </div>
               </div>
             </div>
@@ -1120,7 +1096,26 @@ window.selectOffice=async function(name){
   document.getElementById('input-form').style.display='block';
   document.getElementById('header-back').style.display=window._autoSelectOffice?'none':'inline-block';
   document.getElementById('header-title').textContent=name;
+  await applyClosedState(todayStr);
 };
+
+async function applyClosedState(dateStr){
+  if(!state.cur)return;
+  const month=dateStr.substring(0,7);
+  const wdays=await loadWorkdays(state.cur,month);
+  const isClosed=wdays[dateStr]!==1;
+  state.isClosed=isClosed;
+  document.getElementById('closed-day-banner').style.display=isClosed?'block':'none';
+  document.querySelectorAll('#input-form .submit-btn').forEach(btn=>{
+    btn.disabled=isClosed;
+    btn.style.opacity=isClosed?'0.4':'';
+    btn.style.cursor=isClosed?'not-allowed':'';
+  });
+  document.querySelectorAll('#input-form .tap-num').forEach(el=>{
+    el.style.pointerEvents=isClosed?'none':'';
+    el.style.opacity=isClosed?'0.4':'';
+  });
+}
 
 // 日付切り替え時：選択日付のデータを再読み込みしてフォームを更新
 window.onReportDateChange=async function(){
@@ -1136,6 +1131,7 @@ window.onReportDateChange=async function(){
   state.dirty=false;
   state.formDate=dateVal;
   document.getElementById('form-date-label').textContent=dateStrToLabel(dateVal);
+  await applyClosedState(dateVal);
   try{
     const q=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',dateVal));
     const snap=await getDocs(q);
@@ -1318,6 +1314,42 @@ window.downloadCSV=async function(){
   a.download=`貢献速報（日次）_${dateVal.replace(/-/g,'')}.csv`;a.click();
 };
 
+// ===== 日次テンキー入力 =====
+const DAILY_FIELDS=[
+  {field:'kids',label:'貢献人数',service:null},
+  {field:'planned',label:'予定人数',service:null},
+  {field:'inquiry',label:'問合せ',service:null},
+  {field:'visit',label:'見学',service:null},
+  {field:'contract',label:'契約',service:null},
+];
+const LAFORE_DAILY_FIELDS=[
+  {field:'actual',label:'生活介護 実績',service:'care'},
+  {field:'reservations',label:'生活介護 予定',service:'care'},
+  {field:'inquiries',label:'生活介護 問合せ',service:'care'},
+  {field:'visits',label:'生活介護 見学',service:'care'},
+  {field:'contracts',label:'生活介護 契約',service:'care'},
+  {field:'actual',label:'就労B型 実績',service:'work'},
+  {field:'reservations',label:'就労B型 予定',service:'work'},
+  {field:'inquiries',label:'就労B型 問合せ',service:'work'},
+  {field:'visits',label:'就労B型 見学',service:'work'},
+  {field:'contracts',label:'就労B型 契約',service:'work'},
+];
+let numpadMode='weekly';
+let dailyTarget=null;
+
+window.numpadOpenDaily=function(field,service){
+  if(state.isClosed)return;
+  numpadMode='daily';
+  const fieldList=service?LAFORE_DAILY_FIELDS:DAILY_FIELDS;
+  const idx=fieldList.findIndex(f=>f.field===field&&f.service===service);
+  dailyTarget={field,service,fieldList,idx};
+  const currentVal=service?laforeState[service][field]:(field==='kids'?state.kids:extraState[field]);
+  document.getElementById('numpad-date-lbl').textContent=fieldList[idx]?.label||field;
+  wpState.val=currentVal>0?String(currentVal):'';
+  document.getElementById('numpad-val').textContent=wpState.val||'─';
+  document.getElementById('numpad-overlay').style.display='flex';
+};
+
 // ===== 週次予定入力 =====
 const wpState={days:[],values:{},target:null,val:'',weekOffset:1};
 const DOW_JP=['日','月','火','水','木','金','土'];
@@ -1405,8 +1437,31 @@ window.numpadKey=function(key){
 };
 
 function numpadConfirm(advance){
-  const ds=wpState.target;if(!ds)return;
   const v=parseInt(wpState.val)||0;
+  if(numpadMode==='daily'&&dailyTarget){
+    const{field,service,fieldList,idx}=dailyTarget;
+    if(service){
+      laforeState[service][field]=Math.max(0,v);
+      document.getElementById(`${service}-${field}`).textContent=laforeState[service][field];
+    }else if(field==='kids'){
+      state.kids=Math.max(0,v);
+      document.getElementById('kids-num').textContent=state.kids;
+    }else{
+      extraState[field]=Math.max(0,v);
+      document.getElementById(field+'-num').textContent=extraState[field];
+    }
+    state.dirty=true;
+    if(advance&&idx<fieldList.length-1){
+      const next=fieldList[idx+1];
+      setTimeout(()=>window.numpadOpenDaily(next.field,next.service),80);
+      return;
+    }
+    document.getElementById('numpad-overlay').style.display='none';
+    dailyTarget=null;wpState.val='';numpadMode='weekly';
+    return;
+  }
+  // 週次モード
+  const ds=wpState.target;if(!ds)return;
   wpState.values[ds]=v;
   const e=document.getElementById('wpf-'+ds.replace(/-/g,''));
   if(e){e.textContent=v;e.className='wp-field';e.classList.remove('active');}
