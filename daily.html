@@ -623,6 +623,7 @@ window.loadHistory=async function(){
       reports[r.date].care = careActual;
       reports[r.date].work = workActual;
       reports[r.date].kids = careActual + workActual;
+      reports[r.date].planned += (r.services["生活介護"]?.reservations ?? 0) + (r.services["就労B型"]?.reservations ?? 0);
     } else if(r.serviceType==='care') {
       reports[r.date].care=r.kids;
       reports[r.date].kids+=r.kids;
