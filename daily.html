@@ -296,20 +296,25 @@ textarea:focus{border-color:#1D9E75}
           </div>
           <button class="submit-btn" onclick="submitReport()">報告する</button>
           <div class="success-msg" id="success-msg">✅ 報告しました</div>
+          <div id="weekly-planned-area" style="display:none;margin-top:10px">
+            <button class="csv-btn" onclick="toggleWeeklyPlanned()" style="margin-bottom:0;font-size:14px;color:#1D9E75;border-color:#1D9E75">週次予定を入力</button>
+            <div id="weekly-plan-panel" style="display:none;background:#fff;border-radius:12px;padding:14px;border:1px solid #E8EAED;margin-top:6px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <button onclick="shiftWeek(-1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">◀ 前週</button>
+                <span id="wp-week-label" style="font-size:13px;font-weight:600;color:#333"></span>
+                <button onclick="shiftWeek(1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">翌週 ▶</button>
+              </div>
+              <div id="weekly-plan-rows"></div>
+              <button class="submit-btn" onclick="saveWeeklyPlanned()" style="margin-top:14px">一括保存</button>
+              <div class="success-msg" id="weekly-plan-success">✅ 保存しました</div>
+            </div>
+          </div>
           <div class="history-card" id="history-area" style="display:none">
             <div class="history-header">
               <span class="history-title">稼働日・入力履歴</span>
               <select class="month-sel" id="history-month-sel" onchange="loadHistory()"></select>
             </div>
             <div id="history-body"></div>
-          </div>
-          <div id="weekly-planned-area" style="display:none;margin-top:10px">
-            <button class="csv-btn" onclick="toggleWeeklyPlanned()" style="margin-bottom:0;font-size:14px;color:#1D9E75;border-color:#1D9E75">来週の予定を入力</button>
-            <div id="weekly-plan-panel" style="display:none;background:#fff;border-radius:12px;padding:14px;border:1px solid #E8EAED;margin-top:6px">
-              <div id="weekly-plan-rows"></div>
-              <button class="submit-btn" onclick="saveWeeklyPlanned()" style="margin-top:14px">一括保存</button>
-              <div class="success-msg" id="weekly-plan-success">✅ 保存しました</div>
-            </div>
           </div>
         </div>
 
@@ -1313,29 +1318,50 @@ window.downloadCSV=async function(){
   a.download=`貢献速報（日次）_${dateVal.replace(/-/g,'')}.csv`;a.click();
 };
 
-// ===== 来週の予定入力 =====
-const wpState={days:[],values:{},target:null,val:''};
+// ===== 週次予定入力 =====
+const wpState={days:[],values:{},target:null,val:'',weekOffset:1};
 const DOW_JP=['日','月','火','水','木','金','土'];
+
+// 今週月曜を基準にoffset週後の月曜を返す
+function getWeekMonday(offset){
+  const today=new Date();
+  const dow=today.getDay();
+  const daysToThisMon=dow===0?-6:1-dow;
+  const mon=new Date(today);
+  mon.setDate(today.getDate()+daysToThisMon+offset*7);
+  return mon;
+}
 
 window.toggleWeeklyPlanned=async function(){
   const panel=document.getElementById('weekly-plan-panel');
-  if(panel.style.display==='none'){panel.style.display='block';await loadWeeklyPlanned();}
-  else panel.style.display='none';
+  if(panel.style.display==='none'){
+    wpState.weekOffset=1; // 翌週をデフォルト表示
+    panel.style.display='block';
+    await loadWeeklyPlanned();
+  }else{
+    panel.style.display='none';
+  }
+};
+
+window.shiftWeek=async function(dir){
+  wpState.weekOffset+=dir;
+  await loadWeeklyPlanned();
 };
 
 async function loadWeeklyPlanned(){
   if(!state.cur)return;
-  const today=new Date();
-  const dow=today.getDay();
-  const daysToNextMon=dow===0?1:8-dow;
-  const nextMon=new Date(today);
-  nextMon.setDate(today.getDate()+daysToNextMon);
+  const mon=getWeekMonday(wpState.weekOffset);
   const candidates=[];
   for(let i=0;i<7;i++){
-    const d=new Date(nextMon);d.setDate(nextMon.getDate()+i);
+    const d=new Date(mon);d.setDate(mon.getDate()+i);
     const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     candidates.push({dateStr:ds,d});
   }
+  // 週ラベル更新
+  const f=candidates[0].d,l=candidates[6].d;
+  document.getElementById('wp-week-label').textContent=
+    `${f.getMonth()+1}/${f.getDate()}(${DOW_JP[f.getDay()]})〜${l.getMonth()+1}/${l.getDate()}(${DOW_JP[l.getDay()]})`;
+
   const months=[...new Set(candidates.map(c=>c.dateStr.substring(0,7)))];
   let wdays={};
   for(const m of months){const wd=await loadWorkdays(state.cur,m);Object.assign(wdays,wd);}
