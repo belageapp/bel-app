@@ -1058,8 +1058,8 @@ function applyPaceDisplay(prefix, office, mt){
   if(line){line.style.display='block';line.style.left=markerPct+'%';}
   const txt=document.getElementById(prefix+'pace-text');
   if(txt){
-    if(diff>0){txt.textContent=`${diff}名分 順調に貢献できています`;txt.style.color='#0F6E56';}
-    else if(diff===0){txt.textContent=`順調に貢献できています`;txt.style.color='#0F6E56';}
+    if(diff>0){txt.textContent=`${diff}名分 順調に貢献`;txt.style.color='#0F6E56';}
+    else if(diff===0){txt.textContent=`順調に貢献`;txt.style.color='#0F6E56';}
     else{txt.textContent=`${Math.abs(diff)}名の貢献に遅れ`;txt.style.color='#E65100';}
   }
 }
