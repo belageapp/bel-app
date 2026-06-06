@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="朝礼報告">
+<meta name="theme-color" content="#ffffff">
+<title>朝礼報告（週次）| ベルアージュ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#F4F6F8;min-height:100dvh}
+.app{max-width:760px;margin:0 auto;padding:0 0 80px}
+
+/* ===== トップバー ===== */
+.top-bar{background:#fff;border-bottom:1px solid #E8EAED;padding:0;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;min-height:52px}
+.top-bar-logo{background:#fff;padding:8px 16px;display:flex;align-items:center;border-right:1px solid #E8EAED;flex-shrink:0}
+.top-bar-logo img{height:34px;object-fit:contain}
+.top-bar-main{padding:0 12px;display:flex;align-items:center;gap:8px;flex:1;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.top-bar-title{font-size:14px;font-weight:600;color:#333;white-space:nowrap}
+.top-bar-divider{width:1px;height:22px;background:#E8EAED;flex-shrink:0}
+.nav-link{padding:5px 10px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:11px;cursor:pointer;font-family:inherit;font-weight:500;transition:background .15s,border-color .15s,color .15s;white-space:nowrap;text-decoration:none;display:inline-block;flex-shrink:0}
+.nav-link:hover{background:#F4F6F8;border-color:#d0d3d8;color:#333}
+.nav-link.active{background:#F0FAF6;border-color:#1D9E75;color:#1D9E75;font-weight:600}
+
+/* ===== 週ナビ ===== */
+.week-nav{background:#fff;border-bottom:1px solid #E8EAED;display:flex;align-items:center;gap:8px;padding:9px 16px;position:sticky;top:52px;z-index:98}
+.week-nav-btn{width:34px;height:34px;border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
+.week-nav-btn:active{background:#e0e0e0}
+.week-nav-center{flex:1;text-align:center}
+.week-label{font-size:15px;font-weight:600;color:#333;display:block}
+.week-range{font-size:11px;color:#999;display:block;margin-top:2px}
+
+/* ===== タブバー ===== */
+.tab-bar{background:#fff;border-bottom:1px solid #E8EAED;display:flex}
+.tab{flex:1;padding:11px;font-size:13px;border:none;background:none;cursor:pointer;color:#888;border-bottom:2px solid transparent;font-family:inherit}
+.tab.active{color:#1D9E75;border-bottom-color:#1D9E75;font-weight:500}
+
+/* ===== セクション ===== */
+.section{display:none;padding:14px 16px}.section.active{display:block}
+
+/* ===== オフィスカード ===== */
+.office-card{background:#fff;border-radius:12px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid #E8EAED;overflow:hidden}
+.office-card-header{background:#F0FAF6;padding:10px 14px;border-bottom:1px solid #d4f4e8;display:flex;align-items:center;justify-content:space-between}
+.office-card-name{font-size:14px;font-weight:600;color:#0F6E56}
+.office-card-wdays{font-size:11px;color:#0F6E56}
+.office-card-body{padding:12px 14px}
+
+/* ===== 週間スタッツグリッド ===== */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:12px}
+.stat-cell{background:#F8FDFB;border:1px solid #E0F5ED;border-radius:8px;padding:7px 3px;text-align:center}
+.stat-cell-label{font-size:9px;color:#888;display:block;margin-bottom:3px;line-height:1.3}
+.stat-cell-value{font-size:13px;font-weight:700;color:#1D9E75;display:block}
+.stat-cell-value.blue{color:#185FA5}
+.stat-cell-sub{font-size:9px;color:#aaa;display:block;margin-top:1px}
+
+/* ===== 入力フォーム ===== */
+.input-group{margin-bottom:8px}
+.input-group:last-of-type{margin-bottom:0}
+.input-label{font-size:12px;color:#666;font-weight:500;display:block;margin-bottom:4px}
+.input-textarea{width:100%;padding:8px 10px;border:1px solid #E8EAED;border-radius:8px;font-family:inherit;font-size:13px;color:#333;background:#fff;resize:none;outline:none;line-height:1.5}
+.input-textarea:focus{border-color:#1D9E75}
+
+/* ===== 月次テーブル ===== */
+.monthly-section{margin-top:16px}
+.section-title{font-size:14px;font-weight:600;color:#333;margin-bottom:10px}
+.month-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border-radius:12px;border:1px solid #E8EAED;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.month-table{width:100%;border-collapse:collapse;font-size:12px;min-width:440px}
+.month-table th{background:#F4F6F8;padding:8px 10px;text-align:center;color:#666;font-weight:500;border-bottom:1px solid #E8EAED;white-space:nowrap}
+.month-table th:first-child{text-align:left}
+.month-table td{padding:8px 10px;text-align:center;border-bottom:1px solid #f5f5f5;color:#333}
+.month-table td:first-child{text-align:left;font-weight:500}
+.month-table tr:last-child td{border-bottom:none}
+.month-table .green{color:#1D9E75;font-weight:600}
+.month-table .gray{color:#999;font-size:11px}
+
+/* ===== 保存ボタン ===== */
+.save-wrap{margin-top:16px}
+.save-btn{width:100%;padding:14px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit}
+.save-btn:active{background:#0F6E56}
+.save-btn:disabled{background:#a0d9c0;cursor:not-allowed}
+.success-msg{display:none;background:#d4f4e8;color:#0F6E56;padding:10px 14px;border-radius:8px;margin-top:10px;font-size:14px;font-weight:600;text-align:center}
+
+/* ===== 一覧タブ ===== */
+.manager-block{background:#fff;border-radius:12px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid #E8EAED;overflow:hidden}
+.manager-header{background:#EBF3FB;padding:10px 14px;border-bottom:1px solid #B5D4F4;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.manager-name{font-size:14px;font-weight:600;color:#185FA5}
+.manager-role-badge{font-size:10px;color:#185FA5;background:#D4E9FF;padding:2px 8px;border-radius:10px}
+.mine-badge{font-size:10px;background:#d4f4e8;color:#0F6E56;padding:2px 8px;border-radius:10px}
+.manager-saved{font-size:10px;color:#aaa;margin-left:auto}
+.office-comment-row{padding:10px 14px;border-bottom:1px solid #f5f5f5}
+.office-comment-row:last-child{border-bottom:none}
+.ocr-name{font-size:12px;font-weight:600;color:#333;margin-bottom:5px}
+.ocr-item{font-size:12px;color:#555;padding:2px 0;display:flex;gap:6px;align-items:flex-start}
+.ocr-key{color:#999;flex-shrink:0;min-width:36px}
+.ocr-val{color:#333;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+
+/* ===== 共通 ===== */
+.no-data{text-align:center;padding:24px;color:#aaa;font-size:13px}
+.loading{text-align:center;padding:24px;color:#888;font-size:13px}
+.toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- トップバー -->
+  <div class="top-bar">
+    <div class="top-bar-logo">
+      <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
+    </div>
+    <div class="top-bar-main">
+      <span class="top-bar-title">朝礼報告（週次）</span>
+      <div class="top-bar-divider"></div>
+      <a href="daily.html" class="nav-link">速報入力</a>
+      <a href="monthly.html" class="nav-link">月次速報</a>
+      <a href="report.html" class="nav-link">実績表</a>
+      <a href="settings.html" class="nav-link">設定</a>
+      <a href="index.html" class="nav-link">ポータル</a>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;flex-shrink:0;margin-left:4px" id="top-bar-user-info"></div>
+      <button onclick="_logout()" style="padding:4px 10px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;margin-left:4px">ログアウト</button>
+    </div>
+  </div>
+
+  <!-- 週ナビ -->
+  <div class="week-nav">
+    <button class="week-nav-btn" onclick="shiftWeek(-1)">‹</button>
+    <div class="week-nav-center">
+      <span class="week-label" id="week-label">読み込み中...</span>
+      <span class="week-range" id="week-range"></span>
+    </div>
+    <button class="week-nav-btn" onclick="shiftWeek(1)">›</button>
+  </div>
+
+  <!-- タブバー -->
+  <div class="tab-bar">
+    <button class="tab active" id="tab-btn-input" onclick="switchTab('input')">入力</button>
+    <button class="tab" id="tab-btn-list" onclick="switchTab('list')">一覧</button>
+  </div>
+
+  <!-- 入力タブ -->
+  <div class="section active" id="tab-input">
+    <div id="input-content"><div class="loading">読み込み中...</div></div>
+  </div>
+
+  <!-- 一覧タブ -->
+  <div class="section" id="tab-list">
+    <div id="list-content"><div class="loading">読み込み中...</div></div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, doc, getDoc, setDoc, query, where, getDocs }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, onAuthStateChanged, signOut }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
+  authDomain: "daily-report-b90e8.firebaseapp.com",
+  projectId: "daily-report-b90e8",
+  storageBucket: "daily-report-b90e8.firebasestorage.app",
+  messagingSenderId: "16569831525",
+  appId: "1:16569831525:web:aa250f2061f762dfe1768c"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const auth = getAuth(app);
+
+const ROLE_LABELS = {
+  admin:'Administrator', support:'事業支援課',
+  area_manager:'エリアマネジャー', unit_manager:'ユニットマネジャー',
+  manager:'事業所管理者'
+};
+
+let currentUser = null;
+let currentUserData = null;
+let currentWeekStart = null;
+let currentWeekEnd   = null;
+let myOffices  = [];
+let allOffices = [];
+let capacityMap = {};
+let savedReport = null;
+let activeTab = 'input';
+let cachedWeeklyStats   = null;
+let cachedMonthlyStats  = null;
+let cachedWeekEndMonth  = null;
+
+// ===== 日付ユーティリティ =====
+function dateToStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function strToDate(s) { return new Date(s + 'T00:00:00'); }
+function getDatesInRange(s, e) {
+  const dates = [], cur = strToDate(s), end = strToDate(e);
+  while (cur <= end) { dates.push(dateToStr(cur)); cur.setDate(cur.getDate()+1); }
+  return dates;
+}
+function getFiscalYear(dateStr) {
+  const mo = parseInt(dateStr.substring(5,7)), yr = parseInt(dateStr.substring(0,4));
+  return mo >= 4 ? yr : yr - 1;
+}
+
+// ===== 週計算 =====
+// 週単位：木曜〜水曜。金曜日は直前に終わった週（先週）を表示。
+function getWeekBounds(baseDate) {
+  const dow = baseDate.getDay(); // 0=日 … 5=金 6=土
+  let ref = new Date(baseDate);
+  if (dow === 5) ref.setDate(ref.getDate() - 2); // 金→先週水曜を基準に
+  const daysUntilWed = (3 - ref.getDay() + 7) % 7;
+  const weekEnd = new Date(ref);
+  weekEnd.setDate(weekEnd.getDate() + daysUntilWed);
+  const weekStart = new Date(weekEnd);
+  weekStart.setDate(weekStart.getDate() - 6);
+  return { weekStart, weekEnd };
+}
+function getWeekInfo(weekStart, weekEnd) {
+  const y = weekEnd.getFullYear(), m = weekEnd.getMonth()+1, d = weekEnd.getDate();
+  const n = Math.ceil(d / 7);
+  return {
+    label: `${y}年${m}月第${n}週`,
+    range: `${dateToStr(weekStart).replace(/-/g,'/')} 〜 ${dateToStr(weekEnd).replace(/-/g,'/')}`
+  };
+}
+
+// ===== 認証 =====
+onAuthStateChanged(auth, async user => {
+  if (!user) { location.href = 'login.html'; return; }
+  currentUser = user;
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (!snap.exists() || snap.data().disabled) {
+      await signOut(auth); location.href = 'login.html'; return;
+    }
+    currentUserData = snap.data();
+    const el = document.getElementById('top-bar-user-info');
+    if (el) el.innerHTML =
+      `<span style="font-size:11px;color:#555;white-space:nowrap">${currentUserData.displayName||user.email}</span>
+       <span style="font-size:10px;color:#999;white-space:nowrap">${ROLE_LABELS[currentUserData.role]||currentUserData.role}</span>`;
+    await initPage();
+  } catch(e) { console.error(e); }
+});
+
+window._logout = async function() { await signOut(auth); location.href = 'login.html'; };
+
+// ===== 初期化 =====
+async function initPage() {
+  const { weekStart, weekEnd } = getWeekBounds(new Date());
+  currentWeekStart = weekStart;
+  currentWeekEnd   = weekEnd;
+  await loadMasterData();
+  await loadAndRender();
+}
+
+async function loadMasterData() {
+  const [offSnap, prSnap] = await Promise.all([
+    getDocs(collection(db, 'offices')),
+    getDocs(collection(db, 'prices'))
+  ]);
+  const prices = {};
+  prSnap.forEach(d => prices[d.id] = d.data());
+  allOffices = [];
+  offSnap.forEach(d => {
+    const data = d.data();
+    if (!data.name) return;
+    const price = prices[data.priceId] || {};
+    const cap = price.capacity || data.capacity || 10;
+    capacityMap[data.name] = cap;
+    allOffices.push({ id: d.id, ...data, capacity: cap });
+  });
+  allOffices.sort((a, b) => (a.name||'').localeCompare(b.name||'', 'ja'));
+
+  const role = currentUserData.role;
+  if (role === 'admin' || role === 'support') {
+    myOffices = [...allOffices];
+  } else {
+    myOffices = allOffices.filter(o => o.managerUid === currentUser.uid);
+  }
+}
+
+// ===== 週ナビゲーション =====
+window.shiftWeek = function(dir) {
+  currentWeekStart = new Date(currentWeekStart);
+  currentWeekEnd   = new Date(currentWeekEnd);
+  currentWeekStart.setDate(currentWeekStart.getDate() + dir * 7);
+  currentWeekEnd.setDate(currentWeekEnd.getDate()   + dir * 7);
+  loadAndRender();
+};
+
+function updateWeekLabel() {
+  const info = getWeekInfo(currentWeekStart, currentWeekEnd);
+  document.getElementById('week-label').textContent = info.label;
+  document.getElementById('week-range').textContent = info.range;
+}
+
+// ===== タブ切替 =====
+window.switchTab = function(tab) {
+  activeTab = tab;
+  ['input','list'].forEach(t => {
+    document.getElementById(`tab-btn-${t}`).classList.toggle('active', t===tab);
+    document.getElementById(`tab-${t}`).classList.toggle('active', t===tab);
+  });
+  if (tab === 'list') renderListTab();
+};
+
+// ===== データ読込 =====
+async function loadAndRender() {
+  updateWeekLabel();
+  document.getElementById('input-content').innerHTML = '<div class="loading">読み込み中...</div>';
+  cachedWeeklyStats = null; cachedMonthlyStats = null;
+
+  const weekStartStr = dateToStr(currentWeekStart);
+  const weekEndStr   = dateToStr(currentWeekEnd);
+
+  const prevWeekStart = new Date(currentWeekStart); prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+  const prevWeekEnd   = new Date(currentWeekEnd);   prevWeekEnd.setDate(prevWeekEnd.getDate()   - 7);
+  const prevWeekStartStr = dateToStr(prevWeekStart);
+  const prevWeekEndStr   = dateToStr(prevWeekEnd);
+
+  const [weY, weMo] = [currentWeekEnd.getFullYear(), currentWeekEnd.getMonth()+1];
+  const monthStr  = `${weY}-${String(weMo).padStart(2,'0')}`;
+  const monthStart = `${monthStr}-01`;
+  const monthEnd   = `${monthStr}-${String(new Date(weY, weMo, 0).getDate()).padStart(2,'0')}`;
+
+  try {
+    const officeNames = myOffices.map(o => o.name);
+
+    // 稼働日データ読込（前週〜月末をカバーする全fiscalYear）
+    const fiscalYears = new Set();
+    getDatesInRange(prevWeekStartStr, monthEnd).forEach(d => fiscalYears.add(getFiscalYear(d)));
+    const workdaysByOffice = {};
+    officeNames.forEach(n => workdaysByOffice[n] = {});
+    await Promise.all(
+      [...fiscalYears].flatMap(fy =>
+        officeNames.map(async name => {
+          try {
+            const snap = await getDoc(doc(db, 'workdays', `${fy}_${name}`));
+            if (snap.exists()) Object.assign(workdaysByOffice[name], snap.data().days || {});
+          } catch(_) {}
+        })
+      )
+    );
+
+    // 報告データ読込（前週〜月末が含まれる月ごとにクエリ）
+    const monthsToLoad = new Set();
+    getDatesInRange(prevWeekStartStr, monthEnd).forEach(d => monthsToLoad.add(d.substring(0,7)));
+    const reportsByOffice = {};
+    officeNames.forEach(n => reportsByOffice[n] = {});
+    await Promise.all(
+      officeNames.flatMap(name =>
+        [...monthsToLoad].map(async month => {
+          try {
+            const q = query(collection(db,'reports'),
+              where('office','==',name), where('month','==',month));
+            const snap = await getDocs(q);
+            snap.forEach(d => {
+              const r = d.data();
+              let actual = 0, planned = 0;
+              if (r.services) {
+                Object.values(r.services).forEach(sv => {
+                  actual  += (sv.actual       || 0);
+                  planned += (sv.reservations || 0);
+                });
+              } else {
+                actual  = r.kids    || 0;
+                planned = r.planned || 0;
+              }
+              if (!reportsByOffice[name][r.date]) reportsByOffice[name][r.date] = { actual:0, planned:0 };
+              reportsByOffice[name][r.date].actual  += actual;
+              reportsByOffice[name][r.date].planned += planned;
+            });
+          } catch(_) {}
+        })
+      )
+    );
+
+    // 保存済み朝礼報告読込
+    const docId = `${weekStartStr}_${currentUser.uid}`;
+    const savedSnap = await getDoc(doc(db, 'morning_reports', docId));
+    savedReport = savedSnap.exists() ? savedSnap.data() : null;
+
+    // ===== スタッツ計算 =====
+    const weeklyStats  = {};
+    const monthlyStats = {};
+
+    myOffices.forEach(office => {
+      const name = office.name;
+      const cap  = capacityMap[name] || 10;
+      const wdays = workdaysByOffice[name] || {};
+
+      // 週間集計
+      let weekWorkDays=0, weekCap=0, weekActual=0, weekPlanned=0;
+      getDatesInRange(weekStartStr, weekEndStr).forEach(d => {
+        if (wdays[d] === 1) {
+          weekWorkDays++; weekCap += cap;
+          const rep = reportsByOffice[name][d];
+          if (rep) { weekActual += rep.actual; weekPlanned += rep.planned; }
+        }
+      });
+
+      // 前週実績
+      let prevActual = 0;
+      getDatesInRange(prevWeekStartStr, prevWeekEndStr).forEach(d => {
+        if (wdays[d] === 1) {
+          const rep = reportsByOffice[name][d];
+          if (rep) prevActual += rep.actual;
+        }
+      });
+
+      weeklyStats[name] = {
+        workDays:     weekWorkDays,
+        capTotal:     weekCap,
+        actualTotal:  weekActual,
+        plannedTotal: weekPlanned,
+        avgActual:    weekWorkDays > 0 ? weekActual / weekWorkDays : null,
+        prevActual
+      };
+
+      // 月次集計（weekEndの月の全稼働日）
+      let monWorkDays=0, monCap=0, monActual=0, monPlanned=0;
+      getDatesInRange(monthStart, monthEnd).forEach(d => {
+        if (wdays[d] === 1) {
+          monWorkDays++; monCap += cap;
+          const rep = reportsByOffice[name][d];
+          if (rep) { monActual += rep.actual; monPlanned += rep.planned; }
+        }
+      });
+      monthlyStats[name] = {
+        workDays:     monWorkDays,
+        capTotal:     monCap,
+        actualTotal:  monActual,
+        plannedTotal: monPlanned,
+        avgActual:    monWorkDays > 0 ? monActual / monWorkDays : null,
+        rate:         monCap > 0 ? monActual / monCap * 100 : null
+      };
+    });
+
+    cachedWeeklyStats  = weeklyStats;
+    cachedMonthlyStats = monthlyStats;
+    cachedWeekEndMonth = monthStr;
+
+    renderInputTab(weeklyStats, monthlyStats, weY, weMo);
+    if (activeTab === 'list') renderListTab();
+
+  } catch(e) {
+    console.error(e);
+    document.getElementById('input-content').innerHTML = '<div class="no-data">データの読み込みに失敗しました</div>';
+  }
+}
+
+// ===== 入力タブ描画 =====
+function renderInputTab(weeklyStats, monthlyStats, weY, weMo) {
+  const savedComments = (savedReport && savedReport.officeComments) ? savedReport.officeComments : {};
+  const fmtN = v => v != null ? Math.round(v)  : '—';
+  const fmtF = v => v != null ? v.toFixed(1)    : '—';
+
+  let html = '';
+
+  if (myOffices.length === 0) {
+    html = '<div class="no-data">担当事業所が設定されていません<br><small style="color:#bbb;margin-top:6px;display:block">管理者に担当事業所の設定を依頼してください</small></div>';
+  } else {
+    myOffices.forEach(office => {
+      const name = office.name;
+      const ws   = weeklyStats[name];
+      const sv   = savedComments[name] || {};
+
+      html += `
+<div class="office-card">
+  <div class="office-card-header">
+    <span class="office-card-name">${escHtml(name)}</span>
+    <span class="office-card-wdays">稼働 ${ws.workDays}日</span>
+  </div>
+  <div class="office-card-body">
+    <div class="stats-grid">
+      <div class="stat-cell">
+        <span class="stat-cell-label">週間<br>定員計</span>
+        <span class="stat-cell-value">${fmtN(ws.capTotal)}</span>
+        <span class="stat-cell-sub">名</span>
+      </div>
+      <div class="stat-cell">
+        <span class="stat-cell-label">週間<br>予定計</span>
+        <span class="stat-cell-value">${fmtN(ws.plannedTotal)}</span>
+        <span class="stat-cell-sub">名</span>
+      </div>
+      <div class="stat-cell">
+        <span class="stat-cell-label">週間<br>実績計</span>
+        <span class="stat-cell-value">${fmtN(ws.actualTotal)}</span>
+        <span class="stat-cell-sub">名</span>
+      </div>
+      <div class="stat-cell">
+        <span class="stat-cell-label">週間<br>平均実績</span>
+        <span class="stat-cell-value">${fmtF(ws.avgActual)}</span>
+        <span class="stat-cell-sub">名/日</span>
+      </div>
+      <div class="stat-cell">
+        <span class="stat-cell-label">前週<br>実績計</span>
+        <span class="stat-cell-value blue">${fmtN(ws.prevActual)}</span>
+        <span class="stat-cell-sub">名</span>
+      </div>
+    </div>
+    <div class="input-group">
+      <label class="input-label">設定目標</label>
+      <textarea class="input-textarea" rows="2" id="goal_${office.id}" placeholder="今週の目標を入力…">${escHtml(sv.goal||'')}</textarea>
+    </div>
+    <div class="input-group">
+      <label class="input-label">取り組み</label>
+      <textarea class="input-textarea" rows="2" id="approach_${office.id}" placeholder="取り組み内容を入力…">${escHtml(sv.approach||'')}</textarea>
+    </div>
+    <div class="input-group">
+      <label class="input-label">備考</label>
+      <textarea class="input-textarea" rows="2" id="note_${office.id}" placeholder="その他備考…">${escHtml(sv.note||'')}</textarea>
+    </div>
+  </div>
+</div>`;
+    });
+
+    // 月次実績セクション
+    html += `
+<div class="monthly-section">
+  <div class="section-title">${weY}年${weMo}月　月次実績</div>
+  <div class="month-table-wrap">
+    <table class="month-table">
+      <thead><tr>
+        <th>事業所</th><th>稼働日</th><th>定員計</th><th>予定計</th><th>実績計</th><th>平均</th><th>貢献率</th>
+      </tr></thead>
+      <tbody>`;
+    myOffices.forEach(office => {
+      const name = office.name;
+      const ms   = monthlyStats[name];
+      html += `<tr>
+        <td>${escHtml(name)}</td>
+        <td>${ms.workDays}日</td>
+        <td>${ms.capTotal}</td>
+        <td>${ms.plannedTotal}</td>
+        <td class="green">${ms.actualTotal}</td>
+        <td>${fmtF(ms.avgActual)}</td>
+        <td class="gray">${ms.rate != null ? ms.rate.toFixed(1)+'%' : '—'}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+
+    html += `
+<div class="save-wrap">
+  <button class="save-btn" id="save-btn" onclick="saveReport()">保存する</button>
+  <div class="success-msg" id="save-success">✅ 保存しました</div>
+</div>`;
+  }
+
+  document.getElementById('input-content').innerHTML = html;
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ===== 保存 =====
+window.saveReport = async function() {
+  const btn = document.getElementById('save-btn');
+  if (btn) btn.disabled = true;
+
+  const weekStartStr = dateToStr(currentWeekStart);
+  const weekEndStr   = dateToStr(currentWeekEnd);
+  const docId = `${weekStartStr}_${currentUser.uid}`;
+
+  const officeComments = {};
+  myOffices.forEach(office => {
+    officeComments[office.name] = {
+      goal:     (document.getElementById(`goal_${office.id}`)?.value     || '').trim(),
+      approach: (document.getElementById(`approach_${office.id}`)?.value || '').trim(),
+      note:     (document.getElementById(`note_${office.id}`)?.value     || '').trim()
+    };
+  });
+
+  try {
+    await setDoc(doc(db, 'morning_reports', docId), {
+      weekStart:   weekStartStr,
+      weekEnd:     weekEndStr,
+      managerUid:  currentUser.uid,
+      managerName: currentUserData.displayName || currentUser.email,
+      managerRole: currentUserData.role,
+      officeComments,
+      savedAt: new Date().toISOString()
+    }, { merge: true });
+
+    savedReport = { weekStart: weekStartStr, weekEnd: weekEndStr,
+      managerUid: currentUser.uid, officeComments };
+
+    const msg = document.getElementById('save-success');
+    if (msg) { msg.style.display = 'block'; setTimeout(() => { msg.style.display='none'; }, 3000); }
+    showToast('保存しました');
+  } catch(e) {
+    console.error(e);
+    showToast('保存に失敗しました');
+  }
+
+  if (btn) btn.disabled = false;
+};
+
+// ===== 一覧タブ描画 =====
+async function renderListTab() {
+  const content = document.getElementById('list-content');
+  content.innerHTML = '<div class="loading">読み込み中...</div>';
+
+  try {
+    const weekStartStr = dateToStr(currentWeekStart);
+    const q = query(collection(db, 'morning_reports'), where('weekStart','==', weekStartStr));
+    const snap = await getDocs(q);
+
+    const reports = [];
+    snap.forEach(d => reports.push({ id: d.id, ...d.data() }));
+
+    if (reports.length === 0) {
+      content.innerHTML = '<div class="no-data">この週の報告はまだありません</div>';
+      return;
+    }
+
+    reports.sort((a, b) => (a.managerName||'').localeCompare(b.managerName||'', 'ja'));
+
+    let html = '';
+    reports.forEach(r => {
+      const comments = r.officeComments || {};
+      const officeKeys = Object.keys(comments).filter(k =>
+        comments[k].goal || comments[k].approach || comments[k].note);
+      const isMine = r.managerUid === currentUser.uid;
+      const savedDate = r.savedAt ? r.savedAt.substring(0,10).replace(/-/g,'/') : '';
+
+      html += `<div class="manager-block">
+  <div class="manager-header">
+    <span class="manager-name">${escHtml(r.managerName||'不明')}</span>
+    <span class="manager-role-badge">${ROLE_LABELS[r.managerRole]||''}</span>
+    ${isMine ? '<span class="mine-badge">自分</span>' : ''}
+    ${savedDate ? `<span class="manager-saved">${savedDate}</span>` : ''}
+  </div>`;
+
+      if (officeKeys.length === 0) {
+        html += '<div class="no-data" style="padding:10px 14px;font-size:12px">コメントなし</div>';
+      } else {
+        officeKeys.forEach(name => {
+          const c = comments[name];
+          html += `<div class="office-comment-row">
+    <div class="ocr-name">${escHtml(name)}</div>`;
+          if (c.goal)     html += `<div class="ocr-item"><span class="ocr-key">目標</span><span class="ocr-val">${escHtml(c.goal)}</span></div>`;
+          if (c.approach) html += `<div class="ocr-item"><span class="ocr-key">取組</span><span class="ocr-val">${escHtml(c.approach)}</span></div>`;
+          if (c.note)     html += `<div class="ocr-item"><span class="ocr-key">備考</span><span class="ocr-val">${escHtml(c.note)}</span></div>`;
+          html += '</div>';
+        });
+      }
+      html += '</div>';
+    });
+
+    content.innerHTML = html;
+  } catch(e) {
+    console.error(e);
+    content.innerHTML = '<div class="no-data">読み込みに失敗しました</div>';
+  }
+}
+
+// ===== トースト =====
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
