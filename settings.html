@@ -272,8 +272,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
         </div>
         <div class="card-body">
           <div class="data-table-wrap"><table class="data-table">
-            <thead><tr><th>事業所名</th><th>事業者番号</th><th>部課コード</th><th>部署</th><th>エリア</th><th>種別／定員</th><th>単価</th></tr></thead>
-            <tbody id="office-tbody"><tr><td colspan="6" class="empty">読み込み中...</td></tr></tbody>
+            <thead><tr><th>事業所名</th><th>事業者番号</th><th>部課コード</th><th>部署</th><th>エリア</th><th>種別／定員</th><th>単価</th><th>担当マネジャー</th></tr></thead>
+            <tbody id="office-tbody"><tr><td colspan="8" class="empty">読み込み中...</td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -484,7 +484,7 @@ const DEFAULT_PRICES = [
   {type:"短期入", capacity:0, price:null, order:5}
 ];
 
-let cache = {types:[], prices:[], depts:[], areas:[], offices:[]};
+let cache = {types:[], prices:[], depts:[], areas:[], offices:[], managers:[]};
 
 function showStatus(msg, isErr=false){
   const el = document.getElementById(isErr?'error-bar':'status-bar');
@@ -711,7 +711,7 @@ async function loadOffices(){
 }
 function renderOfficeTable(){
   const tb = document.getElementById('office-tbody');
-  if(!cache.offices.length){tb.innerHTML='<tr><td colspan="6" class="empty">まだ登録がありません</td></tr>';return;}
+  if(!cache.offices.length){tb.innerHTML='<tr><td colspan="8" class="empty">まだ登録がありません</td></tr>';return;}
   tb.innerHTML = cache.offices.map(o=>`
     <tr>
       <td style="font-weight:500">${o.name}</td>
@@ -747,6 +747,12 @@ function renderOfficeTable(){
         </select>
       </td>
       <td><span class="derived-price" id="derived-${o.id}">${o.price?o.price.toLocaleString()+'円':'—'}</span></td>
+      <td>
+        <select class="office-price-select" id="manager-${o.id}" onchange="updateOfficeManager('${o.id}',this.value)">
+          <option value="">未設定</option>
+          ${cache.managers.map(m=>`<option value="${m.id}"${o.managerUid===m.id?' selected':''}>${m.displayName||m.email}（${ROLE_LABELS[m.role]||m.role}）</option>`).join('')}
+        </select>
+      </td>
     </tr>`).join('');
 }
 
@@ -773,6 +779,10 @@ window.updateOfficePrice = function(id, priceId){
   if(o){o.priceId=priceId; o.price=p&&p.price?p.price:null;}
   document.getElementById(`derived-${id}`).textContent = p&&p.price?p.price.toLocaleString()+'円':'—';
 };
+window.updateOfficeManager = function(id, uid){
+  const o = cache.offices.find(x=>x.id===id);
+  if(o) o.managerUid = uid;
+};
 window.saveOffices = async function(){
   for(const o of cache.offices){
     await setDoc(doc(db,'offices',o.id),{
@@ -784,7 +794,8 @@ window.saveOffices = async function(){
       price:       o.price||null,
       deptCode:    o.deptCode||'',
       order:       o.order||99,
-      createdAt:   o.createdAt||''
+      createdAt:   o.createdAt||'',
+      managerUid:  o.managerUid||''
     });
   }
   await loadOffices();
@@ -921,10 +932,20 @@ window.saveWorkdays = async function(){
   btn.textContent='保存する';btn.disabled=false;
 };
 
+async function loadManagers(){
+  const snap = await getDocs(collection(db,'users'));
+  cache.managers = [];
+  snap.forEach(d=>{
+    const u = {id:d.id,...d.data()};
+    if(u.role==='unit_manager'||u.role==='area_manager') cache.managers.push(u);
+  });
+  cache.managers.sort((a,b)=>(a.displayName||'').localeCompare(b.displayName||'','ja'));
+}
+
 // ===== 初期化 =====
 async function init(){
   await seedIfEmpty();
-  await Promise.all([loadTypes(), loadPrices(), loadDepts(), loadAreas(), loadOffices()]);
+  await Promise.all([loadTypes(), loadPrices(), loadDepts(), loadAreas(), loadOffices(), loadManagers()]);
   renderOfficeTable();
   renderDepts();
   renderAreas();
