@@ -279,6 +279,12 @@ textarea:focus{border-color:#1D9E75}
             </div>
           </div>
 
+          <div class="comment-field">
+            <label>特記事項・コメント（任意）</label>
+            <textarea id="comment-in" rows="3" placeholder="体調不良の児童あり、行事など…"></textarea>
+          </div>
+          <button class="submit-btn" onclick="submitReport()">報告する</button>
+          <div class="success-msg" id="success-msg">✅ 報告しました</div>
           <div id="input-progress-area" style="display:none">
             <div class="input-progress-card">
               <div class="input-progress-title">今月の貢献人数</div>
@@ -298,14 +304,7 @@ textarea:focus{border-color:#1D9E75}
               </div>
             </div>
           </div>
-          <div class="comment-field">
-            <label>特記事項・コメント（任意）</label>
-            <textarea id="comment-in" rows="3" placeholder="体調不良の児童あり、行事など…"></textarea>
-          </div>
-          <button class="submit-btn" onclick="submitReport()">報告する</button>
-          <div class="success-msg" id="success-msg">✅ 報告しました</div>
           <div id="weekly-planned-area" style="display:none;margin-top:20px;padding-top:16px;border-top:2px dashed #E8EAED">
-            <div style="font-size:11px;color:#aaa;text-align:center;margin-bottom:8px;letter-spacing:.05em">── 週次予定入力 ──</div>
             <button class="csv-btn" onclick="toggleWeeklyPlanned()" style="margin-bottom:0;font-size:14px;color:#185FA5;border-color:#185FA5;background:#EBF3FB">週次予定を入力</button>
             <div id="weekly-plan-panel" style="display:none;background:#fff;border-radius:12px;padding:14px;border:1px solid #E8EAED;margin-top:6px">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
