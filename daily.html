@@ -309,6 +309,16 @@ textarea:focus{border-color:#1D9E75}
           </div>
           <div id="weekly-planned-area" style="display:none;margin-top:20px;padding-top:16px;border-top:2px dashed #E8EAED">
             <button class="csv-btn" onclick="toggleWeeklyPlanned()" style="margin-bottom:0;font-size:14px;color:#185FA5;border-color:#185FA5;background:#EBF3FB">週次予定を入力</button>
+            <div id="weekly-plan-panel" style="display:none;margin-top:12px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <button onclick="shiftWeek(-1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">◀ 前週</button>
+                <span id="wp-week-label" style="font-size:13px;font-weight:600;color:#333"></span>
+                <button onclick="shiftWeek(1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">翌週 ▶</button>
+              </div>
+              <div id="weekly-plan-rows"></div>
+              <button class="submit-btn" onclick="saveWeeklyPlanned()" style="margin-top:14px">一括保存</button>
+              <div class="success-msg" id="weekly-plan-success">✅ 保存しました</div>
+            </div>
           </div>
           <div class="history-card" id="history-area" style="display:none">
             <div class="history-header">
@@ -439,6 +449,16 @@ textarea:focus{border-color:#1D9E75}
           </div>
           <div id="lafore-weekly-planned-area" style="display:none;margin-top:20px;padding-top:16px;border-top:2px dashed #E8EAED">
             <button class="csv-btn" onclick="toggleWeeklyPlanned()" style="margin-bottom:0;font-size:14px;color:#185FA5;border-color:#185FA5;background:#EBF3FB">週次予定を入力</button>
+            <div id="lafore-weekly-plan-panel" style="display:none;margin-top:12px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <button onclick="shiftWeek(-1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">◀ 前週</button>
+                <span id="lafore-wp-week-label" style="font-size:13px;font-weight:600;color:#333"></span>
+                <button onclick="shiftWeek(1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">翌週 ▶</button>
+              </div>
+              <div id="lafore-weekly-plan-rows"></div>
+              <button class="submit-btn" onclick="saveWeeklyPlanned()" style="margin-top:14px">一括保存</button>
+              <div class="success-msg" id="lafore-weekly-plan-success">✅ 保存しました</div>
+            </div>
           </div>
           <div class="history-card" id="lafore-history-area" style="display:none">
             <div class="history-header">
@@ -447,16 +467,6 @@ textarea:focus{border-color:#1D9E75}
             </div>
             <div id="lafore-history-body"></div>
           </div>
-        </div>
-        <div id="weekly-plan-panel" style="display:none;background:#fff;border-radius:12px;padding:14px;border:1px solid #E8EAED;margin-top:6px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <button onclick="shiftWeek(-1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">◀ 前週</button>
-            <span id="wp-week-label" style="font-size:13px;font-weight:600;color:#333"></span>
-            <button onclick="shiftWeek(1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">翌週 ▶</button>
-          </div>
-          <div id="weekly-plan-rows"></div>
-          <button class="submit-btn" onclick="saveWeeklyPlanned()" style="margin-top:14px">一括保存</button>
-          <div class="success-msg" id="weekly-plan-success">✅ 保存しました</div>
         </div>
       </div>
     </div>
@@ -1246,7 +1256,7 @@ window.selectOffice=async function(name){
     document.getElementById('lafore-history-area').style.display='block';
     document.getElementById('lafore-weekly-planned-area').style.display='block';
     document.getElementById('weekly-planned-area').style.display='none';
-    document.getElementById('weekly-plan-panel').style.display='none';
+    document.getElementById('lafore-weekly-plan-panel').style.display='none';
     await window.loadHistory();
   }else{
     document.getElementById('normal-input').style.display='block';
@@ -1276,6 +1286,7 @@ window.selectOffice=async function(name){
     document.getElementById('weekly-planned-area').style.display='block';
     document.getElementById('lafore-weekly-planned-area').style.display='none';
     document.getElementById('weekly-plan-panel').style.display='none';
+    document.getElementById('lafore-weekly-plan-panel').style.display='none';
     await window.loadHistory();
   }
   document.getElementById('office-selector').style.display='none';
@@ -1551,11 +1562,17 @@ function getWeekMonday(offset){
   return mon;
 }
 
+function getWpPanelId(){return isLafore(state.cur)?'lafore-weekly-plan-panel':'weekly-plan-panel';}
+function getWpWeekLabelId(){return isLafore(state.cur)?'lafore-wp-week-label':'wp-week-label';}
+function getWpRowsId(){return isLafore(state.cur)?'lafore-weekly-plan-rows':'weekly-plan-rows';}
+function getWpSuccessId(){return isLafore(state.cur)?'lafore-weekly-plan-success':'weekly-plan-success';}
+
 window.toggleWeeklyPlanned=async function(){
-  const panel=document.getElementById('weekly-plan-panel');
+  const panel=document.getElementById(getWpPanelId());
   if(panel.style.display==='none'){
-    wpState.weekOffset=1; // 翌週をデフォルト表示
+    wpState.weekOffset=1;
     panel.style.display='block';
+    panel.scrollIntoView({behavior:'smooth',block:'nearest'});
     await loadWeeklyPlanned();
   }else{
     panel.style.display='none';
@@ -1578,7 +1595,7 @@ async function loadWeeklyPlanned(){
   }
   // 週ラベル更新
   const f=candidates[0].d,l=candidates[6].d;
-  document.getElementById('wp-week-label').textContent=
+  document.getElementById(getWpWeekLabelId()).textContent=
     `${f.getMonth()+1}/${f.getDate()}(${DOW_JP[f.getDay()]})〜${l.getMonth()+1}/${l.getDate()}(${DOW_JP[l.getDay()]})`;
 
   const months=[...new Set(candidates.map(c=>c.dateStr.substring(0,7)))];
@@ -1597,7 +1614,7 @@ async function loadWeeklyPlanned(){
 }
 
 function renderWeeklyPlanned(){
-  const el=document.getElementById('weekly-plan-rows');
+  const el=document.getElementById(getWpRowsId());
   if(!wpState.days.length){el.innerHTML='<div style="text-align:center;padding:20px;color:#999;font-size:13px">来週の稼働日が登録されていません</div>';return;}
   el.innerHTML=wpState.days.map(({dateStr,label})=>{
     const v=wpState.values[dateStr];
@@ -1674,7 +1691,7 @@ window.saveWeeklyPlanned=async function(){
       if(!snap.empty){await updateDoc(doc(db,'reports',snap.docs[0].id),{planned});}
       else{await addDoc(collection(db,'reports'),{office:state.cur,date:dateStr,month,kids:0,planned,comment:'',time:getTime(),inquiry:0,visit:0,contract:0});}
     }
-    showSuccessMsg('weekly-plan-success');
+    showSuccessMsg(getWpSuccessId());
     await window.loadHistory();
   }catch(e){console.error(e);showToast('保存エラー: '+e.message);}
 };
