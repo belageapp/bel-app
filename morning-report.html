@@ -51,6 +51,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .office-card-wdays{font-size:11px;color:#0F6E56}
 .office-card-body{padding:12px 14px}
 
+/* ===== 貢献人数バー ===== */
+.mr-progress-card{background:#f0faf6;border:1px solid #d4f4e8;border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.mr-progress-title{font-size:11px;color:#0F6E56;margin-bottom:6px;font-weight:500}
+.mr-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.mr-progress-num{font-size:16px;font-weight:700;color:#0F6E56}
+.mr-progress-goal{font-size:11px;color:#888}
+.mr-progress-wrap{height:6px;background:#d4f4e8;border-radius:3px;overflow:hidden}
+.mr-progress-bar{height:100%;border-radius:3px;background:#1D9E75;transition:width 0.3s}
+.mr-progress-bar.over{background:#E24B4A}
+.mr-progress-pct{font-size:11px;color:#0F6E56;margin-top:3px;text-align:right}
+
 /* ===== 週次テーブル ===== */
 .week-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px}
 .week-table{width:100%;border-collapse:collapse;font-size:12px;min-width:340px}
@@ -405,7 +416,7 @@ async function loadAndRender() {
 
   // 報告週の直前5週（oldestからnewest順）
   const prevWeeks = getPrevWeeks(currentWeekStart);
-  // データ読込範囲：最古の前週開始〜報告週の月末
+  // データ読込範囲：最古の前週開始〜
   const rangeStart = prevWeeks[0].startStr;
 
   const weY  = currentWeekStart.getFullYear();
@@ -413,8 +424,17 @@ async function loadAndRender() {
   const monthStr   = `${weY}-${String(weMo).padStart(2,'0')}`;
   const monthStart = `${monthStr}-01`;
   const monthEnd   = `${monthStr}-${String(new Date(weY, weMo, 0).getDate()).padStart(2,'0')}`;
-  // 読込終端は月末（報告週は来週なので月末で十分）
-  const rangeEnd = monthEnd;
+
+  // 報告週が月またぎかチェック（バー表示・データ範囲に影響）
+  const weY2  = currentWeekEnd.getFullYear();
+  const weMo2 = currentWeekEnd.getMonth() + 1;
+  const spansMonths = weY !== weY2 || weMo !== weMo2;
+  const month2Str   = spansMonths ? `${weY2}-${String(weMo2).padStart(2,'0')}` : null;
+  const month2Start = spansMonths ? `${month2Str}-01` : null;
+  const month2End   = spansMonths ? `${month2Str}-${String(new Date(weY2, weMo2, 0).getDate()).padStart(2,'0')}` : null;
+
+  // 読込終端：月またぎなら第2月の月末まで
+  const rangeEnd = spansMonths ? month2End : monthEnd;
 
   try {
     const officeNames = myOffices.map(o => o.name);
@@ -527,11 +547,36 @@ async function loadAndRender() {
       };
     });
 
+    // ===== 貢献人数バー用データ =====
+    const progressMonths = [{ label: `${weMo}月`, start: monthStart, end: monthEnd }];
+    if (spansMonths) progressMonths.push({ label: `${weMo2}月`, start: month2Start, end: month2End });
+
+    const progressData = {};
+    myOffices.forEach(office => {
+      const name  = office.name;
+      const cap   = capacityMap[name] || 10;
+      const wdays = workdaysByOffice[name] || {};
+      progressData[name] = progressMonths.map(mo => {
+        let actual = 0, workDays = 0;
+        getDatesInRange(mo.start, mo.end).forEach(d => {
+          if (wdays[d] === 1) {
+            workDays++;
+            const rep = reportsByOffice[name][d];
+            if (rep) actual += rep.actual;
+          }
+        });
+        const goal = cap * workDays;
+        const pct  = goal > 0 ? Math.min(Math.round(actual / goal * 100), 100) : 0;
+        const over = goal > 0 && actual > goal;
+        return { label: mo.label, actual, goal, pct, over };
+      });
+    });
+
     cachedWeeklyStats  = weeklyStats;
     cachedMonthlyStats = monthlyStats;
     cachedWeekEndMonth = monthStr;
 
-    renderInputTab(weeklyStats, monthlyStats, weY, weMo);
+    renderInputTab(weeklyStats, monthlyStats, progressData, weY, weMo);
     if (activeTab === 'list') renderListTab();
 
   } catch(e) {
@@ -541,7 +586,7 @@ async function loadAndRender() {
 }
 
 // ===== 入力タブ描画 =====
-function renderInputTab(weeklyStats, monthlyStats, weY, weMo) {
+function renderInputTab(weeklyStats, monthlyStats, progressData, weY, weMo) {
   const savedComments = (savedReport && savedReport.officeComments) ? savedReport.officeComments : {};
   const fmtN = v => v != null ? Math.round(v)  : '—';
   const fmtF = v => v != null ? v.toFixed(1)    : '—';
@@ -571,6 +616,21 @@ function renderInputTab(weeklyStats, monthlyStats, weY, weMo) {
         </tr>`;
       });
 
+      // 貢献人数バーHTML
+      const bars = progressData[name] || [];
+      const barsHtml = bars.map(b => `
+<div class="mr-progress-card">
+  <div class="mr-progress-title">${b.label}　貢献人数</div>
+  <div class="mr-progress-row">
+    <span class="mr-progress-num">${b.actual}</span>
+    <span class="mr-progress-goal">目標 ${b.goal}名</span>
+  </div>
+  <div class="mr-progress-wrap">
+    <div class="mr-progress-bar${b.over?' over':''}" style="width:${b.pct}%"></div>
+  </div>
+  <div class="mr-progress-pct">${b.pct}%</div>
+</div>`).join('');
+
       html += `
 <div class="office-card">
   <div class="office-card-header">
@@ -578,6 +638,7 @@ function renderInputTab(weeklyStats, monthlyStats, weY, weMo) {
     <span class="office-card-wdays">直近週 稼働${latestWorkDays}日</span>
   </div>
   <div class="office-card-body">
+    ${barsHtml}
     <div class="week-table-wrap">
       <table class="week-table">
         <thead><tr><th>期間</th><th>定員計</th><th>予定計</th><th>実績計</th><th>平均</th><th>達成率</th></tr></thead>
