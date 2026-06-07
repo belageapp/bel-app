@@ -259,7 +259,7 @@ textarea:focus{border-color:#1D9E75}
             <div class="extra-row">
               <span class="extra-label">貢献予定人数</span>
               <div class="count-ctrl">
-                <span class="cnt-num tap-num" id="planned-num" onclick="numpadOpenDaily('planned',null)">0</span>
+                <span class="cnt-num" id="planned-num">0</span>
               </div>
             </div>
             <div class="extra-row">
@@ -345,7 +345,7 @@ textarea:focus{border-color:#1D9E75}
               <div class="extra-row">
                 <span class="extra-label">貢献予定人数</span>
                 <div class="count-ctrl">
-                  <span class="cnt-num tap-num" id="care-reservations" onclick="numpadOpenDaily('reservations','care')">0</span>
+                  <span class="cnt-num" id="care-reservations">0</span>
                 </div>
               </div>
               <div class="extra-row">
@@ -381,7 +381,7 @@ textarea:focus{border-color:#1D9E75}
               <div class="extra-row">
                 <span class="extra-label">貢献予定人数</span>
                 <div class="count-ctrl">
-                  <span class="cnt-num tap-num" id="work-reservations" onclick="numpadOpenDaily('reservations','work')">0</span>
+                  <span class="cnt-num" id="work-reservations">0</span>
                 </div>
               </div>
               <div class="extra-row">
@@ -1518,19 +1518,16 @@ window.downloadCSV=async function(){
 // ===== 日次テンキー入力 =====
 const DAILY_FIELDS=[
   {field:'kids',label:'貢献実績人数',service:null},
-  {field:'planned',label:'貢献予定人数',service:null},
   {field:'inquiry',label:'問合せ',service:null},
   {field:'visit',label:'見学',service:null},
   {field:'contract',label:'契約',service:null},
 ];
 const LAFORE_DAILY_FIELDS=[
   {field:'actual',label:'生活介護 貢献実績人数',service:'care'},
-  {field:'reservations',label:'生活介護 貢献予定人数',service:'care'},
   {field:'inquiries',label:'生活介護 問合せ',service:'care'},
   {field:'visits',label:'生活介護 見学',service:'care'},
   {field:'contracts',label:'生活介護 契約',service:'care'},
   {field:'actual',label:'就労B型 貢献実績人数',service:'work'},
-  {field:'reservations',label:'就労B型 貢献予定人数',service:'work'},
   {field:'inquiries',label:'就労B型 問合せ',service:'work'},
   {field:'visits',label:'就労B型 見学',service:'work'},
   {field:'contracts',label:'就労B型 契約',service:'work'},
