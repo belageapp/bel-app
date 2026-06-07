@@ -491,21 +491,22 @@ async function loadAndRender() {
       };
 
       // 月次集計（weekEndの月の全稼働日）
-      let monWorkDays=0, monCap=0, monActual=0, monPlanned=0;
+      let monWorkDays=0, monCap=0, monActual=0, monPlanned=0, monReportedDays=0;
       getDatesInRange(monthStart, monthEnd).forEach(d => {
         if (wdays[d] === 1) {
           monWorkDays++; monCap += cap;
           const rep = reportsByOffice[name][d];
-          if (rep) { monActual += rep.actual; monPlanned += rep.planned; }
+          if (rep) { monActual += rep.actual; monPlanned += rep.planned; monReportedDays++; }
         }
       });
+      const monRepCap = cap * monReportedDays;
       monthlyStats[name] = {
         workDays:     monWorkDays,
         capTotal:     monCap,
         actualTotal:  monActual,
         plannedTotal: monPlanned,
-        avgActual:    monWorkDays > 0 ? monActual / monWorkDays : null,
-        rate:         monCap > 0 ? monActual / monCap * 100 : null
+        avgActual:    monReportedDays > 0 ? monActual / monReportedDays : null,
+        rate:         monRepCap > 0 ? monActual / monRepCap * 100 : null
       };
     });
 
