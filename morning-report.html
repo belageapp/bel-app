@@ -51,13 +51,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .office-card-wdays{font-size:11px;color:#0F6E56}
 .office-card-body{padding:12px 14px}
 
-/* ===== 週間スタッツグリッド ===== */
-.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:12px}
-.stat-cell{background:#F8FDFB;border:1px solid #E0F5ED;border-radius:8px;padding:7px 3px;text-align:center}
-.stat-cell-label{font-size:9px;color:#888;display:block;margin-bottom:3px;line-height:1.3}
-.stat-cell-value{font-size:13px;font-weight:700;color:#1D9E75;display:block}
-.stat-cell-value.blue{color:#185FA5}
-.stat-cell-sub{font-size:9px;color:#aaa;display:block;margin-top:1px}
+/* ===== 週次テーブル ===== */
+.week-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px}
+.week-table{width:100%;border-collapse:collapse;font-size:12px;min-width:340px}
+.week-table th{background:#F0FAF6;padding:6px 8px;text-align:center;color:#0F6E56;font-weight:600;border-bottom:2px solid #d4f4e8;white-space:nowrap}
+.week-table th:first-child{text-align:left}
+.week-table td{padding:6px 8px;text-align:center;border-bottom:1px solid #f0f0f0;color:#333;white-space:nowrap}
+.week-table td:first-child{text-align:left;font-size:11px;color:#555;font-weight:500}
+.week-table tr:last-child td{border-bottom:none}
+.week-table .wt-actual{color:#1D9E75;font-weight:700}
+.week-table .wt-rate{color:#999;font-size:11px}
+.week-table tr.cur-week td{background:#FAFFF8}
 
 /* ===== 入力フォーム ===== */
 .input-group{margin-bottom:8px}
@@ -235,8 +239,8 @@ const OFFICE_ORDER = [
 
 let currentUser = null;
 let currentUserData = null;
-let currentWeekStart = null;
-let currentWeekEnd   = null;
+let currentYear  = null;
+let currentMonth = null;
 let myOffices  = [];
 let allOffices = [];
 let capacityMap = {};
@@ -261,26 +265,29 @@ function getFiscalYear(dateStr) {
   return mo >= 4 ? yr : yr - 1;
 }
 
-// ===== 週計算 =====
-// 週単位：木曜〜水曜。金曜日は直前に終わった週（先週）を表示。
-function getWeekBounds(baseDate) {
-  const dow = baseDate.getDay(); // 0=日 … 5=金 6=土
-  let ref = new Date(baseDate);
-  if (dow === 5) ref.setDate(ref.getDate() - 2); // 金→先週水曜を基準に
-  const daysUntilWed = (3 - ref.getDay() + 7) % 7;
-  const weekEnd = new Date(ref);
-  weekEnd.setDate(weekEnd.getDate() + daysUntilWed);
-  const weekStart = new Date(weekEnd);
-  weekStart.setDate(weekStart.getDate() - 6);
-  return { weekStart, weekEnd };
+// ===== 月・週計算 =====
+// 指定月をカバーする5つの「日〜土」週を返す（最初の週は前月開始もある）
+function getMonthWeeks(year, month) {
+  const firstDay = new Date(year, month - 1, 1);
+  const dow = firstDay.getDay(); // 0=日
+  const firstSunday = new Date(firstDay);
+  firstSunday.setDate(firstDay.getDate() - dow);
+  const weeks = [];
+  for (let i = 0; i < 5; i++) {
+    const start = new Date(firstSunday);
+    start.setDate(firstSunday.getDate() + i * 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    weeks.push({ start, end, startStr: dateToStr(start), endStr: dateToStr(end) });
+  }
+  return weeks;
 }
-function getWeekInfo(weekStart, weekEnd) {
-  const y = weekEnd.getFullYear(), m = weekEnd.getMonth()+1, d = weekEnd.getDate();
-  const n = Math.ceil(d / 7);
-  return {
-    label: `${y}年${m}月第${n}週`,
-    range: `${dateToStr(weekStart).replace(/-/g,'/')} 〜 ${dateToStr(weekEnd).replace(/-/g,'/')}`
-  };
+function weekRangeLabel(w) {
+  const s = w.start, e = w.end;
+  return `${s.getMonth()+1}/${s.getDate()}-${e.getMonth()+1}/${e.getDate()}`;
+}
+function monthLabel(year, month) {
+  return `${year}年${month}月`;
 }
 
 // ===== 認証 =====
@@ -312,9 +319,9 @@ window.toggleNotice = function() {
 
 // ===== 初期化 =====
 async function initPage() {
-  const { weekStart, weekEnd } = getWeekBounds(new Date());
-  currentWeekStart = weekStart;
-  currentWeekEnd   = weekEnd;
+  const today = new Date();
+  currentYear  = today.getFullYear();
+  currentMonth = today.getMonth() + 1;
   await loadMasterData();
   await loadAndRender();
 }
@@ -352,19 +359,17 @@ async function loadMasterData() {
   }
 }
 
-// ===== 週ナビゲーション =====
+// ===== 月ナビゲーション =====
 window.shiftWeek = function(dir) {
-  currentWeekStart = new Date(currentWeekStart);
-  currentWeekEnd   = new Date(currentWeekEnd);
-  currentWeekStart.setDate(currentWeekStart.getDate() + dir * 7);
-  currentWeekEnd.setDate(currentWeekEnd.getDate()   + dir * 7);
+  currentMonth += dir;
+  if (currentMonth > 12) { currentMonth = 1;  currentYear++; }
+  if (currentMonth < 1)  { currentMonth = 12; currentYear--; }
   loadAndRender();
 };
 
 function updateWeekLabel() {
-  const info = getWeekInfo(currentWeekStart, currentWeekEnd);
-  document.getElementById('week-label').textContent = info.label;
-  document.getElementById('week-range').textContent = info.range;
+  document.getElementById('week-label').textContent = monthLabel(currentYear, currentMonth);
+  document.getElementById('week-range').textContent = '';
 }
 
 // ===== タブ切替 =====
@@ -383,25 +388,20 @@ async function loadAndRender() {
   document.getElementById('input-content').innerHTML = '<div class="loading">読み込み中...</div>';
   cachedWeeklyStats = null; cachedMonthlyStats = null;
 
-  const weekStartStr = dateToStr(currentWeekStart);
-  const weekEndStr   = dateToStr(currentWeekEnd);
+  const weeks = getMonthWeeks(currentYear, currentMonth);
+  const rangeStart = weeks[0].startStr;
+  const rangeEnd   = weeks[4].endStr;
 
-  const prevWeekStart = new Date(currentWeekStart); prevWeekStart.setDate(prevWeekStart.getDate() - 7);
-  const prevWeekEnd   = new Date(currentWeekEnd);   prevWeekEnd.setDate(prevWeekEnd.getDate()   - 7);
-  const prevWeekStartStr = dateToStr(prevWeekStart);
-  const prevWeekEndStr   = dateToStr(prevWeekEnd);
-
-  const [weY, weMo] = [currentWeekEnd.getFullYear(), currentWeekEnd.getMonth()+1];
-  const monthStr  = `${weY}-${String(weMo).padStart(2,'0')}`;
+  const monthStr  = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
   const monthStart = `${monthStr}-01`;
-  const monthEnd   = `${monthStr}-${String(new Date(weY, weMo, 0).getDate()).padStart(2,'0')}`;
+  const monthEnd   = `${monthStr}-${String(new Date(currentYear, currentMonth, 0).getDate()).padStart(2,'0')}`;
 
   try {
     const officeNames = myOffices.map(o => o.name);
 
-    // 稼働日データ読込（前週〜月末をカバーする全fiscalYear）
+    // 稼働日データ読込（5週全体をカバーする全fiscalYear）
     const fiscalYears = new Set();
-    getDatesInRange(prevWeekStartStr, monthEnd).forEach(d => fiscalYears.add(getFiscalYear(d)));
+    getDatesInRange(rangeStart, rangeEnd).forEach(d => fiscalYears.add(getFiscalYear(d)));
     const workdaysByOffice = {};
     officeNames.forEach(n => workdaysByOffice[n] = {});
     await Promise.all(
@@ -415,9 +415,9 @@ async function loadAndRender() {
       )
     );
 
-    // 報告データ読込（前週〜月末が含まれる月ごとにクエリ）
+    // 報告データ読込（5週全体が含まれる月ごとにクエリ）
     const monthsToLoad = new Set();
-    getDatesInRange(prevWeekStartStr, monthEnd).forEach(d => monthsToLoad.add(d.substring(0,7)));
+    getDatesInRange(rangeStart, rangeEnd).forEach(d => monthsToLoad.add(d.substring(0,7)));
     const reportsByOffice = {};
     officeNames.forEach(n => reportsByOffice[n] = {});
     await Promise.all(
@@ -449,49 +449,46 @@ async function loadAndRender() {
       )
     );
 
-    // 保存済み朝礼報告読込
-    const docId = `${weekStartStr}_${currentUser.uid}`;
+    // 保存済み朝礼報告読込（月単位キー）
+    const docId = `${monthStr}_${currentUser.uid}`;
     const savedSnap = await getDoc(doc(db, 'morning_reports', docId));
     savedReport = savedSnap.exists() ? savedSnap.data() : null;
 
     // ===== スタッツ計算 =====
     const weeklyStats  = {};
     const monthlyStats = {};
+    const today = dateToStr(new Date());
 
     myOffices.forEach(office => {
       const name = office.name;
       const cap  = capacityMap[name] || 10;
       const wdays = workdaysByOffice[name] || {};
 
-      // 週間集計
-      let weekWorkDays=0, weekCap=0, weekActual=0, weekPlanned=0, weekReportedDays=0;
-      getDatesInRange(weekStartStr, weekEndStr).forEach(d => {
-        if (wdays[d] === 1) {
-          weekWorkDays++; weekCap += cap;
-          const rep = reportsByOffice[name][d];
-          if (rep) { weekActual += rep.actual; weekPlanned += rep.planned; if (rep.reported) weekReportedDays++; }
-        }
+      // 5週分の集計
+      weeklyStats[name] = weeks.map(w => {
+        let workDays=0, actual=0, planned=0, reportedDays=0;
+        getDatesInRange(w.startStr, w.endStr).forEach(d => {
+          if (wdays[d] === 1) {
+            workDays++;
+            const rep = reportsByOffice[name][d];
+            if (rep) { actual += rep.actual; planned += rep.planned; if (rep.reported) reportedDays++; }
+          }
+        });
+        const capTotal = cap * workDays;
+        const repCap   = cap * reportedDays;
+        return {
+          week:         w,
+          workDays,
+          capTotal,
+          actualTotal:  actual,
+          plannedTotal: planned,
+          avgActual:    reportedDays > 0 ? actual / reportedDays : null,
+          rate:         repCap > 0 ? actual / repCap * 100 : null,
+          isCurrent:    w.startStr <= today && today <= w.endStr
+        };
       });
 
-      // 前週実績
-      let prevActual = 0;
-      getDatesInRange(prevWeekStartStr, prevWeekEndStr).forEach(d => {
-        if (wdays[d] === 1) {
-          const rep = reportsByOffice[name][d];
-          if (rep) prevActual += rep.actual;
-        }
-      });
-
-      weeklyStats[name] = {
-        workDays:     weekWorkDays,
-        capTotal:     weekCap,
-        actualTotal:  weekActual,
-        plannedTotal: weekPlanned,
-        avgActual:    weekReportedDays > 0 ? weekActual / weekReportedDays : null,
-        prevActual
-      };
-
-      // 月次集計（weekEndの月の全稼働日）
+      // 月次集計
       let monWorkDays=0, monCap=0, monActual=0, monPlanned=0, monReportedDays=0;
       getDatesInRange(monthStart, monthEnd).forEach(d => {
         if (wdays[d] === 1) {
@@ -515,7 +512,7 @@ async function loadAndRender() {
     cachedMonthlyStats = monthlyStats;
     cachedWeekEndMonth = monthStr;
 
-    renderInputTab(weeklyStats, monthlyStats, weY, weMo);
+    renderInputTab(weeklyStats, monthlyStats, currentYear, currentMonth);
     if (activeTab === 'list') renderListTab();
 
   } catch(e) {
@@ -529,6 +526,7 @@ function renderInputTab(weeklyStats, monthlyStats, weY, weMo) {
   const savedComments = (savedReport && savedReport.officeComments) ? savedReport.officeComments : {};
   const fmtN = v => v != null ? Math.round(v)  : '—';
   const fmtF = v => v != null ? v.toFixed(1)    : '—';
+  const fmtR = v => v != null ? v.toFixed(1)+'%' : '—';
 
   let html = '';
 
@@ -536,47 +534,39 @@ function renderInputTab(weeklyStats, monthlyStats, weY, weMo) {
     html = '<div class="no-data">担当事業所が設定されていません<br><small style="color:#bbb;margin-top:6px;display:block">管理者に担当事業所の設定を依頼してください</small></div>';
   } else {
     myOffices.forEach(office => {
-      const name = office.name;
-      const ws   = weeklyStats[name];
-      const sv   = savedComments[name] || {};
+      const name  = office.name;
+      const weeks = weeklyStats[name]; // array of 5
+      const sv    = savedComments[name] || {};
+      const totalWorkDays = weeks.reduce((s, w) => s + w.workDays, 0);
+
+      let weekRows = '';
+      weeks.forEach(w => {
+        weekRows += `<tr${w.isCurrent ? ' class="cur-week"' : ''}>
+          <td>${weekRangeLabel(w.week)}</td>
+          <td>${fmtN(w.capTotal)}</td>
+          <td>${fmtN(w.plannedTotal)}</td>
+          <td class="wt-actual">${fmtN(w.actualTotal)}</td>
+          <td>${fmtF(w.avgActual)}</td>
+          <td class="wt-rate">${fmtR(w.rate)}</td>
+        </tr>`;
+      });
 
       html += `
 <div class="office-card">
   <div class="office-card-header">
     <span class="office-card-name">${escHtml(name)}</span>
-    <span class="office-card-wdays">稼働 ${ws.workDays}日</span>
+    <span class="office-card-wdays">稼働 ${totalWorkDays}日</span>
   </div>
   <div class="office-card-body">
-    <div class="stats-grid">
-      <div class="stat-cell">
-        <span class="stat-cell-label">週間<br>定員計</span>
-        <span class="stat-cell-value">${fmtN(ws.capTotal)}</span>
-        <span class="stat-cell-sub">名</span>
-      </div>
-      <div class="stat-cell">
-        <span class="stat-cell-label">週間<br>予定計</span>
-        <span class="stat-cell-value">${fmtN(ws.plannedTotal)}</span>
-        <span class="stat-cell-sub">名</span>
-      </div>
-      <div class="stat-cell">
-        <span class="stat-cell-label">週間<br>実績計</span>
-        <span class="stat-cell-value">${fmtN(ws.actualTotal)}</span>
-        <span class="stat-cell-sub">名</span>
-      </div>
-      <div class="stat-cell">
-        <span class="stat-cell-label">週間<br>平均実績</span>
-        <span class="stat-cell-value">${fmtF(ws.avgActual)}</span>
-        <span class="stat-cell-sub">名/日</span>
-      </div>
-      <div class="stat-cell">
-        <span class="stat-cell-label">前週<br>実績計</span>
-        <span class="stat-cell-value blue">${fmtN(ws.prevActual)}</span>
-        <span class="stat-cell-sub">名</span>
-      </div>
+    <div class="week-table-wrap">
+      <table class="week-table">
+        <thead><tr><th>期間</th><th>定員計</th><th>予定計</th><th>実績計</th><th>平均</th><th>達成率</th></tr></thead>
+        <tbody>${weekRows}</tbody>
+      </table>
     </div>
     <div class="input-group">
       <label class="input-label">設定目標</label>
-      <textarea class="input-textarea" rows="2" id="goal_${office.id}" placeholder="今週の目標を入力…">${escHtml(sv.goal||'')}</textarea>
+      <textarea class="input-textarea" rows="2" id="goal_${office.id}" placeholder="今月の目標を入力…">${escHtml(sv.goal||'')}</textarea>
     </div>
     <div class="input-group">
       <label class="input-label">取り組み</label>
@@ -634,9 +624,8 @@ window.saveReport = async function() {
   const btn = document.getElementById('save-btn');
   if (btn) btn.disabled = true;
 
-  const weekStartStr = dateToStr(currentWeekStart);
-  const weekEndStr   = dateToStr(currentWeekEnd);
-  const docId = `${weekStartStr}_${currentUser.uid}`;
+  const monthStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+  const docId = `${monthStr}_${currentUser.uid}`;
 
   const officeComments = {};
   myOffices.forEach(office => {
@@ -649,8 +638,7 @@ window.saveReport = async function() {
 
   try {
     await setDoc(doc(db, 'morning_reports', docId), {
-      weekStart:   weekStartStr,
-      weekEnd:     weekEndStr,
+      month:       monthStr,
       managerUid:  currentUser.uid,
       managerName: currentUserData.displayName || currentUser.email,
       managerRole: currentUserData.role,
@@ -658,7 +646,7 @@ window.saveReport = async function() {
       savedAt: new Date().toISOString()
     }, { merge: true });
 
-    savedReport = { weekStart: weekStartStr, weekEnd: weekEndStr,
+    savedReport = { month: monthStr,
       managerUid: currentUser.uid, officeComments };
 
     const msg = document.getElementById('save-success');
@@ -678,15 +666,15 @@ async function renderListTab() {
   content.innerHTML = '<div class="loading">読み込み中...</div>';
 
   try {
-    const weekStartStr = dateToStr(currentWeekStart);
-    const q = query(collection(db, 'morning_reports'), where('weekStart','==', weekStartStr));
+    const monthStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+    const q = query(collection(db, 'morning_reports'), where('month','==', monthStr));
     const snap = await getDocs(q);
 
     const reports = [];
     snap.forEach(d => reports.push({ id: d.id, ...d.data() }));
 
     if (reports.length === 0) {
-      content.innerHTML = '<div class="no-data">この週の報告はまだありません</div>';
+      content.innerHTML = '<div class="no-data">この月の報告はまだありません</div>';
       return;
     }
 
