@@ -1358,6 +1358,8 @@ window.onReportDateChange=async function(){
 };
 
 window.backToSelector=function(){
+  if(state.dirty&&!confirm('未保存のデータがあります。\n移動すると入力内容が失われます。\n移動しますか？'))return;
+  state.dirty=false;
   document.getElementById('office-selector').style.display='block';
   document.getElementById('input-form').style.display='none';
   document.getElementById('header-back').style.display='none';
@@ -1491,6 +1493,8 @@ window.switchHqTab=function(tab){
 };
 
 window.switchTab=function(tab){
+  if(state.dirty&&!confirm('未保存のデータがあります。\n移動すると入力内容が失われます。\n移動しますか？'))return;
+  state.dirty=false;
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['input','hq'][i]===tab));
   ['sec-input','sec-hq'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',['input','hq'][i]===tab));
   if(tab==='hq')renderHQ(state.reports);
@@ -1671,11 +1675,6 @@ function numpadConfirm(advance){
       document.getElementById(field+'-num').textContent=extraState[field];
     }
     state.dirty=true;
-    if(advance&&idx<fieldList.length-1){
-      const next=fieldList[idx+1];
-      setTimeout(()=>window.numpadOpenDaily(next.field,next.service),80);
-      return;
-    }
     document.getElementById('numpad-overlay').style.display='none';
     document.querySelectorAll('#input-form .tap-num').forEach(el=>el.classList.remove('input-active'));
     dailyTarget=null;wpState.val='';numpadMode='weekly';
@@ -1733,6 +1732,10 @@ if (window._autoSelectOffice) {
 }
 
 setInterval(async()=>{await loadMonthlyTotals();await loadToday();},30000);
+
+window.addEventListener('beforeunload',e=>{
+  if(state.dirty){e.preventDefault();e.returnValue='';}
+});
 </script>
 </body>
 </html>
