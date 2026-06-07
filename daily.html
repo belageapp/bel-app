@@ -73,6 +73,8 @@ textarea{width:100%;font-size:15px;padding:10px 12px;border:1px solid #E8EAED;bo
 textarea:focus{border-color:#1D9E75}
 .submit-btn{width:100%;padding:14px;background:#1D9E75;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;margin-top:14px;font-family:inherit}
 .submit-btn:active{background:#0F6E56}
+.reset-actual-btn{display:none;width:100%;padding:10px;background:#fff;color:#E65100;border:1px solid #E65100;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;margin-top:8px;font-family:inherit}
+.reset-actual-btn:active{background:#FFF3E0}
 .success-msg{display:none;background:#d4f4e8;color:#0F6E56;padding:10px 14px;border-radius:8px;margin-top:10px;font-size:14px;font-weight:600;text-align:center}
 .input-progress-card{background:#f0faf6;border:1px solid #d4f4e8;border-radius:10px;padding:12px;margin-top:10px}
 .input-progress-title{font-size:12px;color:#0F6E56;margin-bottom:8px;font-weight:500}
@@ -284,6 +286,7 @@ textarea:focus{border-color:#1D9E75}
             <textarea id="comment-in" rows="3" placeholder="体調不良の児童あり、行事など…"></textarea>
           </div>
           <button class="submit-btn" onclick="submitReport()">報告する</button>
+          <button class="reset-actual-btn" id="reset-btn" onclick="resetActual()">実績をリセット（予定は保持）</button>
           <div class="success-msg" id="success-msg">✅ 報告しました</div>
           <div id="input-progress-area" style="display:none">
             <div class="input-progress-card">
@@ -396,6 +399,7 @@ textarea:focus{border-color:#1D9E75}
             <textarea id="comment-care" rows="3" placeholder="体調不良など…"></textarea>
           </div>
           <button class="submit-btn" onclick="submitLafore()">報告する</button>
+          <button class="reset-actual-btn" id="lafore-reset-btn" onclick="resetActual()">実績をリセット（予定は保持）</button>
           <div class="success-msg" id="lafore-success-msg">✅ 報告しました</div>
           <div id="lafore-progress-area" style="display:none">
             <div class="input-progress-card">
@@ -1148,18 +1152,54 @@ function applyPaceDisplay(prefix, office, mt){
 
 function updateFormBadge(r, isLaf){
   const b=document.getElementById('form-badge');
+  let hasActual=false;
   if(isLaf){
     const hasCare=r&&r.care!=null, hasWork=r&&r.work!=null;
     const done=hasCare&&hasWork;
     const partial=!done&&(hasCare||hasWork);
     b.textContent=done?'報告済':partial?'一部報告':'未報告';
     b.className='status-pill'+(done?' done':partial?' partial':'');
+    hasActual=done||partial;
   }else{
     const isReported=r&&(r.reported||r.kids>0);
     b.textContent=isReported?'報告済':'未報告';
     b.className='status-pill'+(isReported?' done':'');
+    hasActual=!!isReported;
   }
+  const btnId=isLaf?'lafore-reset-btn':'reset-btn';
+  document.getElementById(btnId).style.display=hasActual?'block':'none';
 }
+
+window.resetActual=async function(){
+  if(!confirm('実績をリセットします。予定・問合せ・見学・契約は保持されます。よろしいですか？'))return;
+  const isLaf=isLafore(state.cur);
+  const dateVal=state.formDate;
+  try{
+    const q=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',dateVal));
+    const snap=await getDocs(q);
+    if(snap.empty){showToast('対象データが見つかりません');return;}
+    if(isLaf){
+      const d=snap.docs[0];
+      const sv=d.data().services||{};
+      const updSv={};
+      for(const [k,v] of Object.entries(sv)){updSv[k]={...v,actual:0};}
+      await setDoc(d.ref,{...d.data(),kids:0,services:updSv});
+      laforeState.care.actual=0;laforeState.work.actual=0;
+      updateLaforeForm();
+      updateFormBadge(null,true);
+    }else{
+      const d=snap.docs[0];
+      await setDoc(d.ref,{...d.data(),kids:0,reported:false});
+      state.kids=0;state.kidsEdited=false;
+      document.getElementById('kids-num').textContent=0;
+      updateFormBadge(null,false);
+    }
+    state.dirty=false;
+    await loadMonthlyTotals();
+    await window.loadHistory();
+    showToast('実績をリセットしました');
+  }catch(e){showToast('リセットエラー: '+e.message);}
+};
 
 window.selectOffice=async function(name){
   state.cur=name;
