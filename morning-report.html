@@ -439,9 +439,10 @@ async function loadAndRender() {
                 actual  = r.kids    || 0;
                 planned = r.planned || 0;
               }
-              if (!reportsByOffice[name][r.date]) reportsByOffice[name][r.date] = { actual:0, planned:0 };
+              if (!reportsByOffice[name][r.date]) reportsByOffice[name][r.date] = { actual:0, planned:0, reported:false };
               reportsByOffice[name][r.date].actual  += actual;
               reportsByOffice[name][r.date].planned += planned;
+              if (r.reported || actual > 0) reportsByOffice[name][r.date].reported = true;
             });
           } catch(_) {}
         })
@@ -496,7 +497,7 @@ async function loadAndRender() {
         if (wdays[d] === 1) {
           monWorkDays++; monCap += cap;
           const rep = reportsByOffice[name][d];
-          if (rep) { monActual += rep.actual; monPlanned += rep.planned; monReportedDays++; }
+          if (rep) { monActual += rep.actual; monPlanned += rep.planned; if (rep.reported) monReportedDays++; }
         }
       });
       const monRepCap = cap * monReportedDays;
