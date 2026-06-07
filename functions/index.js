@@ -150,26 +150,56 @@ function rateEmoji(rate) {
   return "🔴";
 }
 
+// 常に10文字固定（100%でもズレない）
 function makeBar(rate) {
-  if (rate >= 100) return "██████████▌";
-  const filled = Math.floor(rate / 10);
+  const filled = Math.min(Math.floor(rate / 10), 10);
   return "█".repeat(filled) + "░".repeat(10 - filled);
 }
 
-function rp(s, n) { return String(s).padEnd(n); }
-function lp(s, n) { return String(s).padStart(n); }
+// 全角2・半角1でカウントする視覚幅ヘルパー
+function charVW(c) {
+  const cp = c.codePointAt(0);
+  if (
+    (cp >= 0x1100 && cp <= 0x115F) ||
+    (cp >= 0x2E80 && cp <= 0x303E) ||
+    (cp >= 0x3040 && cp <= 0x33FF) ||
+    (cp >= 0x3400 && cp <= 0x4DBF) ||
+    (cp >= 0x4E00 && cp <= 0x9FFF) ||
+    (cp >= 0xAC00 && cp <= 0xD7AF) ||
+    (cp >= 0xF900 && cp <= 0xFAFF) ||
+    (cp >= 0xFE30 && cp <= 0xFE6F) ||
+    (cp >= 0xFF01 && cp <= 0xFF60) ||
+    (cp >= 0xFFE0 && cp <= 0xFFE6) ||
+    cp >= 0x1F004
+  ) return 2;
+  return 1;
+}
+function visW(s) { let w = 0; for (const c of String(s)) w += charVW(c); return w; }
+// 視覚幅を考慮した右/左パディング
+function rpW(s, n) { return String(s) + " ".repeat(Math.max(0, n - visW(String(s)))); }
+function lpW(s, n) { return " ".repeat(Math.max(0, n - visW(String(s)))) + String(s); }
+// 視覚幅でトリム
+function truncV(s, maxV) {
+  s = String(s); let w = 0, res = "";
+  for (const c of s) { const cw = charVW(c); if (w + cw > maxV) break; w += cw; res += c; }
+  return res;
+}
 
 // ── Chatworkメッセージ本文生成（postDailyReport・triggerDailyReport共通） ──
+// 列幅（視覚幅）: 事業所名=16, 定員=4, 実績=4, 達成率=7  セパレータ="  "
+// LINE長 = 16+2+4+2+4+2+7 = 37
 function buildChatworkMessage(dateStr, offices, reports, openSet) {
   const [y, m, d] = dateStr.split("-");
-  const LINE = "─".repeat(46);
+  const LINE = "─".repeat(37);
 
   let totalCap = 0;
   let totalActual = 0;
   const tableLines = [];
   const graphLines = [];
 
-  tableLines.push(rp("事業所", 16) + lp("定員", 5) + lp("実績", 5) + lp("達成率", 8));
+  tableLines.push(
+    rpW("事業所", 16) + "  " + lpW("定員", 4) + "  " + lpW("実績", 4) + "  " + lpW("達成率", 7)
+  );
   tableLines.push(LINE);
 
   offices.forEach((o) => {
@@ -177,7 +207,7 @@ function buildChatworkMessage(dateStr, offices, reports, openSet) {
     const rep = reports[o.name];
 
     if (!isOpen) {
-      tableLines.push(`${rp(o.name.slice(0, 14), 15)}  （閉所）`);
+      tableLines.push(rpW(truncV(o.name, 16), 16) + "  （閉所）");
       return;
     }
 
@@ -190,21 +220,26 @@ function buildChatworkMessage(dateStr, offices, reports, openSet) {
         const cap = svc.capacity || 10;
         const rate = actual !== null ? (actual / cap) * 100 : null;
         const em = rate !== null ? rateEmoji(rate) : "";
-        const displayName = `${o.name.slice(0, 7)}(${svc.id.slice(0, 4)})`;
-        const nameCol = rp(displayName, 15);
+        // 事業所名8視覚+サービス名6視覚で最大16視覚に収める
+        const displayName = `${truncV(o.name, 8)}(${truncV(svc.id, 6)})`;
 
         tableLines.push(
-          `${nameCol}  ${lp(cap, 4)}  ${actual !== null ? lp(actual, 4) : lp("—", 4)}  ${rate !== null ? lp(rate.toFixed(1) + "%", 7) : lp("—", 7)}  ${em}`
+          rpW(displayName, 16) + "  " +
+          lpW(cap, 4) + "  " +
+          (actual !== null ? lpW(actual, 4) : lpW("—", 4)) + "  " +
+          (rate !== null ? lpW(rate.toFixed(1) + "%", 7) : lpW("—", 7)) +
+          "  " + em
         );
 
         if (actual !== null) {
           totalCap += cap;
           totalActual += actual;
           graphLines.push(
-            `${rp(displayName.slice(0, 11), 12)}  ${makeBar(rate)}  ${rate.toFixed(1)}%  ${rateEmoji(rate)}`
+            rpW(truncV(displayName, 12), 12) + "  " +
+            makeBar(rate) + "  " + rate.toFixed(1) + "%  " + rateEmoji(rate)
           );
         } else {
-          graphLines.push(`${rp(displayName.slice(0, 11), 12)}  （未入力）`);
+          graphLines.push(rpW(truncV(displayName, 12), 12) + "  （未入力）");
         }
       });
     } else {
@@ -213,20 +248,24 @@ function buildChatworkMessage(dateStr, offices, reports, openSet) {
       const cap = o.capacity;
       const rate = actual !== null ? (actual / cap) * 100 : null;
       const em = rate !== null ? rateEmoji(rate) : "";
-      const nameCol = rp(o.name.slice(0, 14), 15);
 
       tableLines.push(
-        `${nameCol}  ${lp(cap, 4)}  ${actual !== null ? lp(actual, 4) : lp("—", 4)}  ${rate !== null ? lp(rate.toFixed(1) + "%", 7) : lp("—", 7)}  ${em}`
+        rpW(truncV(o.name, 16), 16) + "  " +
+        lpW(cap, 4) + "  " +
+        (actual !== null ? lpW(actual, 4) : lpW("—", 4)) + "  " +
+        (rate !== null ? lpW(rate.toFixed(1) + "%", 7) : lpW("—", 7)) +
+        "  " + em
       );
 
       if (actual !== null) {
         totalCap += cap;
         totalActual += actual;
         graphLines.push(
-          `${rp(o.name.slice(0, 11), 12)}  ${makeBar(rate)}  ${rate.toFixed(1)}%  ${rateEmoji(rate)}`
+          rpW(truncV(o.name, 12), 12) + "  " +
+          makeBar(rate) + "  " + rate.toFixed(1) + "%  " + rateEmoji(rate)
         );
       } else {
-        graphLines.push(`${rp(o.name.slice(0, 11), 12)}  （未入力）`);
+        graphLines.push(rpW(truncV(o.name, 12), 12) + "  （未入力）");
       }
     }
   });
@@ -234,7 +273,11 @@ function buildChatworkMessage(dateStr, offices, reports, openSet) {
   tableLines.push(LINE);
   const totalRate = totalCap > 0 ? (totalActual / totalCap) * 100 : 0;
   tableLines.push(
-    `${rp("合　計", 15)}  ${lp(totalCap, 4)}  ${lp(totalActual, 4)}  ${lp(totalRate.toFixed(1) + "%", 7)}  ${totalCap > 0 ? rateEmoji(totalRate) : ""}`
+    rpW("合　計", 16) + "  " +
+    lpW(totalCap, 4) + "  " +
+    lpW(totalActual, 4) + "  " +
+    lpW(totalRate.toFixed(1) + "%", 7) +
+    "  " + (totalCap > 0 ? rateEmoji(totalRate) : "")
   );
   tableLines.push("　　　　　　　　　　※合計は開所事業所のみ");
 
