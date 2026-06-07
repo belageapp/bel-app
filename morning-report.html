@@ -464,12 +464,12 @@ async function loadAndRender() {
       const wdays = workdaysByOffice[name] || {};
 
       // 週間集計
-      let weekWorkDays=0, weekCap=0, weekActual=0, weekPlanned=0;
+      let weekWorkDays=0, weekCap=0, weekActual=0, weekPlanned=0, weekReportedDays=0;
       getDatesInRange(weekStartStr, weekEndStr).forEach(d => {
         if (wdays[d] === 1) {
           weekWorkDays++; weekCap += cap;
           const rep = reportsByOffice[name][d];
-          if (rep) { weekActual += rep.actual; weekPlanned += rep.planned; }
+          if (rep) { weekActual += rep.actual; weekPlanned += rep.planned; if (rep.reported) weekReportedDays++; }
         }
       });
 
@@ -487,7 +487,7 @@ async function loadAndRender() {
         capTotal:     weekCap,
         actualTotal:  weekActual,
         plannedTotal: weekPlanned,
-        avgActual:    weekWorkDays > 0 ? weekActual / weekWorkDays : null,
+        avgActual:    weekReportedDays > 0 ? weekActual / weekReportedDays : null,
         prevActual
       };
 
