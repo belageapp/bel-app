@@ -57,10 +57,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .mr-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
 .mr-progress-num{font-size:16px;font-weight:700;color:#0F6E56}
 .mr-progress-goal{font-size:11px;color:#888}
-.mr-progress-wrap{height:6px;background:#d4f4e8;border-radius:3px;overflow:hidden}
-.mr-progress-bar{height:100%;border-radius:3px;background:#1D9E75;transition:width 0.3s}
+.mr-progress-wrap{position:relative;height:6px;background:#d4f4e8;border-radius:3px;overflow:visible}
+.mr-progress-bar{height:100%;border-radius:3px;background:#1D9E75;transition:width 0.3s;overflow:hidden}
 .mr-progress-bar.over{background:#E24B4A}
-.mr-progress-pct{font-size:11px;color:#0F6E56;margin-top:3px;text-align:right}
+.mr-pace-line{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:#555;border-radius:1px;pointer-events:none;z-index:1}
+.mr-progress-pct{font-size:11px;color:#0F6E56}
 
 /* ===== 週次テーブル ===== */
 .week-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px}
@@ -557,18 +558,44 @@ async function loadAndRender() {
       const cap   = capacityMap[name] || 10;
       const wdays = workdaysByOffice[name] || {};
       progressData[name] = progressMonths.map(mo => {
-        let actual = 0, workDays = 0;
+        let actual = 0;
+        const wdDatesInMonth = [];
+        let lastActualDate = null;
         getDatesInRange(mo.start, mo.end).forEach(d => {
           if (wdays[d] === 1) {
-            workDays++;
+            wdDatesInMonth.push(d);
             const rep = reportsByOffice[name][d];
-            if (rep) actual += rep.actual;
+            if (rep) {
+              actual += rep.actual;
+              if (rep.actual > 0 && (!lastActualDate || d > lastActualDate)) lastActualDate = d;
+            }
           }
         });
+        const workDays = wdDatesInMonth.length;
         const goal = cap * workDays;
         const pct  = goal > 0 ? Math.min(Math.round(actual / goal * 100), 100) : 0;
-        const over = goal > 0 && actual > goal;
-        return { label: mo.label, actual, goal, pct, over };
+
+        // ペース計算
+        let markerPct = null, paceText = null, paceColor = '#0F6E56', barStyle = null;
+        if (lastActualDate && goal > 0 && workDays > 0) {
+          const elapsed = wdDatesInMonth.filter(d => d <= lastActualDate).length;
+          if (elapsed > 0) {
+            const expectedPace = Math.round(goal * elapsed / workDays);
+            markerPct = Math.min(Math.round(elapsed / workDays * 100), 100);
+            const diff = actual - expectedPace;
+            if (diff > 0)       { paceText = `+${diff}名 順調`; paceColor = '#0F6E56'; }
+            else if (diff === 0) { paceText = '順調';            paceColor = '#0F6E56'; }
+            else                 { paceText = `${Math.abs(diff)}名 遅れ`; paceColor = '#E65100'; }
+            if (pct <= markerPct) {
+              barStyle = `background:linear-gradient(to right,#1D9E75 0%,#1D9E75 ${pct}%,#EF9F27 ${pct}%,#EF9F27 ${markerPct}%,transparent ${markerPct}%,transparent 100%);width:100%`;
+            } else {
+              barStyle = `background:linear-gradient(to right,#1D9E75 0%,#1D9E75 ${markerPct}%,#1976D2 ${markerPct}%,#1976D2 ${pct}%,transparent ${pct}%,transparent 100%);width:100%`;
+            }
+          }
+        }
+        if (!barStyle) barStyle = `width:${Math.min(pct,100)}%;background:${actual>goal?'#E24B4A':'#1D9E75'}`;
+
+        return { label: mo.label, actual, goal, pct, markerPct, paceText, paceColor, barStyle };
       });
     });
 
@@ -626,9 +653,13 @@ function renderInputTab(weeklyStats, monthlyStats, progressData, weY, weMo) {
     <span class="mr-progress-goal">目標 ${b.goal}名</span>
   </div>
   <div class="mr-progress-wrap">
-    <div class="mr-progress-bar${b.over?' over':''}" style="width:${b.pct}%"></div>
+    <div class="mr-progress-bar" style="${b.barStyle}"></div>
+    ${b.markerPct != null ? `<div class="mr-pace-line" style="left:${b.markerPct}%"></div>` : ''}
   </div>
-  <div class="mr-progress-pct">${b.pct}%</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px">
+    <div class="mr-progress-pct">${b.pct}%</div>
+    ${b.paceText ? `<div style="font-size:10px;color:${b.paceColor};font-weight:500">${b.paceText}</div>` : ''}
+  </div>
 </div>`).join('');
 
       html += `
