@@ -222,6 +222,17 @@ const ROLE_LABELS = {
   manager:'事業所管理者'
 };
 
+const OFFICE_ORDER = [
+  // 発達支援 広島
+  "HUGくみのいえ","ReadyGO井口","ReadyGO八木","ReadyGO川内","ここいろのいえ",
+  // 発達支援 安芸
+  "にじのいえ","はれのいえ",
+  // 発達支援 東広島
+  "まなびあいのいえ","ReadyGO高屋","ReadyGO黒瀬","ぐらっちぇ黒瀬",
+  // 就労生活支援
+  "ラフォーレ高陽","ラフォーレ亀山","レポ白木"
+];
+
 let currentUser = null;
 let currentUserData = null;
 let currentWeekStart = null;
@@ -324,7 +335,14 @@ async function loadMasterData() {
     capacityMap[data.name] = cap;
     allOffices.push({ id: d.id, ...data, capacity: cap });
   });
-  allOffices.sort((a, b) => (a.name||'').localeCompare(b.name||'', 'ja'));
+  allOffices.sort((a, b) => {
+    const ai = OFFICE_ORDER.indexOf(a.name);
+    const bi = OFFICE_ORDER.indexOf(b.name);
+    if (ai === -1 && bi === -1) return (a.name||'').localeCompare(b.name||'', 'ja');
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
 
   const role = currentUserData.role;
   if (role === 'admin' || role === 'support') {
