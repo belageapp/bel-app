@@ -286,48 +286,10 @@ textarea:focus{border-color:#1D9E75}
             <label>特記事項・コメント（任意）</label>
             <textarea id="comment-in" rows="3" placeholder="体調不良の児童あり、行事など…"></textarea>
           </div>
+          <div id="dirty-indicator" style="display:none;font-size:12px;color:#E65100;text-align:center;margin-top:10px;font-weight:500">● 未保存</div>
           <button class="submit-btn" onclick="submitReport()">報告する</button>
           <button class="reset-actual-btn" id="reset-btn" onclick="resetActual()">実績をリセット（予定は保持）</button>
           <div class="success-msg" id="success-msg">✅ 報告しました</div>
-          <div id="input-progress-area" style="display:none">
-            <div class="input-progress-card">
-              <div class="input-progress-title">今月の貢献人数</div>
-              <div class="input-progress-row">
-                <span class="input-progress-num" id="ip-current">0</span>
-                <span class="input-progress-goal" id="ip-goal"></span>
-              </div>
-              <div style="position:relative">
-                <div class="input-progress-wrap">
-                  <div class="input-progress-bar" id="ip-bar" style="width:0%"></div>
-                </div>
-                <div class="pace-line" id="ip-pace-line" style="display:none"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-                <div class="input-progress-pct" id="ip-pct" style="margin-top:0"></div>
-                <div id="ip-pace-text" style="font-size:11px"></div>
-              </div>
-            </div>
-          </div>
-          <div id="weekly-planned-area" style="display:none;margin-top:20px;padding-top:16px;border-top:2px dashed #E8EAED">
-            <button class="csv-btn" onclick="toggleWeeklyPlanned()" style="margin-bottom:0;font-size:14px;color:#185FA5;border-color:#185FA5;background:#EBF3FB">週次予定を入力</button>
-            <div id="weekly-plan-panel" style="display:none;margin-top:12px">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                <button onclick="shiftWeek(-1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">◀ 前週</button>
-                <span id="wp-week-label" style="font-size:13px;font-weight:600;color:#333"></span>
-                <button onclick="shiftWeek(1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">翌週 ▶</button>
-              </div>
-              <div id="weekly-plan-rows"></div>
-              <button class="submit-btn" onclick="saveWeeklyPlanned()" style="margin-top:14px">一括保存</button>
-              <div class="success-msg" id="weekly-plan-success">✅ 保存しました</div>
-            </div>
-          </div>
-          <div class="history-card" id="history-area" style="display:none">
-            <div class="history-header">
-              <span class="history-title">稼働日・入力履歴</span>
-              <select class="month-sel" id="history-month-sel" onchange="loadHistory()"></select>
-            </div>
-            <div id="history-body"></div>
-          </div>
         </div>
 
         <!-- ラフォーレ用の入力（サービス種別ごと5項目） -->
@@ -409,66 +371,111 @@ textarea:focus{border-color:#1D9E75}
             <label>特記事項・コメント（任意）</label>
             <textarea id="comment-care" rows="3" placeholder="体調不良など…"></textarea>
           </div>
+          <div id="lafore-dirty-indicator" style="display:none;font-size:12px;color:#E65100;text-align:center;margin-top:10px;font-weight:500">● 未保存</div>
           <button class="submit-btn" onclick="submitLafore()">報告する</button>
           <button class="reset-actual-btn" id="lafore-reset-btn" onclick="resetActual()">実績をリセット（予定は保持）</button>
           <div class="success-msg" id="lafore-success-msg">✅ 報告しました</div>
-          <div id="lafore-progress-area" style="display:none">
-            <div class="input-progress-card">
-              <div class="input-progress-title">生活介護　今月の貢献人数</div>
-              <div class="input-progress-row">
-                <span class="input-progress-num" id="lp-care-current">0</span>
-                <span class="input-progress-goal" id="lp-care-goal"></span>
-              </div>
-              <div style="position:relative">
-                <div class="input-progress-wrap">
-                  <div class="input-progress-bar" id="lp-care-bar" style="width:0%"></div>
-                </div>
-                <div class="pace-line" id="lp-care-pace-line" style="display:none"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-                <div class="input-progress-pct" id="lp-care-pct" style="margin-top:0"></div>
-                <div id="lp-care-pace-text" style="font-size:11px"></div>
-              </div>
-            </div>
-            <div class="input-progress-card" style="margin-top:8px">
-              <div class="input-progress-title">就労B型　今月の貢献人数</div>
-              <div class="input-progress-row">
-                <span class="input-progress-num" id="lp-work-current">0</span>
-                <span class="input-progress-goal" id="lp-work-goal"></span>
-              </div>
-              <div style="position:relative">
-                <div class="input-progress-wrap">
-                  <div class="input-progress-bar" id="lp-work-bar" style="width:0%"></div>
-                </div>
-                <div class="pace-line" id="lp-work-pace-line" style="display:none"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-                <div class="input-progress-pct" id="lp-work-pct" style="margin-top:0"></div>
-                <div id="lp-work-pace-text" style="font-size:11px"></div>
-              </div>
-            </div>
+        </div>
+      </div>
+    </div>
+    <!-- Card 2: 進捗・週次予定・入力履歴 -->
+    <div id="input-card2" class="card" style="display:none;margin-top:12px">
+      <!-- 通常事業所 -->
+      <div id="input-progress-area" style="display:none">
+        <div class="input-progress-card">
+          <div class="input-progress-title">今月の貢献人数</div>
+          <div class="input-progress-row">
+            <span class="input-progress-num" id="ip-current">0</span>
+            <span class="input-progress-goal" id="ip-goal"></span>
           </div>
-          <div id="lafore-weekly-planned-area" style="display:none;margin-top:20px;padding-top:16px;border-top:2px dashed #E8EAED">
-            <button class="csv-btn" onclick="toggleWeeklyPlanned()" style="margin-bottom:0;font-size:14px;color:#185FA5;border-color:#185FA5;background:#EBF3FB">週次予定を入力</button>
-            <div id="lafore-weekly-plan-panel" style="display:none;margin-top:12px">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                <button onclick="shiftWeek(-1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">◀ 前週</button>
-                <span id="lafore-wp-week-label" style="font-size:13px;font-weight:600;color:#333"></span>
-                <button onclick="shiftWeek(1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">翌週 ▶</button>
-              </div>
-              <div id="lafore-weekly-plan-rows"></div>
-              <button class="submit-btn" onclick="saveWeeklyPlanned()" style="margin-top:14px">一括保存</button>
-              <div class="success-msg" id="lafore-weekly-plan-success">✅ 保存しました</div>
+          <div style="position:relative">
+            <div class="input-progress-wrap">
+              <div class="input-progress-bar" id="ip-bar" style="width:0%"></div>
             </div>
+            <div class="pace-line" id="ip-pace-line" style="display:none"></div>
           </div>
-          <div class="history-card" id="lafore-history-area" style="display:none">
-            <div class="history-header">
-              <span class="history-title">稼働日・入力履歴</span>
-              <select class="month-sel" id="lafore-history-month-sel" onchange="loadHistory()"></select>
-            </div>
-            <div id="lafore-history-body"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+            <div class="input-progress-pct" id="ip-pct" style="margin-top:0"></div>
+            <div id="ip-pace-text" style="font-size:11px"></div>
           </div>
         </div>
+      </div>
+      <div id="weekly-planned-area" style="display:none;margin-top:20px;padding-top:16px;border-top:2px dashed #E8EAED">
+        <button class="csv-btn" onclick="toggleWeeklyPlanned()" style="margin-bottom:0;font-size:14px;color:#185FA5;border-color:#185FA5;background:#EBF3FB">週次予定を入力</button>
+        <div id="weekly-plan-panel" style="display:none;margin-top:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <button onclick="shiftWeek(-1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">◀ 前週</button>
+            <span id="wp-week-label" style="font-size:13px;font-weight:600;color:#333"></span>
+            <button onclick="shiftWeek(1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">翌週 ▶</button>
+          </div>
+          <div id="weekly-plan-rows"></div>
+          <button class="submit-btn" onclick="saveWeeklyPlanned()" style="margin-top:14px">一括保存</button>
+          <div class="success-msg" id="weekly-plan-success">✅ 保存しました</div>
+        </div>
+      </div>
+      <div class="history-card" id="history-area" style="display:none">
+        <div class="history-header">
+          <span class="history-title">稼働日・入力履歴</span>
+          <select class="month-sel" id="history-month-sel" onchange="loadHistory()"></select>
+        </div>
+        <div id="history-body"></div>
+      </div>
+      <!-- ラフォーレ -->
+      <div id="lafore-progress-area" style="display:none">
+        <div class="input-progress-card">
+          <div class="input-progress-title">生活介護　今月の貢献人数</div>
+          <div class="input-progress-row">
+            <span class="input-progress-num" id="lp-care-current">0</span>
+            <span class="input-progress-goal" id="lp-care-goal"></span>
+          </div>
+          <div style="position:relative">
+            <div class="input-progress-wrap">
+              <div class="input-progress-bar" id="lp-care-bar" style="width:0%"></div>
+            </div>
+            <div class="pace-line" id="lp-care-pace-line" style="display:none"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+            <div class="input-progress-pct" id="lp-care-pct" style="margin-top:0"></div>
+            <div id="lp-care-pace-text" style="font-size:11px"></div>
+          </div>
+        </div>
+        <div class="input-progress-card" style="margin-top:8px">
+          <div class="input-progress-title">就労B型　今月の貢献人数</div>
+          <div class="input-progress-row">
+            <span class="input-progress-num" id="lp-work-current">0</span>
+            <span class="input-progress-goal" id="lp-work-goal"></span>
+          </div>
+          <div style="position:relative">
+            <div class="input-progress-wrap">
+              <div class="input-progress-bar" id="lp-work-bar" style="width:0%"></div>
+            </div>
+            <div class="pace-line" id="lp-work-pace-line" style="display:none"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+            <div class="input-progress-pct" id="lp-work-pct" style="margin-top:0"></div>
+            <div id="lp-work-pace-text" style="font-size:11px"></div>
+          </div>
+        </div>
+      </div>
+      <div id="lafore-weekly-planned-area" style="display:none;margin-top:20px;padding-top:16px;border-top:2px dashed #E8EAED">
+        <button class="csv-btn" onclick="toggleWeeklyPlanned()" style="margin-bottom:0;font-size:14px;color:#185FA5;border-color:#185FA5;background:#EBF3FB">週次予定を入力</button>
+        <div id="lafore-weekly-plan-panel" style="display:none;margin-top:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <button onclick="shiftWeek(-1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">◀ 前週</button>
+            <span id="lafore-wp-week-label" style="font-size:13px;font-weight:600;color:#333"></span>
+            <button onclick="shiftWeek(1)" style="border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:#555">翌週 ▶</button>
+          </div>
+          <div id="lafore-weekly-plan-rows"></div>
+          <button class="submit-btn" onclick="saveWeeklyPlanned()" style="margin-top:14px">一括保存</button>
+          <div class="success-msg" id="lafore-weekly-plan-success">✅ 保存しました</div>
+        </div>
+      </div>
+      <div class="history-card" id="lafore-history-area" style="display:none">
+        <div class="history-header">
+          <span class="history-title">稼働日・入力履歴</span>
+          <select class="month-sel" id="lafore-history-month-sel" onchange="loadHistory()"></select>
+        </div>
+        <div id="lafore-history-body"></div>
       </div>
     </div>
   </div>
@@ -631,6 +638,13 @@ const state = {
   wdInfo:{},
   lastActualDate:{}
 };
+
+function setDirty(val){
+  state.dirty=val;
+  const isLaf=isLafore(state.cur);
+  document.getElementById('dirty-indicator').style.display=(val&&!isLaf)?'block':'none';
+  document.getElementById('lafore-dirty-indicator').style.display=(val&&isLaf)?'block':'none';
+}
 
 // ラフォーレのサービス別入力状態
 const laforeState = {
@@ -1209,7 +1223,7 @@ window.resetActual=async function(){
       document.getElementById('kids-num').textContent=0;
       updateFormBadge(null,false);
     }
-    state.dirty=false;
+    setDirty(false);
     await loadMonthlyTotals();
     await window.loadHistory();
     showToast('実績をリセットしました');
@@ -1217,6 +1231,7 @@ window.resetActual=async function(){
 };
 
 window.selectOffice=async function(name){
+  setDirty(false);
   state.cur=name;
   state.formDate=todayStr;
   const r=state.reports[name];
@@ -1294,6 +1309,7 @@ window.selectOffice=async function(name){
   }
   document.getElementById('office-selector').style.display='none';
   document.getElementById('input-form').style.display='block';
+  document.getElementById('input-card2').style.display='block';
   document.getElementById('header-back').style.display=window._autoSelectOffice?'none':'inline-block';
   document.getElementById('header-title').textContent=name;
   await applyClosedState(todayStr);
@@ -1321,14 +1337,14 @@ async function applyClosedState(dateStr){
 window.onReportDateChange=async function(){
   const dateVal=document.getElementById('report-date').value;
   if(!state.cur||!dateVal)return;
-  if(dateVal===state.formDate){state.dirty=false;} // 保存後の再読み込み時はスキップ
+  if(dateVal===state.formDate){setDirty(false);} // 保存後の再読み込み時はスキップ
   if(state.dirty&&dateVal!==state.formDate){
     if(!confirm('未保存のデータがあります。\n日付を変更すると入力内容が失われます。\n変更しますか？')){
       document.getElementById('report-date').value=state.formDate;
       return;
     }
   }
-  state.dirty=false;
+  setDirty(false);
   state.formDate=dateVal;
   document.getElementById('form-date-label').textContent=dateStrToLabel(dateVal);
   await applyClosedState(dateVal);
@@ -1359,28 +1375,29 @@ window.onReportDateChange=async function(){
 
 window.backToSelector=function(){
   if(state.dirty&&!confirm('未保存のデータがあります。\n移動すると入力内容が失われます。\n移動しますか？'))return;
-  state.dirty=false;
+  setDirty(false);
   document.getElementById('office-selector').style.display='block';
   document.getElementById('input-form').style.display='none';
+  document.getElementById('input-card2').style.display='none';
   document.getElementById('header-back').style.display='none';
   document.getElementById('header-title').textContent='貢献速報（日次）';
 };
 
 window.adj=function(type,d){
-  if(type==='normal'){state.kids=Math.max(0,state.kids+d);document.getElementById('kids-num').textContent=state.kids;state.dirty=true;}
+  if(type==='normal'){state.kids=Math.max(0,state.kids+d);document.getElementById('kids-num').textContent=state.kids;setDirty(true);}
 };
 
 window.adjLafore=function(service,field,delta){
   laforeState[service][field]=Math.max(0,(laforeState[service][field]||0)+delta);
   document.getElementById(`${service}-${field}`).textContent=laforeState[service][field];
-  state.dirty=true;
+  setDirty(true);
 };
 
 const extraState={planned:0,inquiry:0,visit:0,contract:0};
 window.adjExtra=function(field,delta){
   extraState[field]=Math.max(0,(extraState[field]||0)+delta);
   document.getElementById(field+'-num').textContent=extraState[field];
-  state.dirty=true;
+  setDirty(true);
 };
 
 window.submitReport=async function(){
@@ -1406,7 +1423,7 @@ window.submitReport=async function(){
       savedDocId=ref.id;
     }
     // ローカル状態を更新して表示を維持（リダイレクトしない）
-    state.dirty=false;
+    setDirty(false);
     const saved={...data,docId:savedDocId};
     if(selectedDate===todayStr)state.reports[state.cur]=saved;
     updateFormBadge(saved, false);
@@ -1466,7 +1483,7 @@ window.submitLafore=async function(){
       savedDocId=ref.id;
     }
     // ローカル状態を更新（リダイレクトしない）
-    state.dirty=false;
+    setDirty(false);
     const aggregated={
       kids:data.kids,
       care:laforeState.care.actual,
@@ -1494,7 +1511,7 @@ window.switchHqTab=function(tab){
 
 window.switchTab=function(tab){
   if(state.dirty&&!confirm('未保存のデータがあります。\n移動すると入力内容が失われます。\n移動しますか？'))return;
-  state.dirty=false;
+  setDirty(false);
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['input','hq'][i]===tab));
   ['sec-input','sec-hq'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',['input','hq'][i]===tab));
   if(tab==='hq')renderHQ(state.reports);
@@ -1674,7 +1691,7 @@ function numpadConfirm(advance){
       extraState[field]=Math.max(0,v);
       document.getElementById(field+'-num').textContent=extraState[field];
     }
-    state.dirty=true;
+    setDirty(true);
     document.getElementById('numpad-overlay').style.display='none';
     document.querySelectorAll('#input-form .tap-num').forEach(el=>el.classList.remove('input-active'));
     dailyTarget=null;wpState.val='';numpadMode='weekly';
