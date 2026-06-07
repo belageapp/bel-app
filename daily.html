@@ -191,6 +191,7 @@ textarea:focus{border-color:#1D9E75}
 .nk.nok{background:#1D9E75;color:#fff;font-size:20px;font-weight:700}
 .tap-num{cursor:pointer;min-width:60px;padding:4px 14px;border-radius:8px;background:#F0FAF6;border:2px solid #d4f4e8;-webkit-tap-highlight-color:transparent}
 .tap-num:active{background:#d4f4e8}
+.tap-num.input-active{border-color:#1D9E75;background:#E0F5ED;box-shadow:0 0 0 2px #b2e8d6}
 </style>
 </head>
 <body>
@@ -626,6 +627,7 @@ const state = {
   formDate:todayStr,
   dirty:false,
   kidsEdited:false,
+  dpPlanned:{},
   wdInfo:{},
   lastActualDate:{}
 };
@@ -707,6 +709,7 @@ window.loadHistory=async function(){
     const dpSnap = await getDoc(doc(db, 'dailyPlanned', `${dpY}_${dpM}_${state.cur}`));
     if (dpSnap.exists()) dpPlanned = dpSnap.data().daily || {};
   } catch(_) {}
+  state.dpPlanned = dpPlanned;
   const q=query(collection(db,'reports'),where('office','==',state.cur),where('month','==',month));
   const snap=await getDocs(q);
   const reports={};
@@ -1537,11 +1540,26 @@ let dailyTarget=null;
 
 window.numpadOpenDaily=function(field,service){
   if(state.isClosed)return;
+  // ハイライト切り替え
+  document.querySelectorAll('#input-form .tap-num').forEach(el=>el.classList.remove('input-active'));
+  const elId=service?`${service}-${field}`:(field==='kids'?'kids-num':`${field}-num`);
+  const activeEl=document.getElementById(elId);
+  if(activeEl)activeEl.classList.add('input-active');
   numpadMode='daily';
   const fieldList=service?LAFORE_DAILY_FIELDS:DAILY_FIELDS;
   const idx=fieldList.findIndex(f=>f.field===field&&f.service===service);
   dailyTarget={field,service,fieldList,idx};
-  const currentVal=service?laforeState[service][field]:(field==='kids'?state.kids:extraState[field]);
+  let currentVal;
+  if(service){
+    currentVal=laforeState[service][field];
+  }else if(field==='kids'){
+    currentVal=state.kids;
+  }else if(field==='planned'){
+    // 既入力値があればそれを、なければ週次予定の値をデフォルト表示
+    currentVal=extraState.planned>0?extraState.planned:(state.dpPlanned[state.formDate]||0);
+  }else{
+    currentVal=extraState[field];
+  }
   document.getElementById('numpad-date-lbl').textContent=fieldList[idx]?.label||field;
   wpState.val=currentVal>0?String(currentVal):'';
   document.getElementById('numpad-val').textContent=wpState.val||'─';
@@ -1662,6 +1680,7 @@ function numpadConfirm(advance){
       return;
     }
     document.getElementById('numpad-overlay').style.display='none';
+    document.querySelectorAll('#input-form .tap-num').forEach(el=>el.classList.remove('input-active'));
     dailyTarget=null;wpState.val='';numpadMode='weekly';
     return;
   }
