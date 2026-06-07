@@ -294,11 +294,12 @@ function weekRangeLabel(startDate, endDate) {
   return `${s.getMonth()+1}/${s.getDate()}-${e.getMonth()+1}/${e.getDate()}`;
 }
 function getWeekInfo(weekStart, weekEnd) {
-  const y = weekStart.getFullYear(), m = weekStart.getMonth()+1, d = weekStart.getDate();
-  const n = Math.ceil(weekEnd.getDate() / 7);
+  const y = weekStart.getFullYear();
+  const s = `${weekStart.getMonth()+1}/${weekStart.getDate()}`;
+  const e = `${weekEnd.getMonth()+1}/${weekEnd.getDate()}`;
   return {
-    label: `${y}年${m}月第${n}週（報告週）`,
-    range: `${dateToStr(weekStart).replace(/-/g,'/')} 〜 ${dateToStr(weekEnd).replace(/-/g,'/')}`
+    label: `${y}年 ${s}-${e}`,
+    range: '（報告週）'
   };
 }
 
@@ -585,7 +586,7 @@ function renderInputTab(weeklyStats, monthlyStats, weY, weMo) {
     </div>
     <div class="input-group">
       <label class="input-label">設定目標</label>
-      <textarea class="input-textarea" rows="2" id="goal_${office.id}" placeholder="今週の目標を入力…">${escHtml(sv.goal||'')}</textarea>
+      <textarea class="input-textarea" rows="2" id="goal_${office.id}" placeholder="この週の目標を入力…">${escHtml(sv.goal||'')}</textarea>
     </div>
     <div class="input-group">
       <label class="input-label">取り組み</label>
