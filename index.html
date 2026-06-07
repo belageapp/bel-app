@@ -75,6 +75,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .menu-card-small{background:#fff;border-radius:8px;border:1px solid #E8EAED;padding:10px 12px;text-align:center;opacity:0.5;cursor:default}
 .menu-card-small-name{font-size:12px;color:#888;font-weight:500}
 .menu-card-small-badge{font-size:10px;color:#bbb;margin-top:2px}
+/* ===== 貢献ダッシュボード ===== */
+.dash-card{background:#fff;border-radius:10px;border:1px solid #E8EAED;margin-bottom:16px;overflow:hidden}
+.dash-month-nav{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #f0f0f0}
+.dash-nav-btn{width:30px;height:30px;border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0}
+.dash-nav-btn:active{background:#e0e0e0}
+.dash-month-label{font-size:14px;font-weight:600;color:#333}
+.dash-loading{text-align:center;padding:16px;color:#aaa;font-size:12px}
+.dash-dept-header{display:flex;align-items:center;gap:6px;padding:10px 14px;cursor:pointer;background:#F0FAF6;border-bottom:1px solid #E0F5ED;-webkit-tap-highlight-color:transparent;user-select:none}
+.dash-dept-header:active{background:#e4f7ef}
+.dash-dept-name{font-size:12px;font-weight:600;color:#0F6E56;flex:1;min-width:0}
+.dash-area-header{display:flex;align-items:center;gap:6px;padding:8px 14px 8px 28px;cursor:pointer;background:#fafafa;border-bottom:1px solid #f0f0f0;-webkit-tap-highlight-color:transparent;user-select:none}
+.dash-area-header:active{background:#f0f0f0}
+.dash-area-name{font-size:12px;font-weight:500;color:#555;flex:1;min-width:0}
+.dash-office-row{display:flex;align-items:center;gap:5px;padding:7px 12px 7px 42px;border-bottom:1px solid #fafafa}
+.dash-office-row:last-child{border-bottom:none}
+.dash-office-name{font-size:11px;color:#444;width:86px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-bar-wrap{flex:1;position:relative;height:8px;background:#E8EAED;border-radius:4px;min-width:50px;overflow:visible}
+.dash-bar{height:100%;border-radius:4px;overflow:hidden}
+.dash-pace-line{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:#555;border-radius:1px;pointer-events:none;z-index:1}
+.dash-pct{font-size:10px;color:#888;width:30px;text-align:right;flex-shrink:0}
+.dash-diff{font-size:10px;font-weight:600;width:54px;text-align:right;flex-shrink:0;white-space:nowrap}
+.dash-toggle{font-size:9px;color:#aaa;flex-shrink:0;width:10px;text-align:center}
+.dash-agg-bar-wrap{width:56px;height:5px;background:#d4f4e8;border-radius:3px;overflow:hidden;flex-shrink:0}
+.dash-agg-bar{height:100%;border-radius:3px;background:#1D9E75}
+.dash-agg-bar.over{background:#E24B4A}
+.dash-agg-pct{font-size:11px;color:#0F6E56;font-weight:600;width:32px;text-align:right;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -113,6 +139,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
       <div class="notice-title">お知らせ</div>
     </div>
     <div id="notice-list"><div class="notice-empty">お知らせはありません</div></div>
+  </div>
+
+  <!-- 貢献ダッシュボード -->
+  <div class="section-label">貢献状況</div>
+  <div class="dash-card" id="dash-card" style="display:none">
+    <div class="dash-month-nav">
+      <button class="dash-nav-btn" onclick="shiftDashMonth(-1)">‹</button>
+      <span id="dash-month-label">読み込み中...</span>
+      <button class="dash-nav-btn" onclick="shiftDashMonth(1)">›</button>
+    </div>
+    <div id="dash-content"><div class="dash-loading">読み込み中...</div></div>
   </div>
 
   <!-- メニュー -->
@@ -227,6 +264,192 @@ const ROLE_LABELS = {
   manager:'事業所管理者'
 };
 
+// ===== ダッシュボード =====
+const DASH_STRUCTURE = [
+  {cat:'発達支援事業部', areas:[
+    {label:'広島エリア', offices:['HUGくみのいえ','ReadyGO井口','ReadyGO八木','ReadyGO川内','ここいろのいえ']},
+    {label:'安芸エリア',  offices:['にじのいえ','はれのいえ']},
+    {label:'東広島エリア',offices:['まなびあいのいえ','ReadyGO高屋','ReadyGO黒瀬','ぐらっちぇ黒瀬']}
+  ]},
+  {cat:'就労生活支援事業部', single:['ラフォーレ高陽','ラフォーレ亀山','レポ白木']}
+];
+
+let dashYear = null, dashMonth = null, dashCurrentUser = null, dashUserData = null;
+
+function dashDateToStr(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function dashGetDatesInRange(s,e){
+  const dates=[],cur=new Date(s+'T00:00:00'),end=new Date(e+'T00:00:00');
+  while(cur<=end){dates.push(dashDateToStr(cur));cur.setDate(cur.getDate()+1);}
+  return dates;
+}
+function dashGetFY(dateStr){const mo=parseInt(dateStr.substring(5,7)),yr=parseInt(dateStr.substring(0,4));return mo>=4?yr:yr-1;}
+
+window.shiftDashMonth = function(dir){
+  dashMonth+=dir;
+  if(dashMonth>12){dashMonth=1;dashYear++;}
+  if(dashMonth<1){dashMonth=12;dashYear--;}
+  loadDashboard();
+};
+
+window.toggleDash = function(id, headerEl){
+  const el=document.getElementById(id);
+  const tog=headerEl.querySelector('.dash-toggle');
+  const isOpen=el.style.display!=='none';
+  el.style.display=isOpen?'none':'block';
+  if(tog)tog.textContent=isOpen?'▶':'▼';
+};
+
+async function initDashboard(user, userData){
+  dashCurrentUser=user; dashUserData=userData;
+  const today=new Date();
+  dashYear=today.getFullYear(); dashMonth=today.getMonth()+1;
+  document.getElementById('dash-card').style.display='block';
+  await loadDashboard();
+}
+
+async function loadDashboard(){
+  const monthStr=`${dashYear}-${String(dashMonth).padStart(2,'0')}`;
+  document.getElementById('dash-month-label').textContent=`${dashYear}年${dashMonth}月`;
+  document.getElementById('dash-content').innerHTML='<div class="dash-loading">読み込み中...</div>';
+  try{
+    // 1. offices + prices
+    const [offSnap,prSnap]=await Promise.all([getDocs(collection(db,'offices')),getDocs(collection(db,'prices'))]);
+    const prices={};
+    prSnap.forEach(d=>prices[d.id]=d.data());
+    const officeCapMap={};
+    offSnap.forEach(d=>{
+      const data=d.data();
+      if(!data.name)return;
+      const pr=prices[data.priceId]||{};
+      officeCapMap[data.name]=pr.capacity||data.capacity||10;
+    });
+
+    // 2. workdays（月の稼働日）
+    const fy=dashMonth>=4?dashYear:dashYear-1;
+    const allNames=Object.keys(officeCapMap);
+    const wdByOffice={};
+    allNames.forEach(n=>wdByOffice[n]={});
+    await Promise.all(allNames.map(async name=>{
+      try{
+        const snap=await getDoc(doc(db,'workdays',`${fy}_${name}`));
+        if(snap.exists())wdByOffice[name]=snap.data().days||{};
+      }catch(_){}
+    }));
+
+    // 3. reports（月一括クエリ）
+    const repByOffice={};
+    allNames.forEach(n=>repByOffice[n]={});
+    const rSnap=await getDocs(query(collection(db,'reports'),where('month','==',monthStr)));
+    rSnap.forEach(d=>{
+      const r=d.data();
+      if(!repByOffice[r.office])repByOffice[r.office]={};
+      let actual=0;
+      if(r.services){Object.values(r.services).forEach(sv=>actual+=(sv.actual||0));}
+      else actual=r.kids||0;
+      if(!repByOffice[r.office][r.date])repByOffice[r.office][r.date]={actual:0,reported:false};
+      repByOffice[r.office][r.date].actual+=actual;
+      if(r.reported||actual>0)repByOffice[r.office][r.date].reported=true;
+    });
+
+    // 4. stats per office
+    const monthStart=`${monthStr}-01`;
+    const monthEnd=`${monthStr}-${String(new Date(dashYear,dashMonth,0).getDate()).padStart(2,'0')}`;
+    const statsMap={};
+    allNames.forEach(name=>{
+      const cap=officeCapMap[name];
+      const wdays=wdByOffice[name]||{};
+      const reps=repByOffice[name]||{};
+      let actual=0; const wdDates=[]; let lastDate=null;
+      dashGetDatesInRange(monthStart,monthEnd).forEach(d=>{
+        if(wdays[d]===1){
+          wdDates.push(d);
+          const rep=reps[d];
+          if(rep){actual+=rep.actual;if(rep.actual>0&&(!lastDate||d>lastDate))lastDate=d;}
+        }
+      });
+      const goal=cap*wdDates.length;
+      const pct=goal>0?Math.min(Math.round(actual/goal*100),100):0;
+      let markerPct=null,paceText=null,paceColor='#0F6E56',barStyle=null;
+      if(lastDate&&goal>0&&wdDates.length>0){
+        const elapsed=wdDates.filter(d=>d<=lastDate).length;
+        if(elapsed>0){
+          const expPace=Math.round(goal*elapsed/wdDates.length);
+          markerPct=Math.min(Math.round(elapsed/wdDates.length*100),100);
+          const diff=actual-expPace;
+          if(diff>0){paceText=`+${diff}名`;paceColor='#0F6E56';}
+          else if(diff===0){paceText='順調';paceColor='#0F6E56';}
+          else{paceText=`${Math.abs(diff)}名遅れ`;paceColor='#E65100';}
+          if(pct<=markerPct)
+            barStyle=`background:linear-gradient(to right,#1D9E75 0%,#1D9E75 ${pct}%,#EF9F27 ${pct}%,#EF9F27 ${markerPct}%,transparent ${markerPct}%,transparent 100%);width:100%`;
+          else
+            barStyle=`background:linear-gradient(to right,#1D9E75 0%,#1D9E75 ${markerPct}%,#1976D2 ${markerPct}%,#1976D2 ${pct}%,transparent ${pct}%,transparent 100%);width:100%`;
+        }
+      }
+      if(!barStyle)barStyle=`width:${pct}%;background:${actual>goal?'#E24B4A':'#1D9E75'}`;
+      statsMap[name]={actual,goal,pct,markerPct,paceText,paceColor,barStyle};
+    });
+
+    renderDashboard(statsMap);
+  }catch(e){
+    console.error(e);
+    document.getElementById('dash-content').innerHTML='<div class="dash-loading">読み込みに失敗しました</div>';
+  }
+}
+
+function renderDashboard(statsMap){
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  function aggBarHtml(offices){
+    let act=0,goal=0;
+    offices.forEach(n=>{const s=statsMap[n];if(s){act+=s.actual;goal+=s.goal;}});
+    const pct=goal>0?Math.min(Math.round(act/goal*100),100):0;
+    return `<div class="dash-agg-bar-wrap"><div class="dash-agg-bar${act>goal?' over':''}" style="width:${pct}%"></div></div><span class="dash-agg-pct">${pct}%</span>`;
+  }
+
+  function officeRowHtml(name){
+    const s=statsMap[name];
+    if(!s)return'';
+    const paceLine=s.markerPct!=null?`<div class="dash-pace-line" style="left:${s.markerPct}%"></div>`:'';
+    const diff=s.paceText?`<span class="dash-diff" style="color:${s.paceColor}">${esc(s.paceText)}</span>`:`<span class="dash-diff"></span>`;
+    return `<div class="dash-office-row">
+      <span class="dash-office-name" title="${esc(name)}">${esc(name)}</span>
+      <div class="dash-bar-wrap"><div class="dash-bar" style="${s.barStyle}"></div>${paceLine}</div>
+      <span class="dash-pct">${s.pct}%</span>${diff}
+    </div>`;
+  }
+
+  let html='';
+  DASH_STRUCTURE.forEach((dept,di)=>{
+    const deptOffices=dept.areas?dept.areas.flatMap(a=>a.offices):dept.single;
+    const deptId=`dash-dept-${di}`;
+    html+=`<div class="dash-dept-header" onclick="toggleDash('${deptId}',this)">
+      <span class="dash-toggle">▼</span>
+      <span class="dash-dept-name">${esc(dept.cat)}</span>
+      ${aggBarHtml(deptOffices)}
+    </div>
+    <div id="${deptId}">`;
+
+    if(dept.areas){
+      dept.areas.forEach((area,ai)=>{
+        const areaId=`dash-area-${di}-${ai}`;
+        html+=`<div class="dash-area-header" onclick="toggleDash('${areaId}',this)">
+          <span class="dash-toggle">▶</span>
+          <span class="dash-area-name">${esc(area.label)}</span>
+          ${aggBarHtml(area.offices)}
+        </div>
+        <div id="${areaId}" style="display:none">`;
+        area.offices.forEach(n=>{html+=officeRowHtml(n);});
+        html+=`</div>`;
+      });
+    }else{
+      dept.single.forEach(n=>{html+=officeRowHtml(n);});
+    }
+    html+=`</div>`;
+  });
+
+  document.getElementById('dash-content').innerHTML=html;
+}
+
 // ロール別メニュー表示制御
 function applyMenuByRole(role) {
   // managerは速報入力のみ（他は権限に応じて非表示）
@@ -331,10 +554,11 @@ onAuthStateChanged(auth, async user => {
     // ロール別メニュー制御
     applyMenuByRole(userData.role);
 
-    // タスク・お知らせ読み込み
+    // タスク・お知らせ読み込み・ダッシュボード
     await Promise.all([
       loadTasks(user.uid, userData.role),
-      loadNotices()
+      loadNotices(),
+      initDashboard(user, userData)
     ]);
 
   } catch(e) {
