@@ -284,6 +284,25 @@ function dashGetDatesInRange(s,e){
 }
 function dashGetFY(dateStr){const mo=parseInt(dateStr.substring(5,7)),yr=parseInt(dateStr.substring(0,4));return mo>=4?yr:yr-1;}
 
+function dashFindLocation(officeName){
+  for(const dept of DASH_STRUCTURE){
+    if(dept.areas){
+      for(const area of dept.areas){
+        if(area.offices.includes(officeName))return{deptCat:dept.cat,areaLabel:area.label};
+      }
+    }
+    if(dept.single&&dept.single.includes(officeName))return{deptCat:dept.cat,areaLabel:null};
+  }
+  return null;
+}
+
+function dashComputeOpenState(role, userOfficeName){
+  if(role==='admin'||role==='area_manager')return{type:'all_open'};
+  if(role==='support')return{type:'support'};
+  const loc=userOfficeName?dashFindLocation(userOfficeName):null;
+  return{type:'own_area',loc};
+}
+
 window.shiftDashMonth = function(dir){
   dashMonth+=dir;
   if(dashMonth>12){dashMonth=1;dashYear++;}
@@ -317,12 +336,16 @@ async function loadDashboard(){
     const prices={};
     prSnap.forEach(d=>prices[d.id]=d.data());
     const officeCapMap={};
+    const idToOfficeName={};
     offSnap.forEach(d=>{
       const data=d.data();
       if(!data.name)return;
       const pr=prices[data.priceId]||{};
       officeCapMap[data.name]=pr.capacity||data.capacity||10;
+      idToOfficeName[d.id]=data.name;
     });
+    const userOfficeName=dashUserData&&dashUserData.officeId?idToOfficeName[dashUserData.officeId]||null:null;
+    const openState=dashComputeOpenState(dashUserData?dashUserData.role:'admin',userOfficeName);
 
     // 2. workdays（月の稼働日）
     const fy=dashMonth>=4?dashYear:dashYear-1;
@@ -382,22 +405,37 @@ async function loadDashboard(){
           if(pct<=markerPct)
             barStyle=`background:linear-gradient(to right,#1D9E75 0%,#1D9E75 ${pct}%,#EF9F27 ${pct}%,#EF9F27 ${markerPct}%,transparent ${markerPct}%,transparent 100%);width:100%`;
           else
-            barStyle=`background:linear-gradient(to right,#1D9E75 0%,#1D9E75 ${markerPct}%,#1976D2 ${markerPct}%,#1976D2 ${pct}%,transparent ${pct}%,transparent 100%);width:100%`;
+            barStyle=`background:linear-gradient(to right,#1D9E75 0%,#1D9E75 ${markerPct}%,#2196F3 ${markerPct}%,#2196F3 ${pct}%,transparent ${pct}%,transparent 100%);width:100%`;
         }
       }
       if(!barStyle)barStyle=`width:${pct}%;background:${actual>goal?'#E24B4A':'#1D9E75'}`;
       statsMap[name]={actual,goal,pct,markerPct,paceText,paceColor,barStyle};
     });
 
-    renderDashboard(statsMap);
+    renderDashboard(statsMap, openState);
   }catch(e){
     console.error(e);
     document.getElementById('dash-content').innerHTML='<div class="dash-loading">読み込みに失敗しました</div>';
   }
 }
 
-function renderDashboard(statsMap){
+function renderDashboard(statsMap, openState){
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  function isDeptOpen(dept){
+    if(openState.type==='all_open')return true;
+    if(openState.type==='support')return dept.cat==='発達支援事業部';
+    // own_area: 発達支援は常にオン、就労生活支援はユーザーが所属する場合のみ
+    if(dept.cat==='発達支援事業部')return true;
+    return openState.loc&&openState.loc.deptCat===dept.cat;
+  }
+
+  function isAreaOpen(area){
+    if(openState.type==='all_open')return true;
+    if(openState.type==='support')return true; // 発達支援の全エリアオープン（支援課はdept単位で制御済み）
+    // own_area: 自分の所属エリアのみ
+    return openState.loc&&openState.loc.areaLabel===area.label;
+  }
 
   function aggBarHtml(offices){
     let act=0,goal=0;
@@ -422,22 +460,24 @@ function renderDashboard(statsMap){
   DASH_STRUCTURE.forEach((dept,di)=>{
     const deptOffices=dept.areas?dept.areas.flatMap(a=>a.offices):dept.single;
     const deptId=`dash-dept-${di}`;
+    const dOpen=isDeptOpen(dept);
     html+=`<div class="dash-dept-header" onclick="toggleDash('${deptId}',this)">
-      <span class="dash-toggle">▼</span>
+      <span class="dash-toggle">${dOpen?'▼':'▶'}</span>
       <span class="dash-dept-name">${esc(dept.cat)}</span>
       ${aggBarHtml(deptOffices)}
     </div>
-    <div id="${deptId}">`;
+    <div id="${deptId}"${dOpen?'':' style="display:none"'}>`;
 
     if(dept.areas){
       dept.areas.forEach((area,ai)=>{
         const areaId=`dash-area-${di}-${ai}`;
+        const aOpen=dOpen&&isAreaOpen(area);
         html+=`<div class="dash-area-header" onclick="toggleDash('${areaId}',this)">
-          <span class="dash-toggle">▶</span>
+          <span class="dash-toggle">${aOpen?'▼':'▶'}</span>
           <span class="dash-area-name">${esc(area.label)}</span>
           ${aggBarHtml(area.offices)}
         </div>
-        <div id="${areaId}" style="display:none">`;
+        <div id="${areaId}"${aOpen?'':' style="display:none"'}>`;
         area.offices.forEach(n=>{html+=officeRowHtml(n);});
         html+=`</div>`;
       });
