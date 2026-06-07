@@ -185,12 +185,35 @@ function truncV(s, maxV) {
   return res;
 }
 
+// グラフ用事業所略称（2文字）
+const GRAPH_ABBR = {
+  "HUGくみのいえ":    "はぐ",
+  "ReadyGO井口":      "井口",
+  "ReadyGO八木":      "八木",
+  "ReadyGO川内":      "川内",
+  "ここいろのいえ":   "ここ",
+  "にじのいえ":       "にじ",
+  "はれのいえ":       "はれ",
+  "まなびあいのいえ": "まな",
+  "ReadyGO高屋":      "高屋",
+  "ReadyGO黒瀬":      "黒瀬",
+  "ぐらっちぇ黒瀬":   "ぐら",
+  "ラフォーレ高陽":   "高陽",
+  "ラフォーレ亀山":   "亀山",
+  "レポ白木":         "白木",
+};
+// サービス種別略称（グラフ用）
+const SVC_ABBR = {
+  "生活介護": "生",
+  "就労B型":  "就",
+};
+
 // ── Chatworkメッセージ本文生成（postDailyReport・triggerDailyReport共通） ──
-// 列幅（視覚幅）: 事業所名=16, 定員=4, 実績=4, 達成率=7  セパレータ="  "
-// LINE長 = 16+2+4+2+4+2+7 = 37
+// 列幅（視覚幅）: 事業所名=6, 定員=4, 実績=4, 達成率=7  セパレータ="  "
+// LINE長 = 6+2+4+2+4+2+7 = 27
 function buildChatworkMessage(dateStr, offices, reports, openSet) {
   const [y, m, d] = dateStr.split("-");
-  const LINE = "─".repeat(37);
+  const LINE = "─".repeat(27);
 
   let totalCap = 0;
   let totalActual = 0;
@@ -198,16 +221,17 @@ function buildChatworkMessage(dateStr, offices, reports, openSet) {
   const graphLines = [];
 
   tableLines.push(
-    rpW("事業所", 16) + "  " + lpW("定員", 4) + "  " + lpW("実績", 4) + "  " + lpW("達成率", 7)
+    rpW("事業所", 6) + "  " + lpW("定員", 4) + "  " + lpW("実績", 4) + "  " + lpW("達成率", 7)
   );
   tableLines.push(LINE);
 
   offices.forEach((o) => {
     const isOpen = openSet.has(o.name);
     const rep = reports[o.name];
+    const abbr = GRAPH_ABBR[o.name] || truncV(o.name, 2);
 
     if (!isOpen) {
-      tableLines.push(rpW(truncV(o.name, 16), 16) + "  （閉所）");
+      tableLines.push(rpW(abbr, 6) + "  （閉所）");
       return;
     }
 
@@ -220,11 +244,10 @@ function buildChatworkMessage(dateStr, offices, reports, openSet) {
         const cap = svc.capacity || 10;
         const rate = actual !== null ? (actual / cap) * 100 : null;
         const em = rate !== null ? rateEmoji(rate) : "";
-        // 事業所名8視覚+サービス名6視覚で最大16視覚に収める
-        const displayName = `${truncV(o.name, 8)}(${truncV(svc.id, 6)})`;
+        const name = abbr + (SVC_ABBR[svc.id] || truncV(svc.id, 1));
 
         tableLines.push(
-          rpW(displayName, 16) + "  " +
+          rpW(name, 6) + "  " +
           lpW(cap, 4) + "  " +
           (actual !== null ? lpW(actual, 4) : lpW("—", 4)) + "  " +
           (rate !== null ? lpW(rate.toFixed(1) + "%", 7) : lpW("—", 7)) +
@@ -235,11 +258,11 @@ function buildChatworkMessage(dateStr, offices, reports, openSet) {
           totalCap += cap;
           totalActual += actual;
           graphLines.push(
-            rpW(truncV(displayName, 12), 12) + "  " +
+            rpW(name, 6) + "  " +
             makeBar(rate) + "  " + rate.toFixed(1) + "%  " + rateEmoji(rate)
           );
         } else {
-          graphLines.push(rpW(truncV(displayName, 12), 12) + "  （未入力）");
+          graphLines.push(rpW(name, 6) + "  （未入力）");
         }
       });
     } else {
@@ -250,7 +273,7 @@ function buildChatworkMessage(dateStr, offices, reports, openSet) {
       const em = rate !== null ? rateEmoji(rate) : "";
 
       tableLines.push(
-        rpW(truncV(o.name, 16), 16) + "  " +
+        rpW(abbr, 6) + "  " +
         lpW(cap, 4) + "  " +
         (actual !== null ? lpW(actual, 4) : lpW("—", 4)) + "  " +
         (rate !== null ? lpW(rate.toFixed(1) + "%", 7) : lpW("—", 7)) +
@@ -261,11 +284,11 @@ function buildChatworkMessage(dateStr, offices, reports, openSet) {
         totalCap += cap;
         totalActual += actual;
         graphLines.push(
-          rpW(truncV(o.name, 12), 12) + "  " +
+          rpW(abbr, 6) + "  " +
           makeBar(rate) + "  " + rate.toFixed(1) + "%  " + rateEmoji(rate)
         );
       } else {
-        graphLines.push(rpW(truncV(o.name, 12), 12) + "  （未入力）");
+        graphLines.push(rpW(abbr, 6) + "  （未入力）");
       }
     }
   });
@@ -273,13 +296,13 @@ function buildChatworkMessage(dateStr, offices, reports, openSet) {
   tableLines.push(LINE);
   const totalRate = totalCap > 0 ? (totalActual / totalCap) * 100 : 0;
   tableLines.push(
-    rpW("合　計", 16) + "  " +
+    rpW("合　計", 6) + "  " +
     lpW(totalCap, 4) + "  " +
     lpW(totalActual, 4) + "  " +
     lpW(totalRate.toFixed(1) + "%", 7) +
     "  " + (totalCap > 0 ? rateEmoji(totalRate) : "")
   );
-  tableLines.push("　　　　　　　　　　※合計は開所事業所のみ");
+  tableLines.push("※合計は開所事業所のみ");
 
   return (
     `📊 前営業日速報（${y}/${m}/${d}）\n` +
