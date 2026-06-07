@@ -1166,11 +1166,13 @@ function updateFormBadge(r, isLaf){
     b.className='status-pill'+(isReported?' done':'');
     hasActual=!!isReported;
   }
+  const isAdmin=currentUserData?.role==='admin';
   const btnId=isLaf?'lafore-reset-btn':'reset-btn';
-  document.getElementById(btnId).style.display=hasActual?'block':'none';
+  document.getElementById(btnId).style.display=(hasActual&&isAdmin)?'block':'none';
 }
 
 window.resetActual=async function(){
+  if(currentUserData?.role!=='admin'){showToast('管理者のみ実行できます');return;}
   if(!confirm('実績をリセットします。予定・問合せ・見学・契約は保持されます。よろしいですか？'))return;
   const isLaf=isLafore(state.cur);
   const dateVal=state.formDate;
