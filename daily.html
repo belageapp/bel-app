@@ -576,8 +576,8 @@ onAuthStateChanged(auth, async user => {
       el.innerHTML = `<span style="font-size:11px;color:#555;white-space:nowrap">${currentUserData.displayName||user.email}</span>
         <span style="font-size:10px;color:#999;white-space:nowrap">${ROLE_LABELS[currentUserData.role]||currentUserData.role}</span>`;
     }
-    // officeId: users直接設定 → なければ offices.managerUid から逆引き
-    const resolvedOfficeId = currentUserData.officeId || MANAGER_UID_TO_OFFICE_ID[user.uid];
+    // offices.managerUid を優先し、なければ users.officeId にフォールバック
+    const resolvedOfficeId = MANAGER_UID_TO_OFFICE_ID[user.uid] || currentUserData.officeId;
     if (resolvedOfficeId) {
       const selector = document.getElementById('office-selector');
       if (selector) selector.style.display = 'none';
