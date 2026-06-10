@@ -576,12 +576,12 @@ onAuthStateChanged(auth, async user => {
       el.innerHTML = `<span style="font-size:11px;color:#555;white-space:nowrap">${currentUserData.displayName||user.email}</span>
         <span style="font-size:10px;color:#999;white-space:nowrap">${ROLE_LABELS[currentUserData.role]||currentUserData.role}</span>`;
     }
-    if (currentUserData.officeId) {
-      if (['manager','area_manager'].includes(currentUserData.role)) {
-        const selector = document.getElementById('office-selector');
-        if (selector) selector.style.display = 'none';
-      }
-      window._autoSelectOffice = currentUserData.officeId;
+    // officeId: users直接設定 → なければ offices.managerUid から逆引き
+    const resolvedOfficeId = currentUserData.officeId || MANAGER_UID_TO_OFFICE_ID[user.uid];
+    if (resolvedOfficeId) {
+      const selector = document.getElementById('office-selector');
+      if (selector) selector.style.display = 'none';
+      window._autoSelectOffice = resolvedOfficeId;
     }
   } catch(e) { console.error(e); }
 });
@@ -601,6 +601,7 @@ async function loadMasterData() {
     const price = prices[data.priceId] || {};
     CAPACITY[data.name] = price.capacity || data.capacity || 10;
     OFFICE_ID_TO_NAME[d.id] = data.name;
+    if (data.managerUid) MANAGER_UID_TO_OFFICE_ID[data.managerUid] = d.id;
   });
 }
 
@@ -613,6 +614,7 @@ const OFFICES = [
 ];
 let CAPACITY = {}; // Firestoreのoffices+pricesから起動時に動的構築
 let OFFICE_ID_TO_NAME = {};
+let MANAGER_UID_TO_OFFICE_ID = {}; // offices.managerUid → officeId
 const STRUCTURE = [
   {cat:"発達支援事業部", summaryLabel:"発達支援事業部　貢献率", areas:[
     {label:"広島エリア", offices:["HUGくみのいえ","ReadyGO井口","ReadyGO八木","ReadyGO川内","ここいろのいえ"]},
