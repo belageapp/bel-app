@@ -187,8 +187,13 @@ async function init() {
   const officesParam = urlParams.get('offices');
 
   if (officesParam) {
-    // 取り込んだ事業所のみをセレクターに表示
-    const importedOffices = decodeURIComponent(officesParam).split(',');
+    // 取り込んだ事業所のみをセレクターに表示（offices の order 順にソート）
+    const importedOffices = decodeURIComponent(officesParam).split(',')
+      .sort((a, b) => {
+        const oa = offices.find(o => o.name === a)?.order ?? 99;
+        const ob = offices.find(o => o.name === b)?.order ?? 99;
+        return oa - ob;
+      });
     const selO = document.getElementById('sel-office');
     // 全事業所オプションを残しつつ、取り込んだ事業所を先頭に
     selO.innerHTML = '';
