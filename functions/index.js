@@ -444,3 +444,79 @@ exports.triggerDailyReport = onRequest(
     res.json({ success: true, date: prevDay, officesCount: offices.length });
   }
 );
+
+// ── Function 5: sendInvoicePdf（HTTP – 報酬内容明細PDF → Chatwork）────────
+exports.sendInvoicePdf = onRequest(
+  { region: "asia-northeast1" },
+  async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") { res.status(405).json({ error: "Method Not Allowed" }); return; }
+
+    const token = process.env.CHATWORK_API_TOKEN;
+    if (!token) { res.status(500).json({ error: "CHATWORK_API_TOKEN 未設定" }); return; }
+
+    const INVOICE_ROOM_ID = "336841705";
+
+    // multipart/form-data を busboy でパース
+    const Busboy = require("busboy");
+    const bb = Busboy({ headers: req.headers });
+    let fileBuffer = null;
+    let fileName = "報酬内容明細.pdf";
+    let message = "";
+
+    await new Promise((resolve, reject) => {
+      bb.on("file", (_field, stream, info) => {
+        fileName = info.filename || fileName;
+        const chunks = [];
+        stream.on("data", (d) => chunks.push(d));
+        stream.on("end", () => { fileBuffer = Buffer.concat(chunks); });
+      });
+      bb.on("field", (name, val) => {
+        if (name === "message") message = val;
+      });
+      bb.on("finish", resolve);
+      bb.on("error", reject);
+      bb.end(req.rawBody);
+    });
+
+    if (!fileBuffer) { res.status(400).json({ error: "PDFファイルがありません" }); return; }
+
+    // Chatwork ファイルアップロード API
+    const boundary = "----BelBoundary" + Date.now();
+    const CRLF = "\r\n";
+    const buildPart = (name, value) =>
+      `--${boundary}${CRLF}Content-Disposition: form-data; name="${name}"${CRLF}${CRLF}${value}${CRLF}`;
+
+    const head = Buffer.from(
+      `--${boundary}${CRLF}` +
+      `Content-Disposition: form-data; name="file"; filename="${fileName}"${CRLF}` +
+      `Content-Type: application/pdf${CRLF}${CRLF}`
+    );
+    const tail = Buffer.from(
+      `${CRLF}` +
+      (message ? buildPart("message", message) : "") +
+      `--${boundary}--${CRLF}`
+    );
+    const body = Buffer.concat([head, fileBuffer, tail]);
+
+    const cwRes = await fetch(`https://api.chatwork.com/v2/rooms/${INVOICE_ROOM_ID}/files`, {
+      method: "POST",
+      headers: {
+        "X-ChatworkToken": token,
+        "Content-Type": `multipart/form-data; boundary=${boundary}`,
+        "Content-Length": body.length,
+      },
+      body,
+    });
+
+    const cwData = await cwRes.json();
+    if (!cwRes.ok) {
+      res.status(500).json({ error: "Chatwork送信失敗", detail: cwData });
+      return;
+    }
+    res.json({ ok: true, fileId: cwData.file_id });
+  }
+);

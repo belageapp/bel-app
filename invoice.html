@@ -96,6 +96,7 @@ table.detail-table thead td{background:#fafafa;font-weight:700;color:#333;font-s
       </div>
       <button class="btn-load" onclick="loadInvoice()">表示</button>
       <button class="btn-print" onclick="window.print()">🖨️ 印刷・PDF保存</button>
+      <button class="btn-print" id="btn-cw-send" onclick="sendPdfToChatwork()" style="background:#F0F4FF;color:#1565C0;border-color:#A8C0E8;">📤 Chatworkに送信</button>
     </div>
   </div>
 
@@ -376,5 +377,66 @@ window.loadInvoice = async function() {
 
   area.innerHTML = html || '<div class="empty-msg">対象データがありません</div>';
 };</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+async function sendPdfToChatwork() {
+  const area = document.getElementById('invoice-area');
+  if (!area || area.querySelector('.empty-msg')) {
+    alert('先に「表示」で明細を読み込んでください。');
+    return;
+  }
+  const btn = document.getElementById('btn-cw-send');
+  btn.disabled = true;
+  btn.textContent = '⏳ 生成中...';
+
+  try {
+    // PDF生成
+    const canvas = await html2canvas(area, { scale: 2, useCORS: true, logging: false });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgW = pageW;
+    const imgH = (canvas.height * imgW) / canvas.width;
+    let yOffset = 0;
+    while (yOffset < imgH) {
+      if (yOffset > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, -yOffset, imgW, imgH);
+      yOffset += pageH;
+    }
+
+    // ファイル名
+    const ymSel = document.getElementById('sel-year-month');
+    const offSel = document.getElementById('sel-office');
+    const ymText = ymSel.options[ymSel.selectedIndex]?.text || '';
+    const offText = offSel.options[offSel.selectedIndex]?.text || '';
+    const fileName = `報酬内容明細_${ymText}_${offText}.pdf`;
+    const message = `報酬内容明細 ${ymText}　${offText}`;
+
+    btn.textContent = '⏳ 送信中...';
+
+    const blob = pdf.output('blob');
+    const formData = new FormData();
+    formData.append('file', blob, fileName);
+    formData.append('message', message);
+
+    const res = await fetch(
+      'https://asia-northeast1-daily-report-b90e8.cloudfunctions.net/sendInvoicePdf',
+      { method: 'POST', body: formData }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '送信失敗');
+
+    btn.textContent = '✅ 送信完了';
+    setTimeout(() => { btn.disabled = false; btn.textContent = '📤 Chatworkに送信'; }, 3000);
+  } catch (e) {
+    alert('送信エラー: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '📤 Chatworkに送信';
+  }
+}
+</script>
 </body>
 </html>
