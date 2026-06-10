@@ -1312,7 +1312,7 @@ window.selectOffice=async function(name){
   document.getElementById('office-selector').style.display='none';
   document.getElementById('input-form').style.display='block';
   document.getElementById('input-card2').style.display='block';
-  document.getElementById('header-back').style.display=window._autoSelectOffice?'none':'inline-block';
+  document.getElementById('header-back').style.display='inline-block';
   document.getElementById('header-title').textContent=name;
   await applyClosedState(todayStr);
 };
