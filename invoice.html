@@ -393,7 +393,7 @@ async function sendPdfToChatwork() {
 
   try {
     // PDF生成
-    const canvas = await html2canvas(area, { scale: 2, useCORS: true, logging: false });
+    const canvas = await html2canvas(area, { scale: 1.5, useCORS: true, logging: false });
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageW = pdf.internal.pageSize.getWidth();
@@ -422,10 +422,12 @@ async function sendPdfToChatwork() {
     formData.append('file', blob, fileName);
     formData.append('message', message);
 
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 90000);
     const res = await fetch(
       'https://asia-northeast1-daily-report-b90e8.cloudfunctions.net/sendInvoicePdf',
-      { method: 'POST', body: formData }
-    );
+      { method: 'POST', body: formData, signal: controller.signal }
+    ).finally(() => clearTimeout(timer));
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '送信失敗');
 

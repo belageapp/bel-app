@@ -447,7 +447,7 @@ exports.triggerDailyReport = onRequest(
 
 // ── Function 5: sendInvoicePdf（HTTP – 報酬内容明細PDF → Chatwork）────────
 exports.sendInvoicePdf = onRequest(
-  { region: "asia-northeast1" },
+  { region: "asia-northeast1", timeoutSeconds: 120, memory: "512MiB" },
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
