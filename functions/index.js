@@ -468,14 +468,14 @@ exports.sendInvoicePdf = onRequest(
     let message = "";
 
     await new Promise((resolve, reject) => {
-      bb.on("file", (_field, stream, info) => {
-        fileName = info.filename || fileName;
+      bb.on("file", (_field, stream, _info) => {
         const chunks = [];
         stream.on("data", (d) => chunks.push(d));
         stream.on("end", () => { fileBuffer = Buffer.concat(chunks); });
       });
       bb.on("field", (name, val) => {
         if (name === "message") message = val;
+        if (name === "fileName") fileName = val;
       });
       bb.on("finish", resolve);
       bb.on("error", reject);

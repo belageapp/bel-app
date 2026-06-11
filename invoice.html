@@ -424,7 +424,8 @@ async function sendPdfToChatwork() {
 
     const blob = pdf.output('blob');
     const formData = new FormData();
-    formData.append('file', blob, fileName);
+    formData.append('file', blob, 'invoice.pdf');
+    formData.append('fileName', fileName);
     formData.append('message', message);
 
     const controller = new AbortController();
