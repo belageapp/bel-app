@@ -490,9 +490,10 @@ exports.sendInvoicePdf = onRequest(
     const buildPart = (name, value) =>
       `--${boundary}${CRLF}Content-Disposition: form-data; name="${name}"${CRLF}${CRLF}${value}${CRLF}`;
 
+    const encodedFileName = encodeURIComponent(fileName);
     const head = Buffer.from(
       `--${boundary}${CRLF}` +
-      `Content-Disposition: form-data; name="file"; filename="${fileName}"${CRLF}` +
+      `Content-Disposition: form-data; name="file"; filename*=UTF-8''${encodedFileName}${CRLF}` +
       `Content-Type: application/pdf${CRLF}${CRLF}`
     );
     const tail = Buffer.from(

@@ -383,7 +383,8 @@ window.loadInvoice = async function() {
 <script>
 async function sendPdfToChatwork() {
   const area = document.getElementById('invoice-area');
-  if (!area || area.querySelector('.empty-msg')) {
+  const pages = area ? area.querySelectorAll('.invoice-page') : [];
+  if (!pages.length) {
     alert('先に「表示」で明細を読み込んでください。');
     return;
   }
@@ -392,19 +393,23 @@ async function sendPdfToChatwork() {
   btn.textContent = '⏳ 生成中...';
 
   try {
-    // PDF生成
-    const canvas = await html2canvas(area, { scale: 1.5, useCORS: true, logging: false });
+    // 事業所ごとに改ページしてPDF生成
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
-    const imgW = pageW;
-    const imgH = (canvas.height * imgW) / canvas.width;
-    let yOffset = 0;
-    while (yOffset < imgH) {
-      if (yOffset > 0) pdf.addPage();
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, -yOffset, imgW, imgH);
-      yOffset += pageH;
+    let isFirst = true;
+    for (const page of pages) {
+      const canvas = await html2canvas(page, { scale: 1.5, useCORS: true, logging: false });
+      const imgW = pageW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      let yOffset = 0;
+      while (yOffset < imgH) {
+        if (!isFirst) pdf.addPage();
+        isFirst = false;
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, -yOffset, imgW, imgH);
+        yOffset += pageH;
+      }
     }
 
     // ファイル名
