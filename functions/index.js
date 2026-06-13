@@ -221,6 +221,8 @@ const SVC_ABBR = {
 // LINE長 = 6+2+4+2+4+2+7 = 27
 function buildChatworkMessage(dateStr, offices, reports, openSet) {
   const [y, m, d] = dateStr.split("-");
+  const DOW = ["日", "月", "火", "水", "木", "金", "土"];
+  const dow = DOW[new Date(dateStr + "T00:00:00").getDay()];
   const LINE = "─".repeat(27);
 
   let totalCap = 0;
@@ -313,7 +315,7 @@ function buildChatworkMessage(dateStr, offices, reports, openSet) {
   tableLines.push("※合計は開所事業所のみ");
 
   return (
-    `📊 前営業日速報（${y}/${m}/${d}）\n` +
+    `📊 速報（${y}/${m}/${d}（${dow}））\n` +
     `　　　　　　　　　　※達成率は対定員\n\n` +
     `[code]\n${tableLines.join("\n")}\n[/code]\n\n` +
     `[達成率グラフ（対定員）]\n` +
@@ -338,18 +340,27 @@ exports.postDailyReport = onSchedule(
 
     const offices = await getOffices(db);
     const names = offices.map((o) => o.name);
-    const [reports, openSet] = await Promise.all([
-      getReports(db, prevDay),
-      getOpenSet(db, prevDay, names),
-    ]);
-
     const token = process.env.CHATWORK_API_TOKEN;
     const roomId = process.env.CHATWORK_ROOM_ID;
     if (!token || !roomId) { console.error("Chatwork 環境変数が未設定"); return; }
 
-    const message = buildChatworkMessage(prevDay, offices, reports, openSet);
-    await postChatwork(token, roomId, message);
-    console.log(`前営業日速報を投稿しました: ${prevDay}`);
+    // 前営業日から昨日まで（土日含む）を順に投稿
+    const today = toDateStr(jstNow());
+    const cur = new Date(prevDay + "T00:00:00");
+    const todayDate = new Date(today + "T00:00:00");
+    while (cur < todayDate) {
+      const dateStr = toDateStr(cur);
+      const [reports, openSet] = await Promise.all([
+        getReports(db, dateStr),
+        getOpenSet(db, dateStr, names),
+      ]);
+      if (openSet.size > 0) {
+        const message = buildChatworkMessage(dateStr, offices, reports, openSet);
+        await postChatwork(token, roomId, message);
+        console.log(`速報を投稿しました: ${dateStr}`);
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
   }
 );
 
