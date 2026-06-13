@@ -418,7 +418,7 @@ async function sendPdfToChatwork() {
     const ymText = ymSel.options[ymSel.selectedIndex]?.text || '';
     const offText = offSel.options[offSel.selectedIndex]?.text || '';
     const fileName = `報酬内容明細_${ymText}_${offText}.pdf`;
-    const message = `報酬内容明細 ${ymText}　${offText}`;
+    const message = `[toall]\n報酬内容明細 ${ymText}　${offText}`;
 
     btn.textContent = '⏳ 送信中...';
 
