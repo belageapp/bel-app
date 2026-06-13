@@ -380,35 +380,46 @@ exports.checkMissingReports = onSchedule(
 
     const offices = await getOffices(db);
     const names = offices.map((o) => o.name);
-    const [reports, openSet] = await Promise.all([
-      getReports(db, prevDay),
-      getOpenSet(db, prevDay, names),
-    ]);
 
-    const missing = offices
-      .filter((o) => openSet.has(o.name) && !isActualEntered(reports[o.name]))
-      .map((o) => o.name);
+    // 前営業日から昨日まで（土日含む）の未入力を収集
+    const DOW = ["日", "月", "火", "水", "木", "金", "土"];
+    const today = toDateStr(jstNow());
+    const missingByDate = [];
+    const cur = new Date(prevDay + "T00:00:00");
+    const todayDate = new Date(today + "T00:00:00");
+    while (cur < todayDate) {
+      const dateStr = toDateStr(cur);
+      const [reports, openSet] = await Promise.all([
+        getReports(db, dateStr),
+        getOpenSet(db, dateStr, names),
+      ]);
+      const missing = offices
+        .filter((o) => openSet.has(o.name) && !isActualEntered(reports[o.name]))
+        .map((o) => o.name);
+      if (missing.length) missingByDate.push({ dateStr, missing });
+      cur.setDate(cur.getDate() + 1);
+    }
 
-    if (!missing.length) {
+    if (!missingByDate.length) {
       console.log("全事業所が入力済み – アラート不要");
       return;
     }
 
-    const [y, m, d] = prevDay.split("-");
     const appUrl = process.env.BEL_APP_URL || "";
-
-    const message =
-      `[toall]\n⚠️ 速報値 未入力アラート（11:00時点）\n対象日: ${y}/${m}/${d}\n\n` +
-      `以下の事業所が未入力です。\n12:00までに入力をお願いします。\n\n` +
-      missing.map((n) => `・${n}`).join("\n") +
-      (appUrl ? `\n\n入力はこちら → ${appUrl}` : "");
+    let message = `[toall]\n⚠️ 速報値 未入力アラート（11:00時点）\n12:00までに入力をお願いします。`;
+    for (const { dateStr, missing } of missingByDate) {
+      const [y, m, d] = dateStr.split("-");
+      const dow = DOW[new Date(dateStr + "T00:00:00").getDay()];
+      message += `\n\n【${y}/${m}/${d}（${dow}）】\n` + missing.map((n) => `・${n}`).join("\n");
+    }
+    if (appUrl) message += `\n\n入力はこちら → ${appUrl}`;
 
     const token = process.env.CHATWORK_API_TOKEN;
     const roomId = process.env.CHATWORK_ROOM_ID;
     if (!token || !roomId) { console.error("Chatwork 環境変数が未設定"); return; }
 
     await postChatwork(token, roomId, message);
-    console.log(`未入力アラート送信: ${missing.join(", ")}`);
+    console.log(`未入力アラート送信: ${missingByDate.map(({ dateStr, missing }) => `${dateStr}[${missing.join(",")}]`).join(" / ")}`);
   }
 );
 
