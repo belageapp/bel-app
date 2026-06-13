@@ -7,6 +7,60 @@
 
 ---
 
+## v1.8.0 (2026-06-13)
+
+### 新機能
+- **functions/index.js** 土曜日開所事業所の速報・アラートに対応
+  - `postDailyReport`：前営業日から昨日までをループし、開所事業所がある日は順次Chatworkに投稿（月曜日に金曜＋土曜分を配信）
+  - `checkMissingReports`：同様に土曜日を含む全日程の未入力をチェック。アラートメッセージを日付ごとにグループ化して送信
+  - 速報タイトルに曜日を追加（例：`📊 速報（2026/06/13（土））`）
+
+### 修正
+- **invoice.html** ChatworkへのPDF送信メッセージに `[toall]` を追加
+- **functions/index.js** `checkMissingReports` の未入力判定ロジックを修正
+  - 従来：レポートドキュメントが存在するかどうかのみチェック
+  - 修正後：`reported === true`（報告ボタン押下）または `kids > 0` で実績入力済みと判定
+  - 週次予定のみ保存したドキュメント（`reported` なし・`kids = 0`）を未入力として正しくアラート対象に
+
+---
+
+## v1.7.0 (2026-06-11)
+
+### 新機能
+- **invoice.html** Chatwork PDF送信を事業所ごとに改ページ
+  - 全体を一枚のキャンバスにレンダリングする方式から、各 `.invoice-page` を個別にレンダリングしてPDFの新ページとして追加する方式に変更
+
+### 修正
+- **functions/index.js** `sendInvoicePdf` の403エラーを修正
+  - Firebase Functions v2 の `onRequest` に `invoker: "public"` を追加（未認証HTTPアクセスに必要）
+- **invoice.html / functions/index.js** Chatwork送信時のファイル名文字化けを修正
+  - 原因：busboy が `Content-Disposition` ヘッダーのファイル名を Latin-1 でデコードし文字化け
+  - 対処：クライアント側でファイル名を独立したテキストフィールド（`fileName`）として送信し、Cloud Function 側で RFC5987（`filename*=UTF-8''...`）エンコードして Chatwork に転送
+
+---
+
+## v1.6.0 (2026-06-07)
+
+### 新機能
+- **daily.html** `offices.managerUid` によるマネジャー事業所アクセス制御
+  - `loadMasterData()` で `offices` コレクションの `managerUid` → `officeId` マップを構築
+  - `unit_manager` / `area_manager` が担当事業所に登録されていれば事業所セレクト画面をスキップ
+  - 優先順位：`users.officeId`（Firestoreユーザー設定）を優先し、未設定の場合のみ `offices.managerUid` を参照
+  - 自動選択時も「← 事業所一覧」ボタンを常時表示し、他事業所への切替を可能に
+- **invoice.html** Chatworkへの報酬内容明細PDF送信機能を追加
+  - 「📤 Chatworkに送信」ボタンを追加
+  - html2canvas（scale 1.5）＋ jsPDF（A4）でクライアントサイドPDF生成
+  - Cloud Function `sendInvoicePdf` 経由で Chatwork ルーム 336841705 にファイルアップロード
+- **functions/index.js** `sendInvoicePdf` Cloud Function を追加（Function 5）
+  - busboy でmultipart/form-dataをパース
+  - Chatwork ファイルアップロード API（`POST /rooms/{id}/files`）に転送
+- **functions/package.json** `busboy ^1.6.0` を依存関係に追加
+
+### 改善
+- **invoice.html** 取込事業所すべての表示を `order` フィールド順にソート（全事業所と同一基準）
+
+---
+
 ## v1.5.0 (2026-06-07)
 
 ### 新機能
