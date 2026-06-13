@@ -100,7 +100,9 @@ async function getReports(db, dateStr) {
   const reps = {};
   snap.forEach((d) => {
     const r = d.data();
-    if (!reps[r.office]) reps[r.office] = { kids: 0, time: r.time, services: {} };
+    if (!reps[r.office]) reps[r.office] = { kids: 0, time: r.time, services: {}, reported: false };
+
+    if (r.reported) reps[r.office].reported = true;
 
     if (r.services) {
       // 新フォーマット（servicesオブジェクトあり）
@@ -121,6 +123,12 @@ async function getReports(db, dateStr) {
     }
   });
   return reps;
+}
+
+// 実績が入力済みかを判定（reported フラグ優先、kids>0 は補完）
+function isActualEntered(rep) {
+  if (!rep) return false;
+  return rep.reported === true || rep.kids > 0;
 }
 
 // ── Chatwork ──────────────────────────────────────────────────
@@ -367,7 +375,7 @@ exports.checkMissingReports = onSchedule(
     ]);
 
     const missing = offices
-      .filter((o) => openSet.has(o.name) && !reports[o.name])
+      .filter((o) => openSet.has(o.name) && !isActualEntered(reports[o.name]))
       .map((o) => o.name);
 
     if (!missing.length) {
