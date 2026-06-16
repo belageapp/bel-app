@@ -739,7 +739,8 @@ window.loadHistory=async function(){
       reports[r.date].care = careActual;
       reports[r.date].work = workActual;
       reports[r.date].kids = careActual + workActual;
-      reports[r.date].planned += (r.services["生活介護"]?.reservations ?? 0) + (r.services["就労B型"]?.reservations ?? 0);
+      const svcReservations = (r.services["生活介護"]?.reservations ?? 0) + (r.services["就労B型"]?.reservations ?? 0);
+      reports[r.date].planned += svcReservations > 0 ? svcReservations : (r.planned || 0);
       reports[r.date].inquiry += (r.services["生活介護"]?.inquiries ?? 0) + (r.services["就労B型"]?.inquiries ?? 0);
       reports[r.date].visit += (r.services["生活介護"]?.visits ?? 0) + (r.services["就労B型"]?.visits ?? 0);
       reports[r.date].contract += (r.services["生活介護"]?.contracts ?? 0) + (r.services["就労B型"]?.contracts ?? 0);
@@ -1475,7 +1476,10 @@ window.submitLafore=async function(){
     let savedDocId;
     if(!snap.empty){
       savedDocId=snap.docs[0].id;
-      await setDoc(doc(db,'reports',savedDocId),data);
+      // 既存ドキュメントの週次予定(planned)を保持（setDocで消えるのを防ぐ）
+      const existingPlanned = snap.docs.reduce((max, d) => Math.max(max, d.data().planned || 0), 0);
+      const saveData = existingPlanned > 0 ? {...data, planned: existingPlanned} : data;
+      await setDoc(doc(db,'reports',savedDocId),saveData);
       // 旧フォーマットの場合は余分なドキュメントを削除
       for(let i=1;i<snap.docs.length;i++){
         await deleteDoc(doc(db,'reports',snap.docs[i].id));
