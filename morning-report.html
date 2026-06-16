@@ -281,18 +281,17 @@ function getFiscalYear(dateStr) {
 // 週単位：日〜土。金曜日の朝礼では来週（次の日〜土）の目標を設定する。
 function getWeekBounds(baseDate) {
   const dow = baseDate.getDay(); // 0=日 … 6=土
-  // 次の日曜（今日が日曜なら今日）
-  const daysUntilSun = (7 - dow) % 7;
+  // 今週の日曜日（今日が日曜なら今日）
   const weekStart = new Date(baseDate);
-  weekStart.setDate(baseDate.getDate() + daysUntilSun);
+  weekStart.setDate(baseDate.getDate() - dow);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
   return { weekStart, weekEnd };
 }
-// 報告週より前の5つの日〜土週を新しい順に返す
+// 報告週を含む直近5週（oldest→newest、index 4 = 報告週）
 function getPrevWeeks(weekStart) {
   const weeks = [];
-  for (let i = 5; i >= 1; i--) {
+  for (let i = 4; i >= 0; i--) {
     const s = new Date(weekStart);
     s.setDate(weekStart.getDate() - i * 7);
     const e = new Date(s);
@@ -626,9 +625,9 @@ function renderInputTab(weeklyStats, monthlyStats, progressData, weY, weMo) {
   } else {
     myOffices.forEach(office => {
       const name  = office.name;
-      const weeks = weeklyStats[name]; // array of 5
+      const weeks = weeklyStats[name]; // array of 5（index4=報告週）
       const sv    = savedComments[name] || {};
-      // 直近週（最新=weeks[4]）の稼働日数をヘッダーに表示
+      // 報告週（weeks[4]）の稼働日数をヘッダーに表示
       const latestWorkDays = weeks[weeks.length - 1].workDays;
 
       let weekRows = '';
