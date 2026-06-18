@@ -448,8 +448,10 @@ onAuthStateChanged(auth, async user => {
       if (editAdminOpt) editAdminOpt.style.display = 'block';
     }
     // area_manager・unit_manager・managerはマスタ設定の編集不可（閲覧のみ）
+    // ただし稼働日設定（wd-save-btn）は現場マネージャーが操作するため除外
     if (role === 'area_manager' || role === 'unit_manager' || role === 'manager') {
       document.querySelectorAll('.btn-primary,.btn-blue,.btn-danger').forEach(b => {
+        if (b.id === 'wd-save-btn') return;
         b.disabled = true;
         b.style.opacity = '0.4';
         b.style.cursor = 'not-allowed';
