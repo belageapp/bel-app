@@ -7,6 +7,20 @@
 
 ---
 
+## v1.9.3 (2026-06-19)
+
+### 修正
+- **Firestore セキュリティルール** `workdays` コレクションの write 権限を `isSupport()` → `isManager()` に変更
+  - 従来：admin・support のみ書き込み可
+  - 修正後：manager・unit_manager・area_manager も書き込み可
+  - 症状：manager ロールが稼働日設定で「保存する」を押しても "Missing or insufficient permissions" エラーになり保存できなかった
+
+- **settings.html** manager ロールで稼働日設定の「保存する」ボタンが押せない問題を修正
+  - 原因：area_manager・unit_manager・manager ロールはマスタ設定を閲覧のみにするため `.btn-primary` を全て `disabled` にしていたが、稼働日設定の保存ボタン（`wd-save-btn`）も巻き込まれていた
+  - 修正：`wd-save-btn` を `disabled` 化の対象から除外
+
+---
+
 ## v1.9.1 (2026-06-17)
 
 ### 修正
