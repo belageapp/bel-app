@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>未来創造企業 ToDo</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F4F6F8;--white:#fff;--border:#E8EAED;--text:#1a1a2e;--mid:#666;--light:#999;--primary:#2563EB}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+.nav{background:#1a1a2e;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.nav-back{color:#aaa;font-size:13px;text-decoration:none}
+.nav-title{font-size:15px;font-weight:700;flex:1}
+.btn-logout{padding:5px 12px;border-radius:6px;border:1px solid #555;background:transparent;color:#ccc;font-size:11px;cursor:pointer;font-family:inherit}
+.wrap{max-width:800px;margin:0 auto;padding:16px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat-box{background:#fff;border-radius:10px;border:1px solid var(--border);padding:11px 8px;text-align:center}
+.stat-num{font-size:20px;font-weight:700}
+.stat-label{font-size:10px;color:var(--light);margin-top:2px}
+.filters{background:#fff;border-radius:10px;border:1px solid var(--border);padding:12px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filter-select,.filter-input{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px;background:#fff}
+.filter-input{flex:1;min-width:120px}
+.btn-add{margin-left:auto;padding:7px 14px;background:#2563EB;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-add:hover{background:#1d4ed8}
+/* cards */
+.todo-card{background:#fff;border-radius:10px;border:1px solid var(--border);margin-bottom:8px;overflow:hidden;transition:box-shadow .15s;border-left:3px solid transparent}
+.todo-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.todo-card.st-overdue{border-left-color:#DC2626}
+.todo-card.st-urgent{border-left-color:#D97706}
+.todo-card.st-soon{border-left-color:#CA8A04}
+.todo-card.st-done-card{opacity:.6}
+.todo-header{padding:12px 14px;cursor:pointer;display:flex;gap:10px;align-items:flex-start}
+.cat-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.todo-main{flex:1;min-width:0}
+.todo-id{font-size:10px;color:var(--light);margin-bottom:2px}
+.todo-title{font-size:13px;font-weight:600;line-height:1.4}
+.todo-checkitem{font-size:11px;color:var(--mid);margin-top:2px}
+.todo-meta{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.due-badge{font-size:10px;padding:2px 8px;border-radius:8px;font-weight:700}
+.due-overdue{background:#FEE2E2;color:#DC2626}
+.due-urgent{background:#FEF3C7;color:#D97706}
+.due-soon{background:#FEF9C3;color:#CA8A04}
+.due-normal{background:#EFF6FF;color:#2563EB}
+.s-badge{font-size:10px;padding:2px 8px;border-radius:8px;font-weight:700}
+.s-todo{background:#F4F6F8;color:#555}
+.s-in_progress{background:#DBEAFE;color:#1D4ED8}
+.s-done{background:#D1FAE5;color:#065F46}
+.todo-arrow{font-size:11px;color:#bbb;flex-shrink:0;margin-top:3px;transition:transform .2s}
+.todo-arrow.open{transform:rotate(180deg)}
+/* body */
+.todo-body{display:none;padding:0 14px 14px;border-top:1px solid #f0f0f0}
+.todo-body.open{display:block}
+.detail-box{font-size:12px;color:var(--mid);line-height:1.85;margin:12px 0;background:#F9FAFB;border-radius:8px;padding:10px 12px;white-space:pre-wrap}
+.due-label-row{font-size:11px;color:var(--mid);margin-bottom:8px}
+.tags-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.tag-pill{font-size:10px;padding:2px 8px;border-radius:10px;background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE}
+/* progress */
+.prog-section{margin-top:10px}
+.prog-heading{font-size:12px;font-weight:700;color:#333;margin-bottom:8px}
+.prog-timeline{border-left:2px solid #E8EAED;padding-left:12px;margin-bottom:10px}
+.prog-item{margin-bottom:10px}
+.prog-meta{font-size:10px;color:var(--light);margin-bottom:2px}
+.prog-comment{font-size:12px;line-height:1.7}
+.prog-form{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+textarea.prog-textarea{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;resize:vertical;min-height:64px}
+textarea.prog-textarea:focus{outline:none;border-color:#2563EB}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-prog{padding:7px 14px;background:#2563EB;color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.btn-prog:hover{background:#1d4ed8}
+.btn-st{padding:7px 14px;border:1.5px solid;border-radius:7px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;background:#fff}
+.btn-start{border-color:#2563EB;color:#2563EB}.btn-start:hover{background:#EFF6FF}
+.btn-done{border-color:#059669;color:#059669}.btn-done:hover{background:#ECFDF5}
+.btn-reopen{border-color:#D97706;color:#D97706}.btn-reopen:hover{background:#FFFBEB}
+/* modal */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px}
+.modal-ov.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:16px}
+.fg{margin-bottom:13px}
+.fg label{font-size:12px;font-weight:700;color:#444;display:block;margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px}
+.fg textarea{resize:vertical;min-height:80px}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:#2563EB}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.btn-cancel{padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;font-size:13px;cursor:pointer}
+.btn-save{padding:8px 20px;background:#2563EB;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.empty{text-align:center;padding:40px 20px;color:var(--light);font-size:13px}
+.loading{text-align:center;padding:40px;color:var(--light)}
+@media(max-width:480px){.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="index.html" class="nav-back">← 戻る</a>
+  <div class="nav-title">🌱 未来創造企業 ToDo</div>
+  <button class="btn-logout" onclick="doLogout()">ログアウト</button>
+</nav>
+<div class="wrap">
+  <div class="stats">
+    <div class="stat-box"><div class="stat-num" id="st-total">—</div><div class="stat-label">全件</div></div>
+    <div class="stat-box"><div class="stat-num" id="st-todo" style="color:#666">—</div><div class="stat-label">未着手</div></div>
+    <div class="stat-box"><div class="stat-num" id="st-prog" style="color:#2563EB">—</div><div class="stat-label">進行中</div></div>
+    <div class="stat-box"><div class="stat-num" id="st-done" style="color:#059669">—</div><div class="stat-label">完了</div></div>
+  </div>
+  <div class="filters">
+    <select class="filter-select" id="f-cat" onchange="applyFilters()">
+      <option value="">すべてのカテゴリ</option>
+      <option value="前提条件">前提条件</option>
+      <option value="地球">地球</option>
+      <option value="社会">社会</option>
+      <option value="地域">地域</option>
+      <option value="顧客">顧客</option>
+      <option value="取引先">取引先</option>
+      <option value="従業員">従業員</option>
+      <option value="経営者">経営者</option>
+    </select>
+    <select class="filter-select" id="f-st" onchange="applyFilters()">
+      <option value="">すべてのステータス</option>
+      <option value="todo">未着手</option>
+      <option value="in_progress">進行中</option>
+      <option value="done">完了</option>
+    </select>
+    <select class="filter-select" id="f-due" onchange="applyFilters()">
+      <option value="">すべての期限</option>
+      <option value="overdue">期限超過</option>
+      <option value="this_month">今月中</option>
+      <option value="next_month">来月中</option>
+    </select>
+    <input type="text" class="filter-input" id="f-kw" placeholder="キーワード検索…" oninput="applyFilters()">
+    <button class="btn-add" id="btn-add" style="display:none" onclick="openAddModal()">＋ ToDo追加</button>
+  </div>
+  <div id="todo-list"><div class="loading">読み込み中...</div></div>
+</div>
+
+<!-- Add modal -->
+<div class="modal-ov" id="add-modal">
+  <div class="modal">
+    <div class="modal-title">ToDo 追加</div>
+    <div class="fg"><label>カテゴリ *</label>
+      <select id="m-cat">
+        <option>前提条件</option><option>地球</option><option>社会</option><option>地域</option>
+        <option>顧客</option><option>取引先</option><option>従業員</option><option>経営者</option>
+      </select>
+    </div>
+    <div class="fg"><label>サブカテゴリ</label><input id="m-sub" placeholder="例：理念・計画"></div>
+    <div class="fg"><label>チェック項目</label><input id="m-chk" placeholder="例：経営理念・ビジョンの定め"></div>
+    <div class="fg"><label>タイトル *</label><input id="m-ttl" placeholder="タスクのタイトル"></div>
+    <div class="fg"><label>詳細</label><textarea id="m-det" placeholder="詳細内容"></textarea></div>
+    <div class="fg"><label>期限 *</label><input type="date" id="m-due"></div>
+    <div class="fg"><label>頻度</label>
+      <select id="m-freq">
+        <option value="単発">単発</option><option value="月次">月次</option><option value="年次">年次</option>
+        <option value="継続">継続</option><option value="定期">定期</option><option value="随時">随時</option>
+        <option value="四半期">四半期</option><option value="年2回">年2回</option>
+      </select>
+    </div>
+    <div class="fg"><label>タグ（カンマ区切り）</label><input id="m-tags" placeholder="例：理念浸透,中期経営計画"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeAddModal()">キャンセル</button>
+      <button class="btn-save" onclick="saveNewTodo()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {
+  getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, doc,
+  query, orderBy, serverTimestamp, writeBatch, getCountFromServer
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const app = initializeApp({
+  apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
+  authDomain:"daily-report-b90e8.firebaseapp.com",
+  projectId:"daily-report-b90e8",
+  storageBucket:"daily-report-b90e8.firebasestorage.app",
+  messagingSenderId:"16569831525",
+  appId:"1:16569831525:web:aa250f2061f762dfe1768c"
+});
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ── カテゴリ配色 ──────────────────────────────────────────
+const CAT_STYLE = {
+  '前提条件':{ bg:'#F3E8FF', color:'#6D28D9' },
+  '地球':    { bg:'#D1FAE5', color:'#065F46' },
+  '社会':    { bg:'#DBEAFE', color:'#1E40AF' },
+  '地域':    { bg:'#CFFAFE', color:'#164E63' },
+  '顧客':    { bg:'#FEF3C7', color:'#92400E' },
+  '取引先':  { bg:'#FEE2E2', color:'#991B1B' },
+  '従業員':  { bg:'#FCE7F3', color:'#9D174D' },
+  '経営者':  { bg:'#EDE9FE', color:'#4C1D95' },
+};
+const STATUS_LABEL = { todo:'未着手', in_progress:'進行中', done:'完了' };
+
+// ── 初期データ (78件) ─────────────────────────────────────
+const SEED_TASKS = [
+  {id:"PRE-001",category:"前提条件",sub_category:"理念・計画",check_item:"未来創造企業としての経営理念・ビジョンの定め",title:"中期経営計画への重点テーマ位置づけと全事業所での理念共有体制の構築",detail:"中期経営計画の中に「未来創造企業としての重点テーマ」を明確に位置づけ、全従業員が自分の業務と理念を結びつけて理解できるようにする。理念と未来創造企業の価値観を結びつけた社内資料を作成し、全事業所で掲示・共有する。朝礼・ミーティング・運営ラーニングで定期共有する。",due_date:"2026-06-20",due_label:"2026年6月17日体系化・6月20日中期経営計画発表会で発表",frequency:"単発",tags:["理念浸透","中期経営計画","全社共有"]},
+  {id:"PRE-002",category:"前提条件",sub_category:"理念・計画",check_item:"経営理念・ビジョンの対外評価",title:"社外関係者を招いた異業種交流会での理念発信機会の創出",detail:"中期経営計画発表会へ金融機関・行政・教育機関・地域団体等の社外関係者を招き、理念と未来創造企業としての取り組みを自社グループ主催の異業種交流会で共有する機会を増やしていく。",due_date:"2026-07-01",due_label:"2026年7月までに開催準備を整え実施",frequency:"随時",tags:["対外発信","異業種交流会","地域連携"]},
+  {id:"PRE-003",category:"前提条件",sub_category:"理念・計画",check_item:"経営理念・ビジョンの経営幹部浸透",title:"管理者の理念浸透度アンケートの年1回実施・1on1での理念振り返り開始",detail:"管理者の理念浸透度を測る簡易アンケートを年1回実施し、課題を次年度の研修に反映する。幹部の1on1ミーティングや現場巡回の際に、理念に基づく行動や判断を振り返る時間を設ける。",due_date:"2026-07-01",due_label:"2026年7月より毎月実施",frequency:"月次",tags:["理念浸透","1on1","管理者育成"]},
+  {id:"PRE-004",category:"前提条件",sub_category:"理念・計画",check_item:"経営理念・ビジョンの従業員説明",title:"従業員向け理念説明資料の作成・1on1での活用・全従業員への配布",detail:"1on1ミーティングにおいて掲示してある理念を一緒に見ながら説明する。理念と未来創造企業の価値領域をわかりやすく整理した説明資料を作成し、全従業員に共有する。",due_date:"2026-06-30",due_label:"2026年6月末までに作成・配布",frequency:"単発",tags:["理念浸透","従業員","説明資料"]},
+  {id:"PRE-005",category:"前提条件",sub_category:"理念・計画",check_item:"経営理念・ビジョンの職場掲示",title:"新入社員・中途採用者向けオリエンテーションへの理念掲示物活用の組み込み",detail:"新入社員・中途採用者向けのオリエンテーションで掲示物を用いた理念説明を行い、入社初日から理念に触れられる仕組みを整える。",due_date:"2026-04-01",due_label:"2026年4月より運用開始",frequency:"入社時",tags:["理念浸透","新入社員","オリエンテーション"]},
+  {id:"PRE-006",category:"前提条件",sub_category:"理念・計画",check_item:"経営理念・ビジョンのウェブ掲載",title:"WEBサイトのニュース欄での理念・新取り組みの随時発信",detail:"理念の更新や未来創造企業としての新しい取り組みがあった際には、ウェブサイトのニュース欄で発信し、理念が「生きた指針」であることを示していく。",due_date:"2026-04-01",due_label:"2026年4月より随時更新",frequency:"随時",tags:["WEB","対外発信","理念"]},
+  {id:"PRE-007",category:"前提条件",sub_category:"理念・計画",check_item:"経営理念・ビジョンの取引先への共有",title:"取引先向け「理念・未来創造企業取り組み紹介資料」の作成・メール署名への理念追加",detail:"取引先向けの「理念・未来創造企業の取り組み紹介資料」を作成し、契約時・打ち合わせ時に共有する仕組みを整える。メール署名に理念を入れる。",due_date:"2026-06-30",due_label:"2026年6月末までに作成・運用開始",frequency:"単発",tags:["取引先","対外発信","理念","広報"]},
+  {id:"PRE-008",category:"前提条件",sub_category:"理念・計画",check_item:"経営理念・ビジョンの定期見直し",title:"外部専門家による理念・ビジョンの多面的評価の仕組み構築",detail:"税理士・金融機関・社労士・未来創造企業プロデューサーなど、複数の専門家から多面的な評価を受けられる仕組みを構築する。",due_date:"2026-06-01",due_label:"2026年6月までに初回実施",frequency:"年次",tags:["ビジョン見直し","外部専門家","PDCAサイクル"]},
+  {id:"PRE-009",category:"前提条件",sub_category:"理念・計画",check_item:"経営ビジョンの将来分析に基づく見直し",title:"「ビジョン将来シナリオ」の作成・定量データに基づくビジョン方向性の複数パターン検証",detail:"将来予測（人口動態、地域課題、支援ニーズ、労働市場など）を踏まえた「ビジョン将来シナリオ」を作成し、ビジョンの方向性を複数パターンで検証する。",due_date:"2026-06-01",due_label:"2026年6月までに更新完了",frequency:"年次",tags:["ビジョン見直し","将来予測","中期計画"]},
+  {id:"EAR-001",category:"地球",sub_category:"環境",check_item:"環境保護に関する取り組み方針の策定",title:"環境保護方針2026年度版の策定・SDGs宣言への環境保護追加",detail:"環境保護方針（2026年度版）を策定し、理念と未来創造企業の価値領域と紐づけて明文化する。子どもと一緒に取り組む「エコアクションプログラム」を年間計画に組み込む。SDGs宣言に環境保護を加える。",due_date:"2026-07-01",due_label:"2026年7月より開始",frequency:"年次更新",tags:["環境","SDGs","子ども支援","方針策定"]},
+  {id:"EAR-002",category:"地球",sub_category:"環境",check_item:"環境保護に向けた取り組みの実施",title:"子ども向け環境学習の拡充・エコチャレンジカードの導入",detail:"子どもたちと一緒に取り組む環境学習（リサイクル活動、自然観察、エコワークショップ等）を拡充する。子ども向け「エコチャレンジカード」を導入し、家庭と連携した環境行動を促進する。",due_date:"2026-11-01",due_label:"2026年11月導入",frequency:"継続",tags:["環境教育","子ども支援","家庭連携"]},
+  {id:"EAR-003",category:"地球",sub_category:"環境",check_item:"事業活動の環境影響評価・環境監査の実施",title:"事業所ごとの電力・水使用量の見える化・「環境点検の日」の設定",detail:"事業所ごとの電力・水使用量を見える化し、前年対比での削減状況を職員に共有する。子どもと一緒に行う「環境点検の日」を設定する。",due_date:"2026-12-01",due_label:"2026年12月",frequency:"定期",tags:["環境監査","見える化","エネルギー管理"]},
+  {id:"EAR-004",category:"地球",sub_category:"環境",check_item:"有害物質の適切処理",title:"清掃用品・消毒液の鍵付き収納保管・子ども安全管理の徹底",detail:"子どもが触れる可能性のある清掃用品・消毒液は、鍵付き収納に保管し、安全管理を徹底していく。",due_date:"2026-09-01",due_label:"2026年9月開始",frequency:"単発",tags:["安全管理","子ども支援","衛生"]},
+  {id:"EAR-005",category:"地球",sub_category:"環境",check_item:"環境関連法令の遵守",title:"環境関連法令の変更点の年1回整理・全職員への共有体制の構築",detail:"環境関連法令の変更点を年1回まとめ、全職員に共有する仕組みを整える。",due_date:"2026-06-01",due_label:"2026年6月開始",frequency:"年次",tags:["法令遵守","環境","コンプライアンス"]},
+  {id:"EAR-006",category:"地球",sub_category:"資源",check_item:"循環型社会形成へのリサイクル取り組み",title:"「エネルギー点検の日」設定・「リサイクルチャレンジ週間」の年2回実施",detail:"子どもと一緒に行う「エネルギー点検の日」を設定する。子ども・保護者と取り組む「リサイクルチャレンジ週間」を年2回実施する。",due_date:"2026-11-01",due_label:"2026年11月頃",frequency:"年2回",tags:["リサイクル","子ども支援","環境教育"]},
+  {id:"EAR-007",category:"地球",sub_category:"資源",check_item:"再生可能エネルギーへの転換",title:"電力・水・紙の月次使用量記録・社用車EV/ハイブリッド化の検討",detail:"電力・水・紙の使用量を月次で記録し、環境負荷の見える化を行う。社用車を電気自動車やハイブリッド車などに変更できるように検討を進める。",due_date:"2026-11-01",due_label:"2026年11月頃",frequency:"月次",tags:["再生可能エネルギー","EV","環境負荷低減"]},
+  {id:"EAR-008",category:"地球",sub_category:"資源",check_item:"資源保全・管理への協力",title:"CO₂排出量の簡易算定・削減目標の設定",detail:"車両走行距離・ガソリン使用量をもとに、CO₂排出量の簡易算定を行い、削減目標を設定する。",due_date:"2026-11-01",due_label:"2026年11月頃",frequency:"年次",tags:["CO2削減","環境目標設定"]},
+  {id:"EAR-009",category:"地球",sub_category:"資源",check_item:"環境配慮型調達",title:"環境配慮型商品の優先購入ルール作成・「再利用・代替可能性チェック」運用導入",detail:"環境配慮型商品の優先購入ルールを作成し、全事業所に展開する。物品購入前に「再利用・代替可能性チェック」を行う運用を導入する。",due_date:"2026-08-01",due_label:"2026年8月頃",frequency:"単発",tags:["グリーン調達","コスト管理","環境"]},
+  {id:"EAR-010",category:"地球",sub_category:"資源",check_item:"消費エネルギーの効率化",title:"省エネ運用ルール（温度設定・電源オフ等）の整備・全従業員への共有",detail:"空調・照明・PC機器など、日常的に使用する設備の省エネ運用ルールを整備し、従業員全体で共有する。",due_date:"2026-06-01",due_label:"2026年6月頃",frequency:"単発",tags:["省エネ","職場環境","コスト管理"]},
+  {id:"SOC-001",category:"社会",sub_category:"人口",check_item:"多様な人々が働ける社会づくりへの支援",title:"外国人雇用に向けた技能実習制度の理解促進・多様性研修の年1回実施",detail:"外国人の雇用を行えるよう、技能実習などの制度理解を進める。多様性理解を深める研修を年1回実施する。",due_date:"2026-10-01",due_label:"2026年10月",frequency:"年次",tags:["多様性","外国人雇用","研修"]},
+  {id:"SOC-002",category:"社会",sub_category:"人口",check_item:"育児・介護支援の仕組みへの協力",title:"育児・介護支援制度の整備・職員アンケートによる離職防止策の検討",detail:"育児・介護の仕組みを作り、休暇を付与していく。育児・介護による離職防止のため、職員アンケートを年1回実施する。",due_date:"2026-12-01",due_label:"初回：2026年12月",frequency:"年次",tags:["育児支援","介護支援","離職防止"]},
+  {id:"SOC-003",category:"社会",sub_category:"人口",check_item:"海外交流人口の拡大",title:"海外教育・福祉機関との共同プロジェクト検討・ホームページの英語対応",detail:"海外の教育機関・福祉団体との情報交換を行い、海外との共同プロジェクトを検討する。当社ホームページを英語対応にする。",due_date:"2027-03-01",due_label:"2027年3月",frequency:"単発",tags:["国際交流","WEB","海外連携"]},
+  {id:"SOC-004",category:"社会",sub_category:"人口",check_item:"労働人口減少への対応",title:"ICT活用による業務効率化・多様な働き方を受け入れる採用枠の拡大",detail:"ICT活用による業務効率化を進める。シニア人材・子育て世代・短時間勤務者など、多様な働き方を受け入れる採用枠を拡大する。",due_date:"2026-10-01",due_label:"2026年10月",frequency:"継続",tags:["採用","ICT活用","大学連携","多様な働き方"]},
+  {id:"SOC-005",category:"社会",sub_category:"人口",check_item:"開発途上国の人口問題への支援",title:"国際NGO教育支援プロジェクトへの寄付・もったいないボランティアプロジェクトへの支援",detail:"国際NGO教育支援プロジェクトへの寄付を検討し、会社として年1回の支援を行う。",due_date:"2026-10-01",due_label:"2026年10月",frequency:"年次",tags:["国際支援","寄付","SDGs"]},
+  {id:"SOC-006",category:"社会",sub_category:"経済",check_item:"倫理的・道徳的基準の策定",title:"運営ラーニングの参加対象者拡大・年1回の「倫理・コンプライアンス自己点検」の導入",detail:"運営ラーニングの参加対象者を拡大させていく。年1回の「倫理・コンプライアンス自己点検」を導入する。",due_date:"2026-12-01",due_label:"2026年12月",frequency:"年次",tags:["コンプライアンス","倫理","運営ラーニング"]},
+  {id:"SOC-007",category:"社会",sub_category:"経済",check_item:"社会的弱者の経済活動参画支援",title:"社会的弱者の経済参加支援相談の拡張・シルバー人材育成（社協）との連携",detail:"社会的弱者が経済活動に参加出来るように、支援相談していく。シルバー人材育成（社協）との連携を行う。",due_date:"2026-09-01",due_label:"2026年9月",frequency:"継続",tags:["社会的弱者支援","シルバー人材","地域連携"]},
+  {id:"SOC-008",category:"社会",sub_category:"経済",check_item:"倫理的・道徳的に公正な経済活動への支援",title:"コンプライアンス研修への「未来創造企業としての倫理観」組み込み",detail:"コンプライアンス研修に「未来創造企業としての倫理観」を組み込み、従業員の倫理的判断力を高める。",due_date:"2026-08-01",due_label:"2026年8月までに研修内容を改訂",frequency:"年次",tags:["コンプライアンス","研修","倫理教育"]},
+  {id:"SOC-009",category:"社会",sub_category:"経済",check_item:"経済的不平等の解消への取り組み",title:"行政・教育機関・地域団体との連携による学習支援・相談支援のフロー策定",detail:"行政・教育機関・地域団体と連携し、経済的不平等の解消に寄与する活動を行っていく。連携フローを2026年8月までに策定する。",due_date:"2026-08-01",due_label:"2026年8月までにフロー策定",frequency:"単発",tags:["経済格差解消","学習支援","地域連携"]},
+  {id:"SOC-010",category:"社会",sub_category:"経済",check_item:"開発途上国の社会経済課題への取り組み",title:"JICAの南アフリカ障害児支援プロジェクトへの参画協議の開始",detail:"国内の子ども支援で得た知見をJICAが行う南アフリカ共和国などでの障害児を育てる家族の支援に参画する。",due_date:"2026-09-01",due_label:"2026年9月より協議開始",frequency:"単発",tags:["JICA","国際支援","障害児支援"]},
+  {id:"COM-001",category:"地域",sub_category:"コミュニティ",check_item:"地域コミュニティとの関わり方針の策定",title:"従業員が地域コミュニティとの関わりを示す方針の策定・公民館・公園外出支援の拡充",detail:"地域の方との関わりを増やすため、外出支援では公園や公民館を利用して交流を深める。地域コミュニティとの関わりを示す方針を策定する。",due_date:"2027-06-01",due_label:"2027年6月",frequency:"単発",tags:["地域連携","方針策定","外出支援"]},
+  {id:"COM-002",category:"地域",sub_category:"コミュニティ",check_item:"地域行政・住民・市民団体との協働",title:"地域交流イベント（子ども体験会・相談会）の定期開催・「地域未来会議」に向けた準備開始",detail:"住民・保護者・地域団体が参加できる「地域交流イベント」を開催する。3年後の「地域未来会議」開催に向けて準備を始める。",due_date:"2026-09-01",due_label:"2026年9月より定期開催",frequency:"定期",tags:["地域交流","イベント","地域未来会議"]},
+  {id:"COM-003",category:"地域",sub_category:"コミュニティ",check_item:"異業種との連携・協力",title:"「地域未来会議」（子ども支援情報交換会）の年1回開催・療育教材端材の地域企業寄付ルートの確立",detail:"地域の企業・医療機関・学校と連携し、子ども支援に関する情報交換会「地域未来会議」を年1回開催する。",due_date:"2029-01-01",due_label:"2029年（3年後を目標）",frequency:"年次",tags:["地域未来会議","異業種連携","療育教材"]},
+  {id:"COM-004",category:"地域",sub_category:"コミュニティ",check_item:"地域の多様な人々との対話・交流",title:"地域行事参加・学生ボランティア受入れ・「地域オープンデー」の設置",detail:"地域行事に参加する。地域学生ボランティアを受け入れる。「地域オープンデー（事業所開放日）」を設ける。子供カフェを開いて地域の方に開放する。",due_date:"2026-12-01",due_label:"2026年12月",frequency:"定期",tags:["地域交流","ボランティア","事業所開放"]},
+  {id:"COM-005",category:"地域",sub_category:"コミュニティ",check_item:"地域雇用への貢献",title:"地域就労支援機関との連携・就労困難者の雇用機会拡大",detail:"地域の就労支援機関と連携し、地域の就労困難者の雇用機会を拡大する。",due_date:"2026-12-01",due_label:"2026年12月",frequency:"継続",tags:["就労支援","地域雇用","ハローワーク"]},
+  {id:"COM-006",category:"地域",sub_category:"インフラ",check_item:"未成年者への教育支援",title:"通信制サポート校の開校・「子育て教育セミナー」の開催",detail:"通信制サポート校を開校する。保護者・地域住民向けの「子育て教育セミナー」を開催する。",due_date:"2026-05-01",due_label:"2026年5月",frequency:"単発",tags:["通信制","教育支援","子育てセミナー"]},
+  {id:"COM-007",category:"地域",sub_category:"インフラ",check_item:"文化・芸術・スポーツ・国際交流活動への支援",title:"地域文化イベント・スポーツ大会への協賛・文化団体との子ども向け体験活動の実施",detail:"地域の文化イベントやスポーツ大会に協賛する。地域の文化団体と交流し、子ども向けの体験活動を実施する。",due_date:"2026-10-01",due_label:"2026年10月",frequency:"継続",tags:["文化芸術","地域協賛","子ども体験"]},
+  {id:"COM-008",category:"地域",sub_category:"インフラ",check_item:"地域の医療・介護・社会福祉への施設・人材による支援",title:"送迎車両の空き時間を活用した移動支援の検討・「地域オープンスペース制度」の拡大",detail:"送迎車両の空き時間を活用した移動支援の可能性を検討する。事業所の会議室・相談室を地域団体へ貸し出す「地域オープンスペース制度」を拡大する。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"継続",tags:["移動支援","施設開放","地域福祉"]},
+  {id:"COM-009",category:"地域",sub_category:"インフラ",check_item:"地域の危機・危険への対応",title:"事業所ごとの「災害時子ども支援マニュアル」の整備",detail:"事業所ごとに「災害時の子ども支援マニュアル（避難誘導・安全確保・保護者連絡）」を整備する。",due_date:"2026-09-01",due_label:"2026年9月",frequency:"単発",tags:["防災","危機管理","マニュアル整備"]},
+  {id:"COM-010",category:"地域",sub_category:"インフラ",check_item:"地域からの要望・要請への対応",title:"「地域協力受入れ方針2026年度版」の策定・全事業所への共有",detail:"地域からの要望に応えるための「地域協力受入れ方針（2026年度版）」を策定し全事業所へ共有する。",due_date:"2026-07-01",due_label:"2026年7月",frequency:"年次更新",tags:["地域連携","方針策定","受入れ体制"]},
+  {id:"CUS-001",category:"顧客",sub_category:"安全・安心",check_item:"個人情報保護・プライバシー保護",title:"個人情報保護マニュアル2026年度版の更新・ホームページへのプライバシーポリシー設置",detail:"個人情報保護マニュアルを2026年度版として更新し、全事業所へ共有する。ホームページにプライバシーポリシーを設置する。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"年次",tags:["個人情報","プライバシー","マニュアル","WEB"]},
+  {id:"CUS-002",category:"顧客",sub_category:"安全・安心",check_item:"適切な情報提供・開示",title:"「利用者向けガイド」の作成・全事業所への掲示・掲示物デザインの刷新",detail:"サービス内容をまとめた「利用者向けガイド」を作成し全事業所へ掲示する。掲示物のデザインを刷新する。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"単発",tags:["情報提供","掲示物","利用者向け"]},
+  {id:"CUS-003",category:"顧客",sub_category:"安全・安心",check_item:"購入後のサポート体制",title:"苦情対応マニュアルの改訂・初期対応の標準化・年1回の「苦情対応研修」の実施",detail:"苦情対応マニュアルを改訂し、初期対応の標準化を図る。年1回の「苦情対応研修」を実施する。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"年次",tags:["苦情対応","研修","マニュアル"]},
+  {id:"CUS-004",category:"顧客",sub_category:"安全・安心",check_item:"顧客の安全・安心の確保",title:"ヒヤリハット共有会の四半期開催・「安全点検の日」の導入",detail:"事故・ヒヤリハットの共有会を四半期ごとに開催し、再発防止策を全事業所で共有する。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"四半期",tags:["安全管理","ヒヤリハット","再発防止"]},
+  {id:"CUS-005",category:"顧客",sub_category:"安全・安心",check_item:"消費者相談・訴訟への対応",title:"苦情・相談の傾向の年1回分析・翌年度運営計画への反映",detail:"苦情・相談の傾向を年1回分析し、翌年度の運営計画に反映する。毎年内部監査を徹底し、虐待防止項目を追加する。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"年次",tags:["苦情分析","内部監査","虐待防止"]},
+  {id:"CUS-006",category:"顧客",sub_category:"評価・協力",check_item:"顧客とのコミュニケーション体制の構築",title:"LINE公式アカウントの運用ルール整備・情報発信の質向上",detail:"LINE公式アカウントの運用ルールを整備し、情報発信の質を高める。連絡手段の満足度を年1回アンケートで確認する。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"年次",tags:["LINE","顧客コミュニケーション","情報発信"]},
+  {id:"CUS-007",category:"顧客",sub_category:"評価・協力",check_item:"顧客共同でのサービス開発",title:"アンケート結果の「改善レポート」可視化・職員と保護者への共有",detail:"アンケート結果を可視化した「改善レポート」を作成し、職員と保護者へ共有する。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"年次",tags:["アンケート","顧客協働","改善レポート"]},
+  {id:"CUS-008",category:"顧客",sub_category:"評価・協力",check_item:"新規顧客増加・リピート率の向上",title:"新規利用者向け「スタートガイド」の作成・配布・利用者満足度調査の実施",detail:"新規利用者向けの「スタートガイド」を作成し、2026年7月までに配布開始する。利用者満足度調査を年1回実施する。",due_date:"2026-07-01",due_label:"2026年7月",frequency:"年次",tags:["新規利用者","満足度調査","通信制"]},
+  {id:"CUS-009",category:"顧客",sub_category:"評価・協力",check_item:"ネガティブ評判への対応",title:"SNS・口コミの定期チェック体制の整備・対応事例の職員間共有",detail:"ネガティブ情報の早期発見のため、SNS・口コミの定期チェック体制を整える。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"定期",tags:["SNS管理","評判管理","苦情対応"]},
+  {id:"CUS-010",category:"顧客",sub_category:"評価・協力",check_item:"顧客の意見・クレームへの対応",title:"クレーム対応ロールプレイ研修の実施・事前説明チェックリストの作成",detail:"クレーム対応のロールプレイ研修を行い、対応スキルを向上させる。事前説明チェックリストを作る。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"年次",tags:["クレーム対応","研修","ロールプレイ"]},
+  {id:"SUP-001",category:"取引先",sub_category:"企業（条件）",check_item:"公正な商慣行に基づく契約",title:"契約説明のより丁寧でわかりやすい方法の試行錯誤・サービス現場見学の機会の提供",detail:"契約についてより丁寧で分かりやすい説明を試行錯誤する。自社の事業内容を理解してもらうためにサービス提供しているところを見てもらう。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"継続",tags:["契約説明","取引先","現場見学"]},
+  {id:"SUP-002",category:"取引先",sub_category:"企業（条件）",check_item:"双方合意に基づく取引条件",title:"支払条件の明文化・標準化・取引基本合意書への反映",detail:"支払条件の明文化・標準化を行う。口頭・慣行ベースのルールを文書化する。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"単発",tags:["取引条件","文書化","支払管理"]},
+  {id:"SUP-003",category:"取引先",sub_category:"企業（条件）",check_item:"商取引関連法令の遵守",title:"管理者職員向け「契約・取引の基礎研修」「下請法研修」の実施",detail:"管理者職員向けに「契約・取引の基礎研修」「下請法」を実施する。",due_date:"2027-04-01",due_label:"2027年4月",frequency:"年次",tags:["法令研修","下請法","管理者育成"]},
+  {id:"SUP-004",category:"取引先",sub_category:"協働・創造",check_item:"取引先との経営理念・社会課題の共有",title:"取引先への理念の改めての共有・中期経営計画・広報誌の取引先への展開",detail:"中期経営計画や社外向けの広報誌を作成して取引先に伝えていく。",due_date:"2027-04-01",due_label:"2027年4月",frequency:"年次",tags:["理念共有","取引先","広報誌"]},
+  {id:"SUP-005",category:"取引先",sub_category:"協働・創造",check_item:"取引先との社会課題解決への協働",title:"全エリアでの社会課題解決活動への定期参加スケジュールの策定",detail:"全エリア、定期的に参加の機会を設けるようスケジュールを策定する。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"定期",tags:["取引先協働","社会課題解決","スケジュール管理"]},
+  {id:"SUP-006",category:"取引先",sub_category:"協働・創造",check_item:"社会課題解決の達成度の社会発信",title:"取り組む社会課題の公表・ブログの定期更新による発信強化",detail:"取り組んでいる社会課題を公表することから始める。ブログの更新を定期的に行う。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"定期",tags:["情報発信","ブログ","社会課題"]},
+  {id:"SUP-007",category:"取引先",sub_category:"協働・創造",check_item:"取引先選定の多面的評価基準",title:"価格以外の多面的評価基準（品質・信頼性・納期・コンプライアンス等）の設定",detail:"品質・信頼性・納期遵守・アフターサポート・コンプライアンス遵守など、多面的な評価基準を設定し、総合的に判断する仕組みを整備する。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"単発",tags:["取引先選定","評価基準","コンプライアンス"]},
+  {id:"SUP-008",category:"取引先",sub_category:"協働・創造",check_item:"取引先による顧客不法行為の把握",title:"取引先の不法行為把握体制の整備・通報ルートの設定",detail:"取引先に関する懸念や対応履歴を記録し、再発防止策を組織的に検証する。不適切な行為が疑われる場合の通報ルートを整備する。",due_date:"2027-04-01",due_label:"2027年4月",frequency:"継続",tags:["取引先管理","コンプライアンス","リスク管理"]},
+  {id:"EMP-001",category:"従業員",sub_category:"雇用（環境・条件）",check_item:"労働関係法令の遵守・書式整備",title:"育児・介護休業等の掲示物作成（パート向け）・労務管理自己点検の年1回実施",detail:"育児休業・労働法改正・介護休業などについて、パートさんにも分かりやすい掲示物を作成する。年1回、労務管理の自己点検を実施する。",due_date:"2026-12-01",due_label:"2026年12月",frequency:"年次",tags:["労務管理","法令遵守","社労士"]},
+  {id:"EMP-002",category:"従業員",sub_category:"雇用（環境・条件）",check_item:"労務管理ポータルサイト構築",title:"スマホ・PCからアクセスできる労務管理ポータルサイトの構築",detail:"労働関係の書類を管理しているツールの使い方が全ての従業員にとって分かりやすくなるようポータルサイトを構築する。",due_date:"2027-03-01",due_label:"2027年3月開始",frequency:"単発",tags:["ICT活用","ポータルサイト","労務管理","DX"]},
+  {id:"EMP-003",category:"従業員",sub_category:"雇用（環境・条件）",check_item:"適切な人事制度・評価の仕組みの整備",title:"評価制度の簡潔化検討・外部専門家による評価制度の妥当性検証",detail:"評価制度がより簡潔になるように検討を重ねる。外部専門家から評価制度の妥当性について助言を受ける。",due_date:"2026-12-01",due_label:"2026年12月",frequency:"年次",tags:["人事評価","評価制度","人材育成"]},
+  {id:"EMP-004",category:"従業員",sub_category:"雇用（環境・条件）",check_item:"人間力を高める人材育成",title:"褒め文化の仕組みの構築・木鶏会のZoom化による参加者拡大",detail:"褒め文化の仕組みを作る。木鶏会の参加者が限定的なため、Zoom開催するなどより多くの従業員が参加できるよう開催内容を見直す。",due_date:"2026-10-01",due_label:"2026年10月",frequency:"継続",tags:["人間力","木鶏会","褒め文化","研修"]},
+  {id:"EMP-005",category:"従業員",sub_category:"雇用（環境・条件）",check_item:"独自の福利厚生制度",title:"独自福利厚生制度2026年度版の策定・勤続年数による休日付与制度の検討",detail:"勤続年数によって休日が付与される制度を検討する。独自の福利厚生制度（2026年度版）を策定し全職員へ共有する。",due_date:"2026-08-01",due_label:"2026年8月",frequency:"単発",tags:["福利厚生","制度設計","従業員満足度"]},
+  {id:"EMP-006",category:"従業員",sub_category:"雇用（環境・条件）",check_item:"多様なタイプの従業員雇用",title:"外国人・障害者雇用の外部発信・外国籍職員受入れ体制の整備",detail:"外国人雇用、障害者雇用などを外部に向けて発信していく。外国籍職員の受け入れ体制を整備する。",due_date:"2026-09-01",due_label:"2026年9月",frequency:"継続",tags:["多様性","外国人雇用","障害者雇用"]},
+  {id:"EMP-007",category:"従業員",sub_category:"仕事（クオリティ）",check_item:"職場環境改善への従業員の声の反映",title:"職場環境アンケート2026年度版の実施（7月）・「職場環境改善プラン」の策定（8月）",detail:"従業員の声を体系的に集める「職場環境アンケート（2026年度版）」を実施する（7月）。改善策をまとめた「職場環境改善プラン」を策定する（8月）。",due_date:"2026-07-01",due_label:"2026年7月（アンケート）・8月（改善プラン）",frequency:"年次",tags:["職場環境","アンケート","改善計画"]},
+  {id:"EMP-008",category:"従業員",sub_category:"仕事（クオリティ）",check_item:"従業員の身体的・精神的健康管理",title:"ストレスチェック結果活用の「職場環境改善ミーティング」定期開催（9月〜）",detail:"ストレスチェック結果を活用した「職場環境改善ミーティング」を2026年9月から定期開催する。健康づくりのためのミニ研修を2026年10月に開始する。",due_date:"2026-09-01",due_label:"2026年9月〜定期開催",frequency:"定期",tags:["健康管理","メンタルヘルス","ストレスチェック"]},
+  {id:"EMP-009",category:"従業員",sub_category:"仕事（クオリティ）",check_item:"育児・介護支援の実施",title:"育児・介護研修の年1回実施・職員アンケートによる離職防止策の検討",detail:"育児・介護に関する研修を年1回実施する。育児・介護による離職防止のため、職員アンケートを年1回実施する。",due_date:"2026-11-01",due_label:"2026年11月",frequency:"年次",tags:["育児支援","介護支援","離職防止"]},
+  {id:"EMP-010",category:"従業員",sub_category:"仕事（クオリティ）",check_item:"従業員の生活状況に合わせた働き方の選択",title:"「働き方レビュー」の年1回実施（柔軟勤務制度の利用状況・満足度確認）",detail:"柔軟勤務制度の利用状況と満足度を年1回確認する「働き方レビュー」を実施し、翌年度の制度改善に反映する。",due_date:"2026-12-01",due_label:"2026年12月",frequency:"年次",tags:["柔軟勤務","有給休暇","働き方改革"]},
+  {id:"EMP-011",category:"従業員",sub_category:"仕事（クオリティ）",check_item:"退職者との関係維持",title:"「カムバック採用制度」の導入・退職者向けSNS・広報誌による情報共有の開始",detail:"再雇用を希望する退職者が応募しやすい「カムバック採用制度」を導入する。退職後も、FacebookなどSNSでの繋がりを続ける。",due_date:"2026-08-01",due_label:"2026年8月（カムバック制度）・9月（SNS等）",frequency:"単発",tags:["再採用","カムバック制度","OBネットワーク"]},
+  {id:"MGT-001",category:"経営者",sub_category:"倫理（責任）",check_item:"関連法規の遵守・良識ある企業活動",title:"法改正・行政通知の定期収集と社内研修への迅速反映体制の構築",detail:"法改正や行政通知の情報を定期的に収集し、社内研修を通じて迅速に反映する体制を整える。",due_date:"2026-09-01",due_label:"2026年9月",frequency:"定期",tags:["法令遵守","法改正対応","コンプライアンス"]},
+  {id:"MGT-002",category:"経営者",sub_category:"倫理（責任）",check_item:"社会課題解決と経済的価値創出のリンク",title:"社会課題解決度の指標設定・価値領域と収益構造の関係整理資料の作成",detail:"社会課題の解決度を測る指標を設定し、毎年振り返る。未来創造企業の価値領域と収益構造の関係を整理した資料を作成する。",due_date:"2026-09-01",due_label:"2026年9月",frequency:"年次",tags:["社会課題指標","価値創出","中期経営計画"]},
+  {id:"MGT-003",category:"経営者",sub_category:"倫理（責任）",check_item:"適正な納税",title:"財務状況の管理職への定期共有・税務基礎研修の実施",detail:"財務状況を社内の管理職へ定期的に共有し、透明性を高める。税務の基礎・経費処理・帳簿管理の研修を行う。",due_date:"2026-09-01",due_label:"2026年9月",frequency:"定期",tags:["財務透明性","税務研修","法改正対応"]},
+  {id:"MGT-004",category:"経営者",sub_category:"倫理（責任）",check_item:"内部通報窓口の整備",title:"第三者窓口（社労士・弁護士）の導入・内部通報制度の年1回の全従業員周知",detail:"外部の専門機関とも連携し、必要に応じて第三者窓口として利用できる仕組みを導入する。年1回、全従業員に対して内部通報制度の周知を行う。",due_date:"2026-09-01",due_label:"2026年9月",frequency:"年次",tags:["内部通報","コンプライアンス","第三者窓口"]},
+  {id:"MGT-005",category:"経営者",sub_category:"倫理（責任）",check_item:"企業活動が生む社会課題への対策",title:"社会課題につながる兆候の早期把握の仕組みの整備・発生時の行動計画の策定",detail:"利用者・保護者・地域・従業員からの意見を収集し、社会課題につながり得る兆候を早期に把握する仕組みを整える。",due_date:"2026-09-01",due_label:"2026年9月",frequency:"継続",tags:["リスク管理","早期発見","再発防止"]},
+  {id:"MGT-006",category:"経営者",sub_category:"存続・発展",check_item:"中長期経営計画のステークホルダーとの共有",title:"経営理念の実現度の毎年振り返り・中期経営計画のHP「理念・ビジョン」ページへの掲載",detail:"毎年の振り返りで経営理念の実現度を確認し、必要に応じて中期経営計画を見直す。HPの「理念・ビジョン」ページに追加し、対外的な発信を強化する。",due_date:"2026-09-01",due_label:"2026年9月",frequency:"年次",tags:["中期経営計画","HP発信","透明性"]},
+  {id:"MGT-007",category:"経営者",sub_category:"存続・発展",check_item:"健全な財務体質と適正な利益",title:"利益の従業員処遇改善・設備投資・地域貢献への再投資サイクルの実施",detail:"適正な利益を確保しつつ、従業員の処遇改善や設備投資、地域貢献活動へ再投資する循環型の経営を実施する。財務・経営に関する内部研修を年1回実施する。",due_date:"2026-09-01",due_label:"2026年9月",frequency:"年次",tags:["財務管理","再投資","財務教育"]},
+  {id:"MGT-008",category:"経営者",sub_category:"存続・発展",check_item:"知的財産の保護・活用",title:"発達支援ノウハウの体系化・商標登録の検討・外部資料の著作権表示の徹底",detail:"独自に開発した発達支援ノウハウや運営手法を体系化し、社内研修や運営ラーニングで活用する。ロゴ、事業所名、サービス名称などのブランド要素について商標登録を検討する。",due_date:"2026-09-01",due_label:"2026年9月",frequency:"継続",tags:["知的財産","商標登録","ノウハウ体系化"]},
+  {id:"MGT-009",category:"経営者",sub_category:"存続・発展",check_item:"将来への投資",title:"短期収支中心から未来成長に向けた資源配分強化への方針転換・中長期投資計画の体系化",detail:"持続可能な経営のため、短期的な収支だけでなく、未来の成長に向けた資源配分を強化する方針で取り組んでいく。",due_date:"2026-09-01",due_label:"2026年9月",frequency:"年次",tags:["投資計画","中長期経営","資源配分"]},
+  {id:"MGT-010",category:"経営者",sub_category:"存続・発展",check_item:"後継者問題への取り組み",title:"後継者育成：マネジャー向け経営視点学習機会の拡充・権限移譲の推進",detail:"経営理念・ビジョンを継承できる人材を育てるため、理念浸透の場を強化し、経営視点を学ぶ機会を増やす。管理職への権限移譲を段階的に推進する。",due_date:"2026-09-01",due_label:"2026年9月〜継続",frequency:"継続",tags:["後継者育成","権限移譲","組織開発"]},
+];
+
+// ── グローバル状態 ────────────────────────────────────────
+let allTodos = [];    // Firestoreから取得した全件
+let filtered = [];    // フィルタ後
+let currentUser = null;
+let userRole = '';
+let userName = '';
+
+const CAN_WRITE_ROLES = ['admin','support','area_manager'];
+const canWrite = () => CAN_WRITE_ROLES.includes(userRole);
+
+// ── 期限判定 ─────────────────────────────────────────────
+function dueStatus(due_date, status) {
+  if (status === 'done') return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(due_date);
+  const diff = Math.ceil((due - today) / 86400000);
+  if (diff < 0) return 'overdue';
+  if (diff <= 14) return 'urgent';
+  if (diff <= 30) return 'soon';
+  return 'normal';
+}
+function dueBadgeHtml(due_date, status) {
+  const ds = dueStatus(due_date, status);
+  if (!ds) return '';
+  const d = new Date(due_date);
+  const label = `${d.getMonth()+1}/${d.getDate()}`;
+  const cls = ds === 'overdue' ? 'due-overdue' : ds === 'urgent' ? 'due-urgent' : ds === 'soon' ? 'due-soon' : 'due-normal';
+  const prefix = ds === 'overdue' ? '期限超過 ' : ds === 'urgent' ? '⚠ ' : '';
+  return `<span class="due-badge ${cls}">${prefix}${label}</span>`;
+}
+
+// ── カテゴリバッジ ────────────────────────────────────────
+function catBadge(cat) {
+  const s = CAT_STYLE[cat] || { bg:'#F4F6F8', color:'#666' };
+  return `<span class="cat-badge" style="background:${s.bg};color:${s.color}">${cat}</span>`;
+}
+
+// ── ステータスバッジ ──────────────────────────────────────
+function stBadge(st) {
+  return `<span class="s-badge s-${st}">${STATUS_LABEL[st]||st}</span>`;
+}
+
+// ── 統計更新 ─────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('st-total').textContent  = allTodos.length;
+  document.getElementById('st-todo').textContent   = allTodos.filter(t=>t.status==='todo').length;
+  document.getElementById('st-prog').textContent   = allTodos.filter(t=>t.status==='in_progress').length;
+  document.getElementById('st-done').textContent   = allTodos.filter(t=>t.status==='done').length;
+}
+
+// ── フィルタ適用 ─────────────────────────────────────────
+function applyFilters() {
+  const cat  = document.getElementById('f-cat').value;
+  const st   = document.getElementById('f-st').value;
+  const due  = document.getElementById('f-due').value;
+  const kw   = document.getElementById('f-kw').value.toLowerCase();
+  const now  = new Date(); now.setHours(0,0,0,0);
+  const y    = now.getFullYear(), m = now.getMonth();
+  filtered = allTodos.filter(t => {
+    if (cat && t.category !== cat) return false;
+    if (st  && t.status   !== st)  return false;
+    if (kw && ![t.title,t.check_item,t.category,t.sub_category,(t.tags||[]).join(',')].some(s=>s&&s.toLowerCase().includes(kw))) return false;
+    if (due) {
+      const dueDate = new Date(t.due_date);
+      if (due === 'overdue')    return dueStatus(t.due_date, t.status) === 'overdue';
+      if (due === 'this_month') return dueDate.getFullYear()===y && dueDate.getMonth()===m;
+      if (due === 'next_month') { const nm=new Date(y,m+1,1); return dueDate.getFullYear()===nm.getFullYear()&&dueDate.getMonth()===nm.getMonth(); }
+    }
+    return true;
+  });
+  renderList();
+}
+
+// ── カードレンダリング ────────────────────────────────────
+function renderList() {
+  const el = document.getElementById('todo-list');
+  if (!filtered.length) { el.innerHTML = '<div class="empty">該当するToDoはありません</div>'; return; }
+  el.innerHTML = filtered.map(t => {
+    const ds = dueStatus(t.due_date, t.status);
+    const cardCls = t.status === 'done' ? 'st-done-card' : (ds ? `st-${ds}` : '');
+    const logs = (t.progressLogs || []);
+    const lastLog = logs.length ? logs[logs.length-1] : null;
+    return `<div class="todo-card ${cardCls}" id="card-${t._docId}">
+  <div class="todo-header" onclick="toggleCard('${t._docId}')">
+    ${catBadge(t.category)}
+    <div class="todo-main">
+      <div class="todo-id">${t.id || ''} · ${t.sub_category || ''}</div>
+      <div class="todo-title">${t.title}</div>
+      <div class="todo-checkitem">${t.check_item || ''}</div>
+      <div class="todo-meta">
+        ${dueBadgeHtml(t.due_date, t.status)}
+        ${stBadge(t.status)}
+        <span style="font-size:10px;color:#bbb">${t.frequency||''}</span>
+        ${lastLog ? `<span style="font-size:10px;color:#aaa">最終報告: ${lastLog.createdAt?.slice(0,10)||'—'}</span>` : ''}
+      </div>
+    </div>
+    <div class="todo-arrow" id="arrow-${t._docId}">▼</div>
+  </div>
+  <div class="todo-body" id="body-${t._docId}">
+    ${t.due_label ? `<div class="due-label-row" style="margin-top:10px">📅 ${t.due_label}</div>` : ''}
+    <div class="detail-box">${t.detail || '（詳細なし）'}</div>
+    <div class="tags-row">${(t.tags||[]).map(g=>`<span class="tag-pill">${g}</span>`).join('')}</div>
+    <div class="prog-section">
+      <div class="prog-heading">進捗ログ</div>
+      ${logs.length ? `<div class="prog-timeline">${logs.map(l=>`
+        <div class="prog-item">
+          <div class="prog-meta">${l.createdAt?.slice(0,10)||'—'} · ${l.createdByName||l.createdBy||'—'}</div>
+          <div class="prog-comment">${l.comment}</div>
+        </div>`).join('')}</div>` : '<div style="font-size:12px;color:#bbb;margin-bottom:10px">まだ進捗報告がありません</div>'}
+      ${canWrite() ? `<div class="prog-form">
+        <textarea class="prog-textarea" id="log-${t._docId}" placeholder="進捗・コメントを入力…"></textarea>
+        <div class="btn-row">
+          <button class="btn-prog" onclick="addLog('${t._docId}')">報告する</button>
+          ${t.status === 'todo'        ? `<button class="btn-st btn-start" onclick="changeStatus('${t._docId}','in_progress')">着手する</button>` : ''}
+          ${t.status !== 'done'        ? `<button class="btn-st btn-done"  onclick="changeStatus('${t._docId}','done')">完了にする</button>` : ''}
+          ${t.status === 'done'        ? `<button class="btn-st btn-reopen" onclick="changeStatus('${t._docId}','todo')">再開する</button>` : ''}
+        </div>
+      </div>` : ''}
+    </div>
+  </div>
+</div>`;
+  }).join('');
+}
+
+// ── カード開閉 ───────────────────────────────────────────
+window.toggleCard = function(docId) {
+  const body  = document.getElementById('body-'+docId);
+  const arrow = document.getElementById('arrow-'+docId);
+  const open  = body.classList.contains('open');
+  body.classList.toggle('open', !open);
+  if (arrow) arrow.classList.toggle('open', !open);
+};
+
+// ── 進捗ログ追加 ─────────────────────────────────────────
+window.addLog = async function(docId) {
+  const ta = document.getElementById('log-'+docId);
+  const comment = ta?.value.trim();
+  if (!comment) { alert('コメントを入力してください'); return; }
+  const t = allTodos.find(x=>x._docId===docId);
+  if (!t) return;
+  const newLog = { comment, createdAt: new Date().toISOString(), createdBy: currentUser.uid, createdByName: userName };
+  const logs = [...(t.progressLogs||[]), newLog];
+  await updateDoc(doc(db,'miraiTodos',docId), { progressLogs: logs, updatedAt: serverTimestamp() });
+  t.progressLogs = logs;
+  ta.value = '';
+  renderList();
+  // 展開を維持
+  setTimeout(() => {
+    document.getElementById('body-'+docId)?.classList.add('open');
+    document.getElementById('arrow-'+docId)?.classList.add('open');
+  }, 10);
+};
+
+// ── ステータス変更 ───────────────────────────────────────
+window.changeStatus = async function(docId, newStatus) {
+  const t = allTodos.find(x=>x._docId===docId);
+  if (!t) return;
+  const upd = { status: newStatus, updatedAt: serverTimestamp() };
+  if (newStatus === 'done') upd.doneAt = serverTimestamp();
+  await updateDoc(doc(db,'miraiTodos',docId), upd);
+  t.status = newStatus;
+  if (newStatus === 'done') t.doneAt = new Date().toISOString();
+  updateStats();
+  renderList();
+  setTimeout(() => {
+    document.getElementById('body-'+docId)?.classList.add('open');
+    document.getElementById('arrow-'+docId)?.classList.add('open');
+  }, 10);
+};
+
+// ── ToDo追加モーダル ─────────────────────────────────────
+window.openAddModal = function() {
+  document.getElementById('m-due').value = new Date().toISOString().slice(0,10);
+  document.getElementById('add-modal').classList.add('open');
+};
+window.closeAddModal = function() {
+  document.getElementById('add-modal').classList.remove('open');
+};
+window.saveNewTodo = async function() {
+  const title = document.getElementById('m-ttl').value.trim();
+  const due   = document.getElementById('m-due').value;
+  if (!title || !due) { alert('タイトルと期限は必須です'); return; }
+  const tags = document.getElementById('m-tags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  await addDoc(collection(db,'miraiTodos'), {
+    id: 'MNL-' + Date.now(),
+    category:    document.getElementById('m-cat').value,
+    sub_category:document.getElementById('m-sub').value.trim(),
+    check_item:  document.getElementById('m-chk').value.trim(),
+    title,
+    detail:      document.getElementById('m-det').value.trim(),
+    due_date:    due,
+    due_label:   due,
+    frequency:   document.getElementById('m-freq').value,
+    tags,
+    status: 'todo',
+    source: 'manual',
+    progressLogs: [],
+    createdAt: serverTimestamp(),
+    createdBy: currentUser.uid,
+    createdByName: userName,
+  });
+  closeAddModal();
+  await loadTodos();
+};
+
+// ── データ読み込み ───────────────────────────────────────
+async function loadTodos() {
+  const snap = await getDocs(query(collection(db,'miraiTodos'), orderBy('due_date','asc')));
+  allTodos = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+  updateStats();
+  applyFilters();
+}
+
+// ── 初期シード ───────────────────────────────────────────
+async function seedIfEmpty() {
+  const snap = await getCountFromServer(collection(db,'miraiTodos'));
+  if (snap.data().count > 0) return;
+  const BATCH_SIZE = 20;
+  for (let i = 0; i < SEED_TASKS.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db);
+    SEED_TASKS.slice(i, i+BATCH_SIZE).forEach(t => {
+      batch.set(doc(collection(db,'miraiTodos')), {
+        ...t, status:'todo', source:'initial', progressLogs:[],
+        createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+      });
+    });
+    await batch.commit();
+  }
+}
+
+// ── ログアウト ───────────────────────────────────────────
+window.doLogout = () => signOut(auth).then(() => location.href='login.html');
+
+// ── 初期化 ───────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (!user) { location.href='login.html'; return; }
+  currentUser = user;
+  const ud = await getDoc(doc(db,'users',user.uid));
+  if (ud.exists()) { userRole = ud.data().role || ''; userName = ud.data().name || user.email; }
+  else { userName = user.email; }
+  if (canWrite()) {
+    document.getElementById('btn-add').style.display = 'block';
+    await seedIfEmpty();
+  }
+  await loadTodos();
+});
+</script>
+</body>
+</html>
