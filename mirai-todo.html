@@ -194,7 +194,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
   getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, doc,
-  query, orderBy, serverTimestamp, writeBatch, getCountFromServer
+  query, orderBy, limit, serverTimestamp, writeBatch
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const app = initializeApp({
@@ -513,26 +513,36 @@ window.saveNewTodo = async function() {
 
 // ── データ読み込み ───────────────────────────────────────
 async function loadTodos() {
-  const snap = await getDocs(query(collection(db,'miraiTodos'), orderBy('due_date','asc')));
-  allTodos = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
-  updateStats();
-  applyFilters();
+  const el = document.getElementById('todo-list');
+  try {
+    const snap = await getDocs(query(collection(db,'miraiTodos'), orderBy('due_date','asc')));
+    allTodos = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    updateStats();
+    applyFilters();
+  } catch(e) {
+    console.error('loadTodos:', e);
+    el.innerHTML = `<div class="empty" style="color:#DC2626">データの読み込みに失敗しました。<br><small style="color:#999">${e.code || e.message}</small></div>`;
+  }
 }
 
 // ── 初期シード ───────────────────────────────────────────
 async function seedIfEmpty() {
-  const snap = await getCountFromServer(collection(db,'miraiTodos'));
-  if (snap.data().count > 0) return;
-  const BATCH_SIZE = 20;
-  for (let i = 0; i < SEED_TASKS.length; i += BATCH_SIZE) {
-    const batch = writeBatch(db);
-    SEED_TASKS.slice(i, i+BATCH_SIZE).forEach(t => {
-      batch.set(doc(collection(db,'miraiTodos')), {
-        ...t, status:'todo', source:'initial', progressLogs:[],
-        createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+  try {
+    const check = await getDocs(query(collection(db,'miraiTodos'), limit(1)));
+    if (!check.empty) return;
+    const BATCH_SIZE = 20;
+    for (let i = 0; i < SEED_TASKS.length; i += BATCH_SIZE) {
+      const batch = writeBatch(db);
+      SEED_TASKS.slice(i, i+BATCH_SIZE).forEach(t => {
+        batch.set(doc(collection(db,'miraiTodos')), {
+          ...t, status:'todo', source:'initial', progressLogs:[],
+          createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+        });
       });
-    });
-    await batch.commit();
+      await batch.commit();
+    }
+  } catch(e) {
+    console.error('seedIfEmpty:', e);
   }
 }
 
@@ -543,9 +553,14 @@ window.doLogout = () => signOut(auth).then(() => location.href='login.html');
 onAuthStateChanged(auth, async user => {
   if (!user) { location.href='login.html'; return; }
   currentUser = user;
-  const ud = await getDoc(doc(db,'users',user.uid));
-  if (ud.exists()) { userRole = ud.data().role || ''; userName = ud.data().name || user.email; }
-  else { userName = user.email; }
+  try {
+    const ud = await getDoc(doc(db,'users',user.uid));
+    if (ud.exists()) { userRole = ud.data().role || ''; userName = ud.data().name || user.email; }
+    else { userName = user.email; }
+  } catch(e) {
+    console.error('userDoc:', e);
+    userName = user.email;
+  }
   if (canWrite()) {
     document.getElementById('btn-add').style.display = 'block';
     await seedIfEmpty();
