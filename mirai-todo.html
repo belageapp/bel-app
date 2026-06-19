@@ -2,17 +2,31 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
-<title>未来創造企業 ToDo</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon_32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon_192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="assets/favicon_512.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="未来創造企業 ToDo">
+<meta name="theme-color" content="#ffffff">
+<title>未来創造企業 ToDo | ベルアージュ</title>
 <style>
-:root{--bg:#F4F6F8;--white:#fff;--border:#E8EAED;--text:#1a1a2e;--mid:#666;--light:#999;--primary:#2563EB}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
-.nav{background:#1a1a2e;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
-.nav-back{color:#aaa;font-size:13px;text-decoration:none}
-.nav-title{font-size:15px;font-weight:700;flex:1}
-.btn-logout{padding:5px 12px;border-radius:6px;border:1px solid #555;background:transparent;color:#ccc;font-size:11px;cursor:pointer;font-family:inherit}
+:root{--bg:#F4F6F8;--white:#fff;--border:#E8EAED;--text:#333;--mid:#666;--light:#999;--primary:#2563EB}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100dvh}
+/* ===== トップバー ===== */
+.top-bar{background:#fff;border-bottom:1px solid #E8EAED;padding:0;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;min-height:52px}
+.top-bar-logo{background:#fff;padding:8px 16px;display:flex;align-items:center;border-right:1px solid #E8EAED;flex-shrink:0}
+.top-bar-logo img{height:34px;object-fit:contain}
+.top-bar-main{padding:0 12px;display:flex;align-items:center;gap:8px;flex:1;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.top-bar-title{font-size:14px;font-weight:600;color:#333;white-space:nowrap}
+.top-bar-divider{width:1px;height:22px;background:#E8EAED;flex-shrink:0}
+.nav-link{padding:5px 10px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:11px;cursor:pointer;font-family:inherit;font-weight:500;transition:background .15s,border-color .15s,color .15s;white-space:nowrap;text-decoration:none;display:inline-block;flex-shrink:0}
+.nav-link:hover{background:#F4F6F8;border-color:#d0d3d8;color:#333}
+.nav-link.active{background:#F0FAF6;border-color:#1D9E75;color:#1D9E75;font-weight:600}
 .wrap{max-width:800px;margin:0 auto;padding:16px}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
 .stat-box{background:#fff;border-radius:10px;border:1px solid var(--border);padding:11px 8px;text-align:center}
@@ -92,11 +106,19 @@ textarea.prog-textarea:focus{outline:none;border-color:#2563EB}
 </style>
 </head>
 <body>
-<nav class="nav">
-  <a href="index.html" class="nav-back">← 戻る</a>
-  <div class="nav-title">🌱 未来創造企業 ToDo</div>
-  <button class="btn-logout" onclick="doLogout()">ログアウト</button>
-</nav>
+<div class="top-bar">
+  <div class="top-bar-logo">
+    <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
+  </div>
+  <div class="top-bar-main">
+    <span class="top-bar-title">未来創造企業 ToDo</span>
+    <div class="top-bar-divider"></div>
+    <a href="daily.html" class="nav-link">速報入力</a>
+    <a href="morning-report.html" class="nav-link">朝礼報告</a>
+    <a href="index.html" class="nav-link">ポータル</a>
+    <button onclick="doLogout()" style="padding:4px 10px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;margin-left:4px">ログアウト</button>
+  </div>
+</div>
 <div class="wrap">
   <div class="stats">
     <div class="stat-box"><div class="stat-num" id="st-total">—</div><div class="stat-label">全件</div></div>
