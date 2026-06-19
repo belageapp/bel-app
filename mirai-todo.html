@@ -31,9 +31,10 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .todo-card.st-soon{border-left-color:#CA8A04}
 .todo-card.st-done-card{opacity:.6}
 .todo-header{padding:12px 14px;cursor:pointer;display:flex;gap:10px;align-items:flex-start}
-.cat-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.cat-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
 .todo-main{flex:1;min-width:0}
-.todo-id{font-size:10px;color:var(--light);margin-bottom:2px}
+.todo-id-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.todo-id{font-size:10px;color:var(--light)}
 .todo-title{font-size:13px;font-weight:600;line-height:1.4}
 .todo-checkitem{font-size:11px;color:var(--mid);margin-top:2px}
 .todo-meta{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
@@ -362,9 +363,11 @@ function renderList() {
     const lastLog = logs.length ? logs[logs.length-1] : null;
     return `<div class="todo-card ${cardCls}" id="card-${t._docId}">
   <div class="todo-header" onclick="toggleCard('${t._docId}')">
-    ${catBadge(t.category)}
     <div class="todo-main">
-      <div class="todo-id">${t.id || ''} · ${t.sub_category || ''}</div>
+      <div class="todo-id-row">
+        ${catBadge(t.category)}
+        <span class="todo-id">${t.id || ''} · ${t.sub_category || ''}</span>
+      </div>
       <div class="todo-title">${t.title}</div>
       <div class="todo-checkitem">${t.check_item || ''}</div>
       <div class="todo-meta">
