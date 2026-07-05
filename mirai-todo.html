@@ -317,8 +317,8 @@ const canWrite = () => CAN_WRITE_ROLES.includes(userRole);
 function dueStatus(due_date, status) {
   if (status === 'done') return null;
   const today = new Date(); today.setHours(0,0,0,0);
-  const due = new Date(due_date);
-  const diff = Math.ceil((due - today) / 86400000);
+  const due = new Date(due_date + 'T00:00:00'); // ローカル時刻として解釈（UTC解釈による1日ズレ防止）
+  const diff = Math.round((due - today) / 86400000);
   if (diff < 0) return 'overdue';
   if (diff <= 14) return 'urgent';
   if (diff <= 30) return 'soon';
@@ -478,7 +478,8 @@ window.changeStatus = async function(docId, newStatus) {
 
 // ── ToDo追加モーダル ─────────────────────────────────────
 window.openAddModal = function() {
-  document.getElementById('m-due').value = new Date().toISOString().slice(0,10);
+  const d = new Date();
+  document.getElementById('m-due').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   document.getElementById('add-modal').classList.add('open');
 };
 window.closeAddModal = function() {

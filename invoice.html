@@ -143,6 +143,7 @@ onAuthStateChanged(auth, async user => {
   await init();
 });
 window._logout = async () => { await signOut(auth); location.href = 'login.html'; };
+window._getIdToken = () => auth.currentUser ? auth.currentUser.getIdToken() : Promise.resolve(null);
 
 async function init() {
   // 事業所一覧取得
@@ -428,11 +429,14 @@ async function sendPdfToChatwork() {
     formData.append('fileName', fileName);
     formData.append('message', message);
 
+    const idToken = await window._getIdToken();
+    if (!idToken) throw new Error('ログイン情報を取得できません。再ログインしてください。');
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 90000);
     const res = await fetch(
       'https://asia-northeast1-daily-report-b90e8.cloudfunctions.net/sendInvoicePdf',
-      { method: 'POST', body: formData, signal: controller.signal }
+      { method: 'POST', body: formData, signal: controller.signal, headers: { 'Authorization': 'Bearer ' + idToken } }
     ).finally(() => clearTimeout(timer));
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '送信失敗');

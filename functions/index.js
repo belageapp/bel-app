@@ -3,6 +3,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 
 initializeApp();
 setGlobalOptions({ maxInstances: 5, region: "asia-northeast1" });
@@ -481,9 +482,27 @@ exports.sendInvoicePdf = onRequest(
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     if (req.method === "OPTIONS") { res.status(204).send(""); return; }
     if (req.method !== "POST") { res.status(405).json({ error: "Method Not Allowed" }); return; }
+
+    // Firebase Auth IDトークン検証（ログイン済みユーザーのみ許可）
+    const authHeader = req.headers.authorization || "";
+    const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!idToken) { res.status(401).json({ error: "認証が必要です" }); return; }
+    let decoded;
+    try {
+      decoded = await getAuth().verifyIdToken(idToken);
+    } catch (_) {
+      res.status(401).json({ error: "認証トークンが無効です" });
+      return;
+    }
+    // usersコレクションに登録済み・無効化されていないことを確認
+    const userSnap = await getFirestore().collection("users").doc(decoded.uid).get();
+    if (!userSnap.exists || userSnap.data().disabled) {
+      res.status(403).json({ error: "アクセス権限がありません" });
+      return;
+    }
 
     const token = process.env.CHATWORK_API_TOKEN;
     if (!token) { res.status(500).json({ error: "CHATWORK_API_TOKEN 未設定" }); return; }
