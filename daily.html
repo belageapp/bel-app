@@ -287,7 +287,7 @@ textarea:focus{border-color:#1D9E75}
             <textarea id="comment-in" rows="3" placeholder="体調不良の児童あり、行事など…"></textarea>
           </div>
           <div id="dirty-indicator" style="display:none;font-size:12px;color:#E65100;text-align:center;margin-top:10px;font-weight:500">● 未保存</div>
-          <button class="submit-btn" onclick="submitReport()">報告する</button>
+          <button class="submit-btn" id="submit-btn-normal" onclick="submitReport()">報告する</button>
           <button class="reset-actual-btn" id="reset-btn" onclick="resetActual()">実績をリセット（予定は保持）</button>
           <div class="success-msg" id="success-msg">✅ 報告しました</div>
         </div>
@@ -372,7 +372,7 @@ textarea:focus{border-color:#1D9E75}
             <textarea id="comment-care" rows="3" placeholder="体調不良など…"></textarea>
           </div>
           <div id="lafore-dirty-indicator" style="display:none;font-size:12px;color:#E65100;text-align:center;margin-top:10px;font-weight:500">● 未保存</div>
-          <button class="submit-btn" onclick="submitLafore()">報告する</button>
+          <button class="submit-btn" id="submit-btn-lafore" onclick="submitLafore()">報告する</button>
           <button class="reset-actual-btn" id="lafore-reset-btn" onclick="resetActual()">実績をリセット（予定は保持）</button>
           <div class="success-msg" id="lafore-success-msg">✅ 報告しました</div>
         </div>
@@ -1404,6 +1404,9 @@ window.adjExtra=function(field,delta){
 };
 
 window.submitReport=async function(){
+  const btn=document.getElementById('submit-btn-normal');
+  if(btn&&btn.disabled)return; // 連打防止
+  if(btn){btn.disabled=true;btn.textContent='送信中...';}
   const selectedDate=document.getElementById('report-date').value||todayStr;
   const selectedMonth=dateToMonth(selectedDate);
   const comment=document.getElementById('comment-in').value.trim();
@@ -1412,22 +1415,23 @@ window.submitReport=async function(){
     planned:extraState.planned||0,inquiry:extraState.inquiry||0,
     visit:extraState.visit||0,contract:extraState.contract||0,reported:state.kidsEdited};
   try{
+    // 固定ID（事業所名_日付）で保存 → 同一日の重複ドキュメントを物理的に防止
+    const fixedId=`${state.cur}_${selectedDate}`;
     const q=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate));
     const snap=await getDocs(q);
-    let savedDocId;
-    if(!snap.empty){
-      savedDocId=snap.docs[0].id;
-      await setDoc(doc(db,'reports',savedDocId),data);
-      for(let i=1;i<snap.docs.length;i++){
-        await deleteDoc(doc(db,'reports',snap.docs[i].id));
-      }
-    }else{
-      const ref=await addDoc(collection(db,'reports'),data);
-      savedDocId=ref.id;
+    // 既存ドキュメントの週次予定(planned)を保持（フォーム未入力時に消えるのを防ぐ）
+    if(!data.planned){
+      const existingPlanned=snap.docs.reduce((max,d)=>Math.max(max,d.data().planned||0),0);
+      if(existingPlanned>0)data.planned=existingPlanned;
+    }
+    await setDoc(doc(db,'reports',fixedId),data);
+    // 旧形式（乱数ID）の同日ドキュメントを掃除
+    for(const d of snap.docs){
+      if(d.id!==fixedId)await deleteDoc(doc(db,'reports',d.id));
     }
     // ローカル状態を更新して表示を維持（リダイレクトしない）
     setDirty(false);
-    const saved={...data,docId:savedDocId};
+    const saved={...data,docId:fixedId};
     if(selectedDate===todayStr)state.reports[state.cur]=saved;
     updateFormBadge(saved, false);
     renderBtns();
@@ -1436,9 +1440,13 @@ window.submitReport=async function(){
     await window.loadHistory();
     await window.onReportDateChange();
   }catch(e){console.error('保存エラー:',e);showToast('保存エラー: '+e.message);}
+  finally{if(btn){btn.disabled=false;btn.textContent='報告する';}}
 };
 
 window.submitLafore=async function(){
+  const btn=document.getElementById('submit-btn-lafore');
+  if(btn&&btn.disabled)return; // 連打防止
+  if(btn){btn.disabled=true;btn.textContent='送信中...';}
   const selectedDate=document.getElementById('report-date').value||todayStr;
   const selectedMonth=dateToMonth(selectedDate);
   const time=getTime();
@@ -1470,24 +1478,19 @@ window.submitLafore=async function(){
     }
   };
   try{
-    // 旧フォーマット（2ドキュメント）→新フォーマット（1ドキュメント）に統合して保存
+    // 固定ID（事業所名_日付）で保存 → 同一日の重複ドキュメントを物理的に防止
+    const fixedId=`${state.cur}_${selectedDate}`;
     const q=query(collection(db,'reports'),where('office','==',state.cur),where('date','==',selectedDate));
     const snap=await getDocs(q);
-    let savedDocId;
-    if(!snap.empty){
-      savedDocId=snap.docs[0].id;
-      // 既存ドキュメントの週次予定(planned)を保持（setDocで消えるのを防ぐ）
-      const existingPlanned = snap.docs.reduce((max, d) => Math.max(max, d.data().planned || 0), 0);
-      const saveData = existingPlanned > 0 ? {...data, planned: existingPlanned} : data;
-      await setDoc(doc(db,'reports',savedDocId),saveData);
-      // 旧フォーマットの場合は余分なドキュメントを削除
-      for(let i=1;i<snap.docs.length;i++){
-        await deleteDoc(doc(db,'reports',snap.docs[i].id));
-      }
-    }else{
-      const ref=await addDoc(collection(db,'reports'),data);
-      savedDocId=ref.id;
+    // 既存ドキュメントの週次予定(planned)を保持（setDocで消えるのを防ぐ）
+    const existingPlanned = snap.docs.reduce((max, d) => Math.max(max, d.data().planned || 0), 0);
+    const saveData = existingPlanned > 0 ? {...data, planned: existingPlanned} : data;
+    await setDoc(doc(db,'reports',fixedId),saveData);
+    // 旧形式（乱数ID）の同日ドキュメントを掃除
+    for(const d of snap.docs){
+      if(d.id!==fixedId)await deleteDoc(doc(db,'reports',d.id));
     }
+    const savedDocId=fixedId;
     // ローカル状態を更新（リダイレクトしない）
     setDirty(false);
     const aggregated={
@@ -1505,6 +1508,7 @@ window.submitLafore=async function(){
     loadMonthlyTotals();
     await window.loadHistory();
   }catch(e){showToast('エラー: '+e.message);}
+  finally{if(btn){btn.disabled=false;btn.textContent='報告する';}}
 };
 
 window.switchHqTab=function(tab){
@@ -1727,7 +1731,7 @@ window.saveWeeklyPlanned=async function(){
       const month=dateStr.substring(0,7);
       const snap=await getDocs(query(collection(db,'reports'),where('office','==',state.cur),where('date','==',dateStr)));
       if(!snap.empty){await updateDoc(doc(db,'reports',snap.docs[0].id),{planned});}
-      else{await addDoc(collection(db,'reports'),{office:state.cur,date:dateStr,month,kids:0,planned,comment:'',time:getTime(),inquiry:0,visit:0,contract:0});}
+      else{await setDoc(doc(db,'reports',`${state.cur}_${dateStr}`),{office:state.cur,date:dateStr,month,kids:0,planned,comment:'',time:getTime(),inquiry:0,visit:0,contract:0});}
     }
     showSuccessMsg(getWpSuccessId());
     await window.loadHistory();
