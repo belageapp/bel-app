@@ -1,0 +1,158 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ログイン済みかつusersコレクションに存在するユーザーのみアクセス可
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getRole() {
+      return getUserData().role;
+    }
+
+    function isAdmin() {
+      return isAuth() && getRole() == 'admin';
+    }
+
+    function isSupport() {
+      return isAuth() && getRole() in ['admin', 'support'];
+    }
+
+    function isAreaManager() {
+      return isAuth() && getRole() in ['admin', 'support', 'area_manager', 'unit_manager'];
+    }
+
+    function isManager() {
+      return isAuth() && getRole() in ['admin', 'support', 'area_manager', 'unit_manager', 'manager'];
+    }
+
+    function isOwnOffice(officeId) {
+      return getUserData().officeId == officeId || getRole() in ['admin', 'support', 'area_manager', 'unit_manager'];
+    }
+
+    // users コレクション
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow write: if isSupport();
+      allow update: if isAuth() && request.auth.uid == userId; // 自分自身は更新可
+    }
+
+    // roles コレクション
+    match /roles/{roleId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // offices コレクション
+    match /offices/{officeId} {
+      allow read: if isAuth();
+      allow write: if isSupport();
+    }
+
+    // prices コレクション
+    match /prices/{priceId} {
+      allow read: if isAuth();
+      allow write: if isSupport();
+    }
+
+    // areas コレクション
+    match /areas/{areaId} {
+      allow read: if isAuth();
+      allow write: if isSupport();
+    }
+
+    // departments コレクション
+    match /departments/{deptId} {
+      allow read: if isAuth();
+      allow write: if isSupport();
+    }
+
+    // serviceTypes コレクション
+    match /serviceTypes/{id} {
+      allow read: if isAuth();
+      allow write: if isSupport();
+    }
+
+    // serviceCodes コレクション
+    match /serviceCodes/{id} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // workdays コレクション
+    match /workdays/{docId} {
+      allow read: if isAuth();
+      allow write: if isManager();
+    }
+
+    // reports コレクション（速報入力）
+    // delete は固定ID移行時の旧ドキュメント掃除で manager も使用するため isManager
+    match /reports/{reportId} {
+      allow read: if isAuth();
+      allow create: if isManager();
+      allow update: if isManager();
+      allow delete: if isManager();
+    }
+
+    // actuals コレクション（国保連CSV）
+    match /actuals/{docId} {
+      allow read: if isAuth();
+      allow write: if isSupport();
+      match /months/{month} {
+        allow read: if isAuth();
+        allow write: if isSupport();
+        match /billing/{billingId} {
+          allow read: if isAuth();
+          allow write: if isSupport();
+        }
+      }
+    }
+
+    // dailyActuals コレクション
+    match /dailyActuals/{docId} {
+      allow read: if isAuth();
+      allow write: if isSupport();
+    }
+
+    // dailyPlanned コレクション
+    match /dailyPlanned/{docId} {
+      allow read: if isAuth();
+      allow write: if isSupport();
+    }
+
+    // tasks コレクション
+    match /tasks/{taskId} {
+      allow read: if isAuth();
+      allow write: if isManager();
+    }
+
+    // notices コレクション
+    match /notices/{noticeId} {
+      allow read: if isAuth();
+      allow write: if isSupport();
+    }
+    
+    // morning_reports コレクション（朝礼週次報告）
+    match /morning_reports/{docId} {
+      allow read: if isAuth();
+      allow write: if isAreaManager();
+    }
+    
+    // salaries コレクション（賃金台帳）
+    match /salaries/{docId} {
+      allow read: if isAuth();
+      allow write: if isSupport();
+    }
+    
+    // 未来創造企業 ToDo
+    match /miraiTodos/{docId} {
+      allow read: if isAuth();
+      allow write: if isAuth() && getRole() in ['admin', 'support', 'area_manager'];
+    }
+  }
+}
