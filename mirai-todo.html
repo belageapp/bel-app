@@ -159,10 +159,10 @@ textarea.prog-textarea:focus{outline:none;border-color:#2563EB}
 </div>
 </div><!-- /.app -->
 
-<!-- Add modal -->
+<!-- Add / Edit modal -->
 <div class="modal-ov" id="add-modal">
   <div class="modal">
-    <div class="modal-title">ToDo 追加</div>
+    <div class="modal-title" id="modal-title">ToDo 追加</div>
     <div class="fg"><label>カテゴリ *</label>
       <select id="m-cat">
         <option>前提条件</option><option>地球</option><option>社会</option><option>地域</option>
@@ -180,6 +180,12 @@ textarea.prog-textarea:focus{outline:none;border-color:#2563EB}
         <option value="継続">継続</option><option value="定期">定期</option><option value="随時">随時</option>
         <option value="四半期">四半期</option><option value="年2回">年2回</option>
       </select>
+    </div>
+    <div class="fg"><label>部門カテゴリ</label>
+      <select id="m-dept"><option value="">（未設定）</option></select>
+    </div>
+    <div class="fg"><label>担当者</label>
+      <select id="m-assignee"><option value="">（未設定）</option></select>
     </div>
     <div class="fg"><label>タグ（カンマ区切り）</label><input id="m-tags" placeholder="例：理念浸透,中期経営計画"></div>
     <div class="modal-btns">
@@ -398,6 +404,8 @@ function renderList() {
       <div class="todo-meta">
         ${dueBadgeHtml(t.due_date, t.status)}
         ${stBadge(t.status)}
+        ${t.department ? `<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:#F0FAF6;color:#1D9E75;border:1px solid #A8D5BE;font-weight:700">${t.department}</span>` : ''}
+        ${t.assigneeName ? `<span style="font-size:10px;color:#666">👤 ${t.assigneeName}</span>` : ''}
         <span style="font-size:10px;color:#bbb">${t.frequency||''}</span>
         ${lastLog ? `<span style="font-size:10px;color:#aaa">最終報告: ${lastLog.createdAt?.slice(0,10)||'—'}</span>` : ''}
       </div>
@@ -422,6 +430,7 @@ function renderList() {
           ${t.status === 'todo'        ? `<button class="btn-st btn-start" onclick="changeStatus('${t._docId}','in_progress')">着手する</button>` : ''}
           ${t.status !== 'done'        ? `<button class="btn-st btn-done"  onclick="changeStatus('${t._docId}','done')">完了にする</button>` : ''}
           ${t.status === 'done'        ? `<button class="btn-st btn-reopen" onclick="changeStatus('${t._docId}','todo')">再開する</button>` : ''}
+          <button class="btn-st" style="border-color:#94A3B8;color:#64748B" onclick="openEditModal('${t._docId}')">✏️ 編集</button>
         </div>
       </div>` : ''}
     </div>
@@ -476,38 +485,116 @@ window.changeStatus = async function(docId, newStatus) {
   }, 10);
 };
 
-// ── ToDo追加モーダル ─────────────────────────────────────
+// ── 部門・担当者の選択肢 ─────────────────────────────────
+const FIXED_DEPTS = ['事業支援部','役員'];
+const ASSIGNEE_ROLES = ['area_manager','unit_manager','support'];
+let deptOptions = [];      // 部署一覧 + 固定項目
+let assigneeOptions = [];  // {uid, name}
+
+async function loadModalOptions() {
+  try {
+    const dSnap = await getDocs(collection(db,'departments'));
+    const names = dSnap.docs.map(d=>d.data().name).filter(Boolean).sort();
+    deptOptions = [...names, ...FIXED_DEPTS.filter(f=>!names.includes(f))];
+  } catch(e) { console.error('departments:', e); deptOptions = [...FIXED_DEPTS]; }
+  try {
+    const uSnap = await getDocs(collection(db,'users'));
+    assigneeOptions = uSnap.docs
+      .map(d=>({ uid:d.id, name:d.data().name||d.data().displayName||d.data().email||'', role:d.data().role, disabled:d.data().disabled }))
+      .filter(u=>ASSIGNEE_ROLES.includes(u.role) && !u.disabled && u.name)
+      .sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+  } catch(e) { console.error('users:', e); assigneeOptions = []; }
+  const deptSel = document.getElementById('m-dept');
+  deptSel.innerHTML = '<option value="">（未設定）</option>' + deptOptions.map(n=>`<option value="${n}">${n}</option>`).join('');
+  const asSel = document.getElementById('m-assignee');
+  asSel.innerHTML = '<option value="">（未設定）</option>' + assigneeOptions.map(u=>`<option value="${u.uid}">${u.name}</option>`).join('');
+}
+
+// ── ToDo追加・編集モーダル ───────────────────────────────
+let editingDocId = null; // null=新規追加、docId=編集
+
 window.openAddModal = function() {
+  editingDocId = null;
+  document.getElementById('modal-title').textContent = 'ToDo 追加';
+  document.getElementById('m-cat').value = '前提条件';
+  document.getElementById('m-sub').value = '';
+  document.getElementById('m-chk').value = '';
+  document.getElementById('m-ttl').value = '';
+  document.getElementById('m-det').value = '';
   const d = new Date();
   document.getElementById('m-due').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('m-freq').value = '単発';
+  document.getElementById('m-dept').value = '';
+  document.getElementById('m-assignee').value = '';
+  document.getElementById('m-tags').value = '';
   document.getElementById('add-modal').classList.add('open');
 };
+
+window.openEditModal = function(docId) {
+  const t = allTodos.find(x=>x._docId===docId);
+  if (!t) return;
+  editingDocId = docId;
+  document.getElementById('modal-title').textContent = 'ToDo 編集';
+  document.getElementById('m-cat').value = t.category || '前提条件';
+  document.getElementById('m-sub').value = t.sub_category || '';
+  document.getElementById('m-chk').value = t.check_item || '';
+  document.getElementById('m-ttl').value = t.title || '';
+  document.getElementById('m-det').value = t.detail || '';
+  document.getElementById('m-due').value = t.due_date || '';
+  document.getElementById('m-freq').value = t.frequency || '単発';
+  // 部署が選択肢に無い過去データも表示できるよう一時追加
+  const deptSel = document.getElementById('m-dept');
+  if (t.department && ![...deptSel.options].some(o=>o.value===t.department)) {
+    deptSel.insertAdjacentHTML('beforeend', `<option value="${t.department}">${t.department}</option>`);
+  }
+  deptSel.value = t.department || '';
+  document.getElementById('m-assignee').value = t.assigneeUid || '';
+  document.getElementById('m-tags').value = (t.tags||[]).join(',');
+  document.getElementById('add-modal').classList.add('open');
+};
+
 window.closeAddModal = function() {
   document.getElementById('add-modal').classList.remove('open');
+  editingDocId = null;
 };
+
 window.saveNewTodo = async function() {
   const title = document.getElementById('m-ttl').value.trim();
   const due   = document.getElementById('m-due').value;
   if (!title || !due) { alert('タイトルと期限は必須です'); return; }
-  const tags = document.getElementById('m-tags').value.split(',').map(s=>s.trim()).filter(Boolean);
-  await addDoc(collection(db,'miraiTodos'), {
-    id: 'MNL-' + Date.now(),
+  const tags = document.getElementById('m-tags').value.split(/[,、]/).map(s=>s.trim()).filter(Boolean);
+  const assigneeUid = document.getElementById('m-assignee').value;
+  const assigneeName = assigneeUid ? (assigneeOptions.find(u=>u.uid===assigneeUid)?.name ||
+    document.getElementById('m-assignee').selectedOptions[0]?.textContent || '') : '';
+  const fields = {
     category:    document.getElementById('m-cat').value,
     sub_category:document.getElementById('m-sub').value.trim(),
     check_item:  document.getElementById('m-chk').value.trim(),
     title,
     detail:      document.getElementById('m-det').value.trim(),
     due_date:    due,
-    due_label:   due,
     frequency:   document.getElementById('m-freq').value,
+    department:  document.getElementById('m-dept').value,
+    assigneeUid,
+    assigneeName,
     tags,
-    status: 'todo',
-    source: 'manual',
-    progressLogs: [],
-    createdAt: serverTimestamp(),
-    createdBy: currentUser.uid,
-    createdByName: userName,
-  });
+    updatedAt: serverTimestamp(),
+  };
+  if (editingDocId) {
+    await updateDoc(doc(db,'miraiTodos',editingDocId), fields);
+  } else {
+    await addDoc(collection(db,'miraiTodos'), {
+      ...fields,
+      id: 'MNL-' + Date.now(),
+      due_label: due,
+      status: 'todo',
+      source: 'manual',
+      progressLogs: [],
+      createdAt: serverTimestamp(),
+      createdBy: currentUser.uid,
+      createdByName: userName,
+    });
+  }
   closeAddModal();
   await loadTodos();
 };
@@ -565,6 +652,7 @@ onAuthStateChanged(auth, async user => {
   if (canWrite()) {
     document.getElementById('btn-add').style.display = 'block';
     await seedIfEmpty();
+    await loadModalOptions();
   }
   await loadTodos();
 });
