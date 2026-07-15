@@ -70,7 +70,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .detail-box{font-size:12px;color:var(--mid);line-height:1.85;margin:12px 0;background:#F9FAFB;border-radius:8px;padding:10px 12px;white-space:pre-wrap}
 .due-label-row{font-size:11px;color:var(--mid);margin-bottom:8px}
 .tags-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
-.tag-pill{font-size:10px;padding:2px 8px;border-radius:10px;background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE}
+.tag-pill{font-size:10px;padding:2px 8px;border-radius:10px;background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE;cursor:pointer;transition:background .15s}
+.tag-pill:hover{background:#DBEAFE}
 /* progress */
 .prog-section{margin-top:10px}
 .prog-heading{font-size:12px;font-weight:700;color:#333;margin-bottom:8px}
@@ -415,7 +416,7 @@ function renderList() {
   <div class="todo-body" id="body-${t._docId}">
     ${t.due_label ? `<div class="due-label-row" style="margin-top:10px">📅 ${t.due_label}</div>` : ''}
     <div class="detail-box">${t.detail || '（詳細なし）'}</div>
-    <div class="tags-row">${(t.tags||[]).map(g=>`<span class="tag-pill">${g}</span>`).join('')}</div>
+    <div class="tags-row">${(t.tags||[]).map(g=>`<span class="tag-pill" onclick="filterByTag(event,'${g.replace(/'/g,"\\'")}')" title="このタグで絞り込む">${g}</span>`).join('')}</div>
     <div class="prog-section">
       <div class="prog-heading">進捗ログ</div>
       ${logs.length ? `<div class="prog-timeline">${logs.map(l=>`
@@ -438,6 +439,16 @@ function renderList() {
 </div>`;
   }).join('');
 }
+
+// ── タグクリックで絞り込み ────────────────────────────────
+window.filterByTag = function(ev, tag) {
+  ev.stopPropagation(); // カードの開閉を防ぐ
+  const kw = document.getElementById('f-kw');
+  if (kw.value === tag) { kw.value = ''; }   // 同じタグ再クリックで解除
+  else { kw.value = tag; }
+  applyFilters();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
 // ── カード開閉 ───────────────────────────────────────────
 window.toggleCard = function(docId) {
