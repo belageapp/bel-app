@@ -295,15 +295,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
           <button class="btn btn-blue" onclick="showAddUserForm()">＋ ユーザーを招待</button>
         </div>
         <div class="card-body" style="padding:0">
-          <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table style="width:100%;min-width:920px;border-collapse:collapse;font-size:13px">
             <thead><tr>
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">氏名</th>
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">メールアドレス</th>
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">ロール</th>
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">役職</th>
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">上司</th>
-              <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">担当</th>
+              <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">所属事業所</th>
               <th style="text-align:center;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">状態</th>
               <th style="text-align:center;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">操作</th>
             </tr></thead>
@@ -332,13 +332,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
           </div>
           <div class="form-group">
             <label>ロール <span style="color:#C0392B">*</span></label>
-            <select id="new-user-role" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
-              <option value="manager">事業所管理者</option>
-              <option value="unit_manager">ユニットマネジャー</option>
-              <option value="area_manager">エリアマネジャー</option>
-              <option value="support">事業支援課</option>
-              <option value="admin" id="admin-option" style="display:none">Administrator</option>
+            <select id="new-user-role" style="width:260px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="manager">manager｜自事業所入力</option>
+              <option value="unit_manager">unit_manager｜承認・閲覧</option>
+              <option value="area_manager">area_manager｜承認・閲覧</option>
+              <option value="support">support｜全編集</option>
+              <option value="admin" id="admin-option" style="display:none">admin｜全権限</option>
             </select>
+            <div style="font-size:11px;color:#888;margin-top:4px">※ システム上の操作権限です。社内の肩書きは「役職」で設定してください</div>
           </div>
           <div class="form-group">
             <label>役職（社内）</label>
@@ -361,10 +362,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
             <div style="font-size:11px;color:#888;margin-top:4px">※ 承認フローで報告を確認する人を指定します</div>
           </div>
           <div class="form-group">
-            <label>担当事業所（管理者の場合）</label>
+            <label>所属事業所</label>
             <select id="new-user-office" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
               <option value="">－</option>
             </select>
+            <div style="font-size:11px;color:#888;margin-top:4px">※ manager ロールの場合は速報入力の対象事業所になります</div>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px">
             <button class="btn btn-primary" onclick="createUser()">招待する</button>
@@ -385,13 +387,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
           </div>
           <div class="form-group">
             <label>ロール</label>
-            <select id="edit-user-role" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
-              <option value="manager">事業所管理者</option>
-              <option value="unit_manager">ユニットマネジャー</option>
-              <option value="area_manager">エリアマネジャー</option>
-              <option value="support">事業支援課</option>
-              <option value="admin" id="edit-admin-option" style="display:none">Administrator</option>
+            <select id="edit-user-role" style="width:260px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="manager">manager｜自事業所入力</option>
+              <option value="unit_manager">unit_manager｜承認・閲覧</option>
+              <option value="area_manager">area_manager｜承認・閲覧</option>
+              <option value="support">support｜全編集</option>
+              <option value="admin" id="edit-admin-option" style="display:none">admin｜全権限</option>
             </select>
+            <div style="font-size:11px;color:#888;margin-top:4px">※ システム上の操作権限です。社内の肩書きは「役職」で設定してください</div>
           </div>
           <div class="form-group">
             <label>役職（社内）</label>
@@ -414,10 +417,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
             <div style="font-size:11px;color:#888;margin-top:4px">※ 承認フローで報告を確認する人を指定します</div>
           </div>
           <div class="form-group">
-            <label>担当事業所</label>
+            <label>所属事業所</label>
             <select id="edit-user-office" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
               <option value="">－</option>
             </select>
+            <div style="font-size:11px;color:#888;margin-top:4px">※ manager ロールの場合は速報入力の対象事業所になります</div>
           </div>
           <div class="form-group">
             <label>アカウント状態</label>
@@ -455,10 +459,11 @@ const db = getFirestore(app);
 
 // ===== 認証チェック =====
 const auth = getAuth(app);
+// システム権限ロール（役職とは別物。役職は position フィールドで管理）
 const ROLE_LABELS = {
-  admin:'Administrator', support:'事業支援課',
-  area_manager:'エリアマネジャー', unit_manager:'ユニットマネジャー',
-  manager:'事業所管理者'
+  admin:'admin｜全権限', support:'support｜全編集',
+  area_manager:'area_manager｜承認・閲覧', unit_manager:'unit_manager｜承認・閲覧',
+  manager:'manager｜自事業所入力'
 };
 let currentUserData = null;
 
