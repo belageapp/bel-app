@@ -301,11 +301,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">氏名</th>
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">メールアドレス</th>
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">ロール</th>
+              <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">役職</th>
+              <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">上司</th>
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">担当</th>
               <th style="text-align:center;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">状態</th>
               <th style="text-align:center;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">操作</th>
             </tr></thead>
-            <tbody id="users-tbody"><tr><td colspan="6" class="empty">読み込み中...</td></tr></tbody>
+            <tbody id="users-tbody"><tr><td colspan="8" class="empty">読み込み中...</td></tr></tbody>
           </table>
           </div>
         </div>
@@ -339,6 +341,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
             </select>
           </div>
           <div class="form-group">
+            <label>役職（社内）</label>
+            <select id="new-user-position" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="">（未設定）</option>
+              <option>社長</option>
+              <option>役員</option>
+              <option>エリアマネジャー</option>
+              <option>ユニットマネジャー</option>
+              <option>事業支援課</option>
+              <option>事業所管理者</option>
+            </select>
+            <div style="font-size:11px;color:#888;margin-top:4px">※ システム権限（ロール）とは別の、社内の肩書きです</div>
+          </div>
+          <div class="form-group">
+            <label>上司（直属）</label>
+            <select id="new-user-supervisor" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="">（なし）</option>
+            </select>
+            <div style="font-size:11px;color:#888;margin-top:4px">※ 承認フローで報告を確認する人を指定します</div>
+          </div>
+          <div class="form-group">
             <label>担当事業所（管理者の場合）</label>
             <select id="new-user-office" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
               <option value="">－</option>
@@ -370,6 +392,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
               <option value="support">事業支援課</option>
               <option value="admin" id="edit-admin-option" style="display:none">Administrator</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label>役職（社内）</label>
+            <select id="edit-user-position" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="">（未設定）</option>
+              <option>社長</option>
+              <option>役員</option>
+              <option>エリアマネジャー</option>
+              <option>ユニットマネジャー</option>
+              <option>事業支援課</option>
+              <option>事業所管理者</option>
+            </select>
+            <div style="font-size:11px;color:#888;margin-top:4px">※ システム権限（ロール）とは別の、社内の肩書きです</div>
+          </div>
+          <div class="form-group">
+            <label>上司（直属）</label>
+            <select id="edit-user-supervisor" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="">（なし）</option>
+            </select>
+            <div style="font-size:11px;color:#888;margin-top:4px">※ 承認フローで報告を確認する人を指定します</div>
           </div>
           <div class="form-group">
             <label>担当事業所</label>
@@ -961,7 +1003,7 @@ async function init(){
 async function loadUsers() {
   const tb = document.getElementById('users-tbody');
   if (!tb) return;
-  tb.innerHTML = '<tr><td colspan="6" class="empty">読み込み中...</td></tr>';
+  tb.innerHTML = '<tr><td colspan="8" class="empty">読み込み中...</td></tr>';
   try {
     // officesがまだ読み込まれていない場合は読み込む
     if (!cache.offices.length) await loadOffices();
@@ -970,6 +1012,7 @@ async function loadUsers() {
     const users = [];
     snap.forEach(d => users.push({id:d.id,...d.data()}));
     users.sort((a,b)=>(a.displayName||'').localeCompare(b.displayName||'','ja'));
+    cache.allUsers = users;
 
     // 事業所セレクターにも反映
     const officeOpts = ['<option value="">－</option>',
@@ -977,13 +1020,21 @@ async function loadUsers() {
     document.getElementById('new-user-office').innerHTML = officeOpts;
     document.getElementById('edit-user-office').innerHTML = officeOpts;
 
+    // 上司セレクター（有効ユーザーのみ）
+    const supOpts = ['<option value="">（なし）</option>',
+      ...users.filter(u=>!u.disabled).map(u=>`<option value="${u.id}">${u.displayName||u.email}</option>`)].join('');
+    document.getElementById('new-user-supervisor').innerHTML = supOpts;
+    document.getElementById('edit-user-supervisor').innerHTML = supOpts;
+
     if (!users.length) {
-      tb.innerHTML = '<tr><td colspan="6" class="empty">ユーザーがいません</td></tr>';
+      tb.innerHTML = '<tr><td colspan="8" class="empty">ユーザーがいません</td></tr>';
       return;
     }
 
     const officeMap = {};
     cache.offices.forEach(o => officeMap[o.id] = o.name);
+    const userMap = {};
+    users.forEach(u => userMap[u.id] = u.displayName || u.email || '');
 
     tb.innerHTML = users.map(u => {
       const roleBadge = `<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#EBF3FB;color:#185FA5">${ROLE_LABELS[u.role]||u.role}</span>`;
@@ -991,10 +1042,15 @@ async function loadUsers() {
         ? '<span style="padding:2px 8px;border-radius:10px;font-size:11px;background:#FFF0F4;color:#C0392B">無効</span>'
         : '<span style="padding:2px 8px;border-radius:10px;font-size:11px;background:#E8F5EE;color:#1D6E3E">有効</span>';
       const office = u.officeId ? (officeMap[u.officeId] || u.officeId) : '－';
+      const posBadge = u.position
+        ? `<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#F0FAF6;color:#0F6E56">${u.position}</span>` : '－';
+      const supervisor = u.supervisorUid ? (userMap[u.supervisorUid] || '－') : '－';
       return `<tr>
         <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5;font-weight:500">${u.displayName||'－'}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5;font-size:12px;color:#888">${u.email||'－'}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5">${roleBadge}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5">${posBadge}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5;font-size:12px">${supervisor}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5;font-size:12px">${office}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5;text-align:center">${statusBadge}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #f5f5f5;text-align:center">
@@ -1002,7 +1058,7 @@ async function loadUsers() {
         </td>
       </tr>`;
     }).join('');
-  } catch(e) { tb.innerHTML = `<tr><td colspan="6" class="empty">エラー: ${e.message}</td></tr>`; }
+  } catch(e) { tb.innerHTML = `<tr><td colspan="8" class="empty">エラー: ${e.message}</td></tr>`; }
 }
 
 window.showAddUserForm = function() {
@@ -1045,6 +1101,8 @@ window.createUser = async function() {
     const uid = data.localId;
     await setDoc(doc(db,'users',uid), {
       uid, email, displayName:name, role,
+      position: document.getElementById('new-user-position').value || null,
+      supervisorUid: document.getElementById('new-user-supervisor').value || null,
       officeId: officeId||null,
       areaId: null,
       disabled: false,
@@ -1076,6 +1134,13 @@ window.editUser = function(uid) {
     document.getElementById('edit-user-title').textContent = `${u.displayName||u.email} を編集`;
     document.getElementById('edit-user-name').value = u.displayName||'';
     document.getElementById('edit-user-role').value = u.role||'manager';
+    document.getElementById('edit-user-position').value = u.position||'';
+    // 上司セレクター：自分自身は除外して再構築
+    const supSel = document.getElementById('edit-user-supervisor');
+    const supUsers = (cache.allUsers||[]).filter(x=>!x.disabled && x.id!==uid);
+    supSel.innerHTML = '<option value="">（なし）</option>' +
+      supUsers.map(x=>`<option value="${x.id}">${x.displayName||x.email}</option>`).join('');
+    supSel.value = u.supervisorUid||'';
     document.getElementById('edit-user-office').value = u.officeId||'';
     document.getElementById('edit-user-disabled').value = u.disabled ? 'true' : 'false';
     document.getElementById('edit-user-card').style.display = 'block';
@@ -1101,10 +1166,15 @@ window.saveUser = async function() {
   // 自分自身の無効化・ロール変更を防止
   if (uid === currentUserData?.uid && disabled) { status.textContent='自分自身を無効化することはできません'; status.style.color='#C0392B'; return; }
 
+  const supervisorUid = document.getElementById('edit-user-supervisor').value;
+  if (supervisorUid === uid) { status.textContent='自分自身を上司にはできません'; status.style.color='#C0392B'; return; }
+
   status.textContent = '保存中...'; status.style.color='#888';
   try {
     await setDoc(doc(db,'users',uid), {
       displayName: name, role,
+      position: document.getElementById('edit-user-position').value || null,
+      supervisorUid: supervisorUid || null,
       officeId: officeId||null,
       disabled,
     }, {merge:true});
