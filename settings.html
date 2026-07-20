@@ -303,7 +303,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">氏名</th>
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">メールアドレス</th>
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">ロール</th>
-              <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">役職</th>
+              <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">役割</th>
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">上司</th>
               <th style="text-align:left;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">所属事業所</th>
               <th style="text-align:center;padding:8px 12px;background:#F8F9FA;color:#555;font-weight:500;border-bottom:1px solid #E8EAED">状態</th>
@@ -340,22 +340,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
               <option value="supporter">supporter｜サポーター（全編集）</option>
               <option value="admin" id="admin-option" style="display:none">admin｜システム管理者</option>
             </select>
-            <div style="font-size:11px;color:#888;margin-top:4px">※ システム上の操作権限です。社内の肩書きは「役職」で設定してください</div>
+            <div style="font-size:11px;color:#888;margin-top:4px">※ システム上の操作権限です。社内の役割は「役割」で設定してください</div>
           </div>
           <div class="form-group" id="new-perms-wrap" style="display:none">
             <label>編集者の権限（複数選択可）</label>
             <div id="new-perms-list" style="display:flex;flex-direction:column;gap:4px;border:1px solid #E8EAED;border-radius:6px;padding:10px 12px;max-width:340px;background:#fff"></div>
           </div>
           <div class="form-group">
-            <label>役職（社内）</label>
+            <label>役割</label>
             <select id="new-user-position" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
               <option value="">（未設定）</option>
-              <option>社長</option>
               <option>役員</option>
               <option>エリアマネジャー</option>
               <option>ユニットマネジャー</option>
-              <option>事業支援課</option>
-              <option>事業所管理者</option>
+              <option>エキスパート</option>
+              <option>管理者</option>
             </select>
             <div style="font-size:11px;color:#888;margin-top:4px">※ システム権限（ロール）とは別の、社内の肩書きです</div>
           </div>
@@ -398,22 +397,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
               <option value="supporter">supporter｜サポーター（全編集）</option>
               <option value="admin" id="edit-admin-option" style="display:none">admin｜システム管理者</option>
             </select>
-            <div style="font-size:11px;color:#888;margin-top:4px">※ システム上の操作権限です。社内の肩書きは「役職」で設定してください</div>
+            <div style="font-size:11px;color:#888;margin-top:4px">※ システム上の操作権限です。社内の役割は「役割」で設定してください</div>
           </div>
           <div class="form-group" id="edit-perms-wrap" style="display:none">
             <label>編集者の権限（複数選択可）</label>
             <div id="edit-perms-list" style="display:flex;flex-direction:column;gap:4px;border:1px solid #E8EAED;border-radius:6px;padding:10px 12px;max-width:340px;background:#fff"></div>
           </div>
           <div class="form-group">
-            <label>役職（社内）</label>
+            <label>役割</label>
             <select id="edit-user-position" style="width:200px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
               <option value="">（未設定）</option>
-              <option>社長</option>
               <option>役員</option>
               <option>エリアマネジャー</option>
               <option>ユニットマネジャー</option>
-              <option>事業支援課</option>
-              <option>事業所管理者</option>
+              <option>エキスパート</option>
+              <option>管理者</option>
             </select>
             <div style="font-size:11px;color:#888;margin-top:4px">※ システム権限（ロール）とは別の、社内の肩書きです</div>
           </div>
@@ -468,7 +466,7 @@ const db = getFirestore(app);
 
 // ===== 認証チェック =====
 const auth = getAuth(app);
-// システム権限ロール（役職とは別物。役職は position フィールドで管理）
+// システム権限ロール（役割とは別物。役割は position フィールドで管理）
 // 新体系: user / editor / supporter / admin（旧ロールは perm.js が自動変換）
 const ROLE_LABELS = {
   admin:'admin｜システム管理者', supporter:'supporter｜全編集', support:'supporter｜全編集（旧）',
@@ -1182,7 +1180,12 @@ window.editUser = function(uid) {
     document.getElementById('edit-user-role').value = resolved.tier;
     setPermChecks('edit', resolved.permissions);
     window.togglePermBox('edit');
-    document.getElementById('edit-user-position').value = u.position||'';
+    // 旧選択肢（社長・事業支援課など）が設定済みでも表示できるよう一時追加
+    const posSel = document.getElementById('edit-user-position');
+    if (u.position && ![...posSel.options].some(o=>o.value===u.position)) {
+      posSel.insertAdjacentHTML('beforeend', `<option value="${u.position}">${u.position}（旧）</option>`);
+    }
+    posSel.value = u.position||'';
     // 上司セレクター：自分自身は除外して再構築
     const supSel = document.getElementById('edit-user-supervisor');
     const supUsers = (cache.allUsers||[]).filter(x=>!x.disabled && x.id!==uid);
