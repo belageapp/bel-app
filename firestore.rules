@@ -2,7 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ログイン済みかつusersコレクションに存在するユーザーのみアクセス可
+    // ============================================================
+    // 権限モデル（perm.js と対応）
+    //   tier: user（一般）/ editor（機能別付与）/ supporter（全編集）/ admin
+    //   旧ロール（support/area_manager/unit_manager/manager）は自動変換
+    // ============================================================
     function isAuth() {
       return request.auth != null;
     }
@@ -11,35 +15,57 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    function getRole() {
+    // 無効化されていない登録済みユーザー
+    function isActiveUser() {
+      return isAuth()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && getUserData().disabled != true;
+    }
+
+    function roleOf() {
       return getUserData().role;
     }
 
+    // 旧ロール → 新tier 変換
+    function tierOf() {
+      return roleOf() == 'support' ? 'supporter'
+           : (roleOf() == 'area_manager' || roleOf() == 'unit_manager') ? 'editor'
+           : roleOf() == 'manager' ? 'user'
+           : roleOf(); // admin / supporter / editor / user
+    }
+
     function isAdmin() {
-      return isAuth() && getRole() == 'admin';
+      return isActiveUser() && tierOf() == 'admin';
     }
 
-    function isSupport() {
-      return isAuth() && getRole() in ['admin', 'support'];
+    function isSupporter() {
+      return isActiveUser() && (tierOf() == 'admin' || tierOf() == 'supporter');
     }
 
-    function isAreaManager() {
-      return isAuth() && getRole() in ['admin', 'support', 'area_manager', 'unit_manager'];
+    // 機能別権限：admin/supporterは常時、editorは付与フラグ（旧ロールは既定権限も許容）
+    function hasPerm(p) {
+      return isActiveUser() && (
+        tierOf() == 'admin' || tierOf() == 'supporter'
+        || (tierOf() == 'editor' && (
+             getUserData().get('permissions', []).hasAny([p])
+             || (roleOf() == 'area_manager' && p in ['todo.edit', 'workdays.approve', 'morning.write'])
+             || (roleOf() == 'unit_manager' && p in ['workdays.approve', 'morning.write'])
+           ))
+      );
     }
 
-    function isManager() {
-      return isAuth() && getRole() in ['admin', 'support', 'area_manager', 'unit_manager', 'manager'];
-    }
+    // ============================================================
+    // コレクション別ルール
+    // ============================================================
 
-    function isOwnOffice(officeId) {
-      return getUserData().officeId == officeId || getRole() in ['admin', 'support', 'area_manager', 'unit_manager'];
-    }
-
-    // users コレクション
+    // users：閲覧は全員／管理はsupporter以上
+    // 自分自身の更新は可（ただし role・permissions・disabled の自己変更は禁止）
     match /users/{userId} {
       allow read: if isAuth();
-      allow write: if isSupport();
-      allow update: if isAuth() && request.auth.uid == userId; // 自分自身は更新可
+      allow write: if isSupporter();
+      allow update: if isAuth() && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys()
+             .hasAny(['role', 'permissions', 'disabled']);
     }
 
     // roles コレクション
@@ -48,111 +74,98 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // offices コレクション
+    // マスタ設定（master.edit）
     match /offices/{officeId} {
       allow read: if isAuth();
-      allow write: if isSupport();
+      allow write: if hasPerm('master.edit');
     }
-
-    // prices コレクション
     match /prices/{priceId} {
       allow read: if isAuth();
-      allow write: if isSupport();
+      allow write: if hasPerm('master.edit');
     }
-
-    // areas コレクション
     match /areas/{areaId} {
       allow read: if isAuth();
-      allow write: if isSupport();
+      allow write: if hasPerm('master.edit');
     }
-
-    // departments コレクション
     match /departments/{deptId} {
       allow read: if isAuth();
-      allow write: if isSupport();
+      allow write: if hasPerm('master.edit');
     }
-
-    // serviceTypes コレクション
     match /serviceTypes/{id} {
       allow read: if isAuth();
-      allow write: if isSupport();
+      allow write: if hasPerm('master.edit');
     }
-
-    // serviceCodes コレクション
     match /serviceCodes/{id} {
       allow read: if isAuth();
       allow write: if isAdmin();
     }
 
-    // workdays コレクション
+    // workdays：申請は全ユーザー（基本入力）、承認状態の管理も含め書き込み可
     match /workdays/{docId} {
       allow read: if isAuth();
-      allow write: if isManager();
+      allow write: if isActiveUser();
     }
 
-    // reports コレクション（速報入力）
-    // delete は固定ID移行時の旧ドキュメント掃除で manager も使用するため isManager
+    // reports（速報入力）：基本入力として全ユーザー
     match /reports/{reportId} {
       allow read: if isAuth();
-      allow create: if isManager();
-      allow update: if isManager();
-      allow delete: if isManager();
+      allow create, update, delete: if isActiveUser();
     }
 
-    // actuals コレクション（国保連CSV）
+    // 国保連CSV取込（import.use）
     match /actuals/{docId} {
       allow read: if isAuth();
-      allow write: if isSupport();
+      allow write: if hasPerm('import.use');
       match /months/{month} {
         allow read: if isAuth();
-        allow write: if isSupport();
+        allow write: if hasPerm('import.use');
         match /billing/{billingId} {
           allow read: if isAuth();
-          allow write: if isSupport();
+          allow write: if hasPerm('import.use');
         }
       }
     }
-
-    // dailyActuals コレクション
     match /dailyActuals/{docId} {
       allow read: if isAuth();
-      allow write: if isSupport();
+      allow write: if hasPerm('import.use');
     }
 
-    // dailyPlanned コレクション
+    // 月次の予定編集（monthly.edit）
     match /dailyPlanned/{docId} {
       allow read: if isAuth();
-      allow write: if isSupport();
+      allow write: if hasPerm('monthly.edit');
     }
 
-    // tasks コレクション
+    // tasks：全ユーザー
     match /tasks/{taskId} {
       allow read: if isAuth();
-      allow write: if isManager();
+      allow write: if isActiveUser();
     }
 
-    // notices コレクション
+    // notices（お知らせ配信：notice.write）
     match /notices/{noticeId} {
       allow read: if isAuth();
-      allow write: if isSupport();
+      allow write: if hasPerm('notice.write');
     }
-    
-    // morning_reports コレクション（朝礼週次報告）
+
+    // 朝礼週次報告：自分名義の報告のみ書き込み可（supporter以上は制限なし）
     match /morning_reports/{docId} {
       allow read: if isAuth();
-      allow write: if isAreaManager();
+      allow write: if isSupporter()
+        || (isActiveUser() && request.resource.data.managerUid == request.auth.uid);
+      allow delete: if isSupporter();
     }
-    
-    // salaries コレクション（賃金台帳）
+
+    // 賃金台帳（機微情報）：閲覧も salary.view が必要
     match /salaries/{docId} {
-      allow read: if isAuth();
-      allow write: if isSupport();
+      allow read: if hasPerm('salary.view');
+      allow write: if isSupporter();
     }
-    
-    // 未来創造企業 ToDo
+
+    // 未来創造企業 ToDo（todo.edit）
     match /miraiTodos/{docId} {
       allow read: if isAuth();
-      allow write: if isAuth() && getRole() in ['admin', 'support', 'area_manager'];
+      allow write: if hasPerm('todo.edit');
     }
   }
 }

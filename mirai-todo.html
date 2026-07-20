@@ -210,6 +210,7 @@ textarea.prog-textarea:focus{outline:none;border-color:#2563EB}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { can, resolveTier } from './perm.js';
 import {
   getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, doc,
   query, orderBy, limit, serverTimestamp, writeBatch
@@ -328,8 +329,8 @@ let currentUser = null;
 let userRole = '';
 let userName = '';
 
-const CAN_WRITE_ROLES = ['admin','support','area_manager'];
-const canWrite = () => CAN_WRITE_ROLES.includes(userRole);
+let userData = null; // usersドキュメント（権限判定用）
+const canWrite = () => can(userData, 'todo.edit');
 
 // ── 期限判定 ─────────────────────────────────────────────
 function dueStatus(due_date, status) {
@@ -511,7 +512,7 @@ window.changeStatus = async function(docId, newStatus) {
 
 // ── 部門・担当者・メンバーの選択肢 ────────────────────────
 const FIXED_DEPTS = ['事業支援部','役員'];
-const ASSIGNEE_ROLES = ['admin','area_manager','unit_manager','support']; // 代表(admin)も含む
+// 担当者候補：一般ユーザー（user tier）以外の個人アカウント
 let deptOptions = [];      // 部署一覧 + 固定項目
 let assigneeOptions = [];  // {uid, name} 担当者候補
 let memberOptions = [];    // {uid, name} メンバー候補（全有効ユーザー）
@@ -528,7 +529,7 @@ async function loadModalOptions() {
       .map(d=>({ uid:d.id, name:d.data().name||d.data().displayName||d.data().email||'', role:d.data().role, disabled:d.data().disabled }))
       .filter(u=>!u.disabled && u.name)
       .sort((a,b)=>a.name.localeCompare(b.name,'ja'));
-    assigneeOptions = all.filter(u=>ASSIGNEE_ROLES.includes(u.role));
+    assigneeOptions = all.filter(u=>resolveTier(u).tier !== 'user');
     memberOptions = all;
   } catch(e) { console.error('users:', e); assigneeOptions = []; memberOptions = []; }
   const deptSel = document.getElementById('m-dept');
@@ -702,7 +703,7 @@ onAuthStateChanged(auth, async user => {
   currentUser = user;
   try {
     const ud = await getDoc(doc(db,'users',user.uid));
-    if (ud.exists()) { userRole = ud.data().role || ''; userName = ud.data().name || user.email; }
+    if (ud.exists()) { userData = ud.data(); userRole = userData.role || ''; userName = userData.name || userData.displayName || user.email; }
     else { userName = user.email; }
   } catch(e) {
     console.error('userDoc:', e);

@@ -541,6 +541,7 @@ textarea:focus{border-color:#1D9E75}
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, deleteDoc, updateDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { can, resolveTier } from './perm.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
@@ -1196,13 +1197,13 @@ function updateFormBadge(r, isLaf){
     b.className='status-pill'+(isReported?' done':'');
     hasActual=!!isReported;
   }
-  const isAdmin=currentUserData?.role==='admin';
+  const isAdmin=can(currentUserData,'daily.reset');
   const btnId=isLaf?'lafore-reset-btn':'reset-btn';
   document.getElementById(btnId).style.display=(hasActual&&isAdmin)?'block':'none';
 }
 
 window.resetActual=async function(){
-  if(currentUserData?.role!=='admin'){showToast('管理者のみ実行できます');return;}
+  if(!can(currentUserData,'daily.reset')){showToast('管理者のみ実行できます');return;}
   if(!confirm('実績をリセットします。予定・問合せ・見学・契約は保持されます。よろしいですか？'))return;
   const isLaf=isLafore(state.cur);
   const dateVal=state.formDate;

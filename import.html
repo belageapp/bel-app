@@ -184,6 +184,7 @@ th{background:#f5f5f5;text-align:center;font-weight:600;color:#555;font-size:11p
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, doc, getDoc, setDoc, getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { can } from './perm.js';
 
 const firebaseConfig = {
   apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
@@ -213,6 +214,11 @@ onAuthStateChanged(auth, async user => {
       await signOut(auth); location.href = 'login.html'; return;
     }
     currentUserData = snap.data();
+    // 権限チェック：import.use が無ければ操作不可
+    if (!can(currentUserData, 'import.use')) {
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:-apple-system,sans-serif;color:#888;font-size:14px">このページへのアクセス権限がありません（国保連CSV取込）</div>';
+      return;
+    }
     // ユーザー表示
     const el = document.getElementById('top-bar-user-info');
     if (el) {

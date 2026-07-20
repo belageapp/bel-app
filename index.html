@@ -253,6 +253,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { can, resolveTier } from './perm.js';
 import { getFirestore, collection, doc, getDoc, getDocs, query, orderBy, limit, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -305,9 +306,10 @@ function dashFindLocation(officeName){
   return null;
 }
 
-function dashComputeOpenState(role, userOfficeName){
-  if(role==='admin'||role==='area_manager')return{type:'all_open'};
-  if(role==='support')return{type:'support'};
+function dashComputeOpenState(userData, userOfficeName){
+  const tier = resolveTier(userData||{role:'admin'}).tier;
+  if(tier==='admin'||tier==='editor')return{type:'all_open'};
+  if(tier==='supporter')return{type:'support'};
   const loc=userOfficeName?dashFindLocation(userOfficeName):null;
   return{type:'own_area',loc};
 }
@@ -354,7 +356,7 @@ async function loadDashboard(){
       idToOfficeName[d.id]=data.name;
     });
     const userOfficeName=dashUserData&&dashUserData.officeId?idToOfficeName[dashUserData.officeId]||null:null;
-    const openState=dashComputeOpenState(dashUserData?dashUserData.role:'admin',userOfficeName);
+    const openState=dashComputeOpenState(dashUserData,userOfficeName);
 
     // 2. workdays（月の稼働日）
     const fy=dashMonth>=4?dashYear:dashYear-1;
@@ -499,18 +501,13 @@ function renderDashboard(statsMap, openState){
   document.getElementById('dash-content').innerHTML=html;
 }
 
-// ロール別メニュー表示制御
-function applyMenuByRole(role) {
-  // managerは速報入力のみ（他は権限に応じて非表示）
-  if (role === 'manager') {
+// 権限別メニュー表示制御
+function applyMenuByRole(userData) {
+  if (!can(userData, 'import.use')) {
     document.getElementById('menu-import').classList.add('hidden');
   }
-  // area_manager・unit_managerはCSV取込・マスタ設定を非表示
-  if (role === 'area_manager' || role === 'unit_manager') {
-    document.getElementById('menu-import').classList.add('hidden');
-  }
-  // 事業所管理者は朝礼報告を非表示
-  if (role === 'manager') {
+  // 一般ユーザー（自事業所入力のみ）は朝礼報告を非表示
+  if (resolveTier(userData).tier === 'user') {
     document.getElementById('menu-morning-report').classList.add('hidden');
   }
 }
@@ -601,7 +598,7 @@ onAuthStateChanged(auth, async user => {
     document.getElementById('user-role').textContent = ROLE_LABELS[userData.role] || userData.role;
 
     // ロール別メニュー制御
-    applyMenuByRole(userData.role);
+    applyMenuByRole(userData);
 
     // タスク・お知らせ読み込み・ダッシュボード
     await Promise.all([

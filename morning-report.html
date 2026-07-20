@@ -218,6 +218,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getFirestore, collection, doc, getDoc, setDoc, query, where, getDocs }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut }
+import { can } from './perm.js';
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const firebaseConfig = {
@@ -375,10 +376,10 @@ async function loadMasterData() {
     return ai - bi;
   });
 
-  const role = currentUserData.role;
-  if (role === 'admin' || role === 'support') {
+  if (can(currentUserData, 'morning.write')) {
     myOffices = [...allOffices];
   } else {
+    // morning.write.own：自分が担当マネジャーの事業所のみ
     myOffices = allOffices.filter(o => o.managerUid === currentUser.uid);
   }
 }

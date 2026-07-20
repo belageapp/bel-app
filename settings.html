@@ -334,14 +334,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
           </div>
           <div class="form-group">
             <label>ロール <span style="color:#C0392B">*</span></label>
-            <select id="new-user-role" style="width:260px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
-              <option value="manager">manager｜自事業所入力</option>
-              <option value="unit_manager">unit_manager｜承認・閲覧</option>
-              <option value="area_manager">area_manager｜承認・閲覧</option>
-              <option value="support">support｜全編集</option>
-              <option value="admin" id="admin-option" style="display:none">admin｜全権限</option>
+            <select id="new-user-role" onchange="togglePermBox('new')" style="width:280px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="user">user｜一般（閲覧・基本入力）</option>
+              <option value="editor">editor｜編集者（機能別に付与）</option>
+              <option value="supporter">supporter｜サポーター（全編集）</option>
+              <option value="admin" id="admin-option" style="display:none">admin｜システム管理者</option>
             </select>
             <div style="font-size:11px;color:#888;margin-top:4px">※ システム上の操作権限です。社内の肩書きは「役職」で設定してください</div>
+          </div>
+          <div class="form-group" id="new-perms-wrap" style="display:none">
+            <label>編集者の権限（複数選択可）</label>
+            <div id="new-perms-list" style="display:flex;flex-direction:column;gap:4px;border:1px solid #E8EAED;border-radius:6px;padding:10px 12px;max-width:340px;background:#fff"></div>
           </div>
           <div class="form-group">
             <label>役職（社内）</label>
@@ -389,14 +392,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
           </div>
           <div class="form-group">
             <label>ロール</label>
-            <select id="edit-user-role" style="width:260px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
-              <option value="manager">manager｜自事業所入力</option>
-              <option value="unit_manager">unit_manager｜承認・閲覧</option>
-              <option value="area_manager">area_manager｜承認・閲覧</option>
-              <option value="support">support｜全編集</option>
-              <option value="admin" id="edit-admin-option" style="display:none">admin｜全権限</option>
+            <select id="edit-user-role" onchange="togglePermBox('edit')" style="width:280px;padding:8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:13px">
+              <option value="user">user｜一般（閲覧・基本入力）</option>
+              <option value="editor">editor｜編集者（機能別に付与）</option>
+              <option value="supporter">supporter｜サポーター（全編集）</option>
+              <option value="admin" id="edit-admin-option" style="display:none">admin｜システム管理者</option>
             </select>
             <div style="font-size:11px;color:#888;margin-top:4px">※ システム上の操作権限です。社内の肩書きは「役職」で設定してください</div>
+          </div>
+          <div class="form-group" id="edit-perms-wrap" style="display:none">
+            <label>編集者の権限（複数選択可）</label>
+            <div id="edit-perms-list" style="display:flex;flex-direction:column;gap:4px;border:1px solid #E8EAED;border-radius:6px;padding:10px 12px;max-width:340px;background:#fff"></div>
           </div>
           <div class="form-group">
             <label>役職（社内）</label>
@@ -447,6 +453,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, getDocs, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { can, resolveTier, TIER_LABELS, PERMISSION_FLAGS } from './perm.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
@@ -462,10 +469,11 @@ const db = getFirestore(app);
 // ===== 認証チェック =====
 const auth = getAuth(app);
 // システム権限ロール（役職とは別物。役職は position フィールドで管理）
+// 新体系: user / editor / supporter / admin（旧ロールは perm.js が自動変換）
 const ROLE_LABELS = {
-  admin:'admin｜全権限', support:'support｜全編集',
-  area_manager:'area_manager｜承認・閲覧', unit_manager:'unit_manager｜承認・閲覧',
-  manager:'manager｜自事業所入力'
+  admin:'admin｜システム管理者', supporter:'supporter｜全編集', support:'supporter｜全編集（旧）',
+  editor:'editor｜編集者', area_manager:'editor｜編集者（旧AM）', unit_manager:'editor｜編集者（旧UM）',
+  user:'user｜一般', manager:'user｜一般（旧）'
 };
 let currentUserData = null;
 
@@ -484,21 +492,21 @@ onAuthStateChanged(auth, async user => {
       document.getElementById('user-name-top').textContent = currentUserData.displayName || user.email;
       document.getElementById('user-role-top').textContent = ROLE_LABELS[currentUserData.role] || currentUserData.role;
     }
-    // ユーザー管理メニュー：admin・supportのみ表示
-    const role = currentUserData.role;
-    if (role === 'admin' || role === 'support') {
+    // ユーザー管理メニュー：supporter以上のみ表示
+    const myTier = resolveTier(currentUserData).tier;
+    if (myTier === 'admin' || myTier === 'supporter') {
       document.getElementById('nav-users').style.display = 'block';
     }
     // adminのみadminロール付与可能
-    if (role === 'admin') {
+    if (myTier === 'admin') {
       const adminOpt = document.getElementById('admin-option');
       const editAdminOpt = document.getElementById('edit-admin-option');
       if (adminOpt) adminOpt.style.display = 'block';
       if (editAdminOpt) editAdminOpt.style.display = 'block';
     }
-    // area_manager・unit_manager・managerはマスタ設定の編集不可（閲覧のみ）
-    // ただし稼働日設定（wd-save-btn）は現場マネージャーが操作するため除外
-    if (role === 'area_manager' || role === 'unit_manager' || role === 'manager') {
+    // master.edit 権限がない場合はマスタ設定の編集不可（閲覧のみ）
+    // ただし稼働日設定（wd-save-btn）は全員が操作できるため除外
+    if (!can(currentUserData, 'master.edit')) {
       document.querySelectorAll('.btn-primary,.btn-blue,.btn-danger').forEach(b => {
         if (b.id === 'wd-save-btn') return;
         b.disabled = true;
@@ -992,7 +1000,8 @@ async function loadManagers(){
   cache.managers = [];
   snap.forEach(d=>{
     const u = {id:d.id,...d.data()};
-    if(u.role==='unit_manager'||u.role==='area_manager') cache.managers.push(u);
+    // 担当マネジャー候補：一般ユーザー（user）以外の個人（editor/supporter/admin）
+    if(!u.disabled && resolveTier(u).tier !== 'user') cache.managers.push(u);
   });
   cache.managers.sort((a,b)=>(a.displayName||'').localeCompare(b.displayName||'','ja'));
 }
@@ -1043,8 +1052,12 @@ async function loadUsers() {
     const userMap = {};
     users.forEach(u => userMap[u.id] = u.displayName || u.email || '');
 
+    const PERM_SHORT = {'todo.edit':'ToDo','monthly.edit':'月次','workdays.approve':'稼働日承認','morning.write':'朝礼','master.edit':'マスタ','import.use':'取込','salary.view':'賃金','notice.write':'お知らせ'};
     tb.innerHTML = users.map(u => {
-      const roleBadge = `<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#EBF3FB;color:#185FA5">${ROLE_LABELS[u.role]||u.role}</span>`;
+      const resolved = resolveTier(u);
+      const permNote = resolved.tier === 'editor' && resolved.permissions.length
+        ? `<br><span style="font-size:10px;color:#999">${resolved.permissions.map(p=>PERM_SHORT[p]||p).join('・')}</span>` : '';
+      const roleBadge = `<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#EBF3FB;color:#185FA5">${ROLE_LABELS[u.role]||u.role}</span>${permNote}`;
       const statusBadge = u.disabled
         ? '<span style="padding:2px 8px;border-radius:10px;font-size:11px;background:#FFF0F4;color:#C0392B">無効</span>'
         : '<span style="padding:2px 8px;border-radius:10px;font-size:11px;background:#E8F5EE;color:#1D6E3E">有効</span>';
@@ -1068,9 +1081,32 @@ async function loadUsers() {
   } catch(e) { tb.innerHTML = `<tr><td colspan="8" class="empty">エラー: ${e.message}</td></tr>`; }
 }
 
+// ── editor権限チェックボックス ──────────────────
+function buildPermList(prefix) {
+  const el = document.getElementById(prefix + '-perms-list');
+  if (!el || el.children.length) return;
+  el.innerHTML = Object.entries(PERMISSION_FLAGS).map(([flag, label]) =>
+    `<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;cursor:pointer;margin:0">
+       <input type="checkbox" class="${prefix}-perm-cb" value="${flag}" style="width:15px;height:15px;cursor:pointer">${label}
+     </label>`).join('');
+}
+window.togglePermBox = function(prefix) {
+  buildPermList(prefix);
+  const role = document.getElementById(prefix === 'new' ? 'new-user-role' : 'edit-user-role').value;
+  document.getElementById(prefix + '-perms-wrap').style.display = role === 'editor' ? 'block' : 'none';
+};
+function getPermChecks(prefix) {
+  return [...document.querySelectorAll('.' + prefix + '-perm-cb:checked')].map(cb => cb.value);
+}
+function setPermChecks(prefix, flags) {
+  buildPermList(prefix);
+  document.querySelectorAll('.' + prefix + '-perm-cb').forEach(cb => { cb.checked = flags.includes(cb.value); });
+}
+
 window.showAddUserForm = function() {
   document.getElementById('add-user-card').style.display = 'block';
   document.getElementById('edit-user-card').style.display = 'none';
+  window.togglePermBox('new');
 };
 window.hideAddUserForm = function() {
   document.getElementById('add-user-card').style.display = 'none';
@@ -1089,7 +1125,7 @@ window.createUser = async function() {
 
   if (!email||!name||!password) { status.textContent='必須項目を入力してください'; status.style.color='#C0392B'; return; }
   if (password.length < 8) { status.textContent='パスワードは8文字以上にしてください'; status.style.color='#C0392B'; return; }
-  if (role==='admin' && currentUserData?.role!=='admin') { status.textContent='adminロールはadminのみ付与できます'; status.style.color='#C0392B'; return; }
+  if (role==='admin' && resolveTier(currentUserData).tier!=='admin') { status.textContent='adminロールはadminのみ付与できます'; status.style.color='#C0392B'; return; }
 
   status.textContent = 'ユーザーを作成中...'; status.style.color = '#888';
 
@@ -1108,6 +1144,7 @@ window.createUser = async function() {
     const uid = data.localId;
     await setDoc(doc(db,'users',uid), {
       uid, email, displayName:name, role,
+      permissions: role === 'editor' ? getPermChecks('new') : [],
       position: document.getElementById('new-user-position').value || null,
       supervisorUid: document.getElementById('new-user-supervisor').value || null,
       officeId: officeId||null,
@@ -1140,7 +1177,11 @@ window.editUser = function(uid) {
     document.getElementById('edit-user-uid').value = uid;
     document.getElementById('edit-user-title').textContent = `${u.displayName||u.email} を編集`;
     document.getElementById('edit-user-name').value = u.displayName||'';
-    document.getElementById('edit-user-role').value = u.role||'manager';
+    // 旧ロールは新体系（tier + permissions）に変換して表示
+    const resolved = resolveTier(u);
+    document.getElementById('edit-user-role').value = resolved.tier;
+    setPermChecks('edit', resolved.permissions);
+    window.togglePermBox('edit');
     document.getElementById('edit-user-position').value = u.position||'';
     // 上司セレクター：自分自身は除外して再構築
     const supSel = document.getElementById('edit-user-supervisor');
@@ -1169,7 +1210,7 @@ window.saveUser = async function() {
   const status   = document.getElementById('user-edit-status');
 
   if (!name) { status.textContent='氏名を入力してください'; status.style.color='#C0392B'; return; }
-  if (role==='admin' && currentUserData?.role!=='admin') { status.textContent='adminロールはadminのみ付与できます'; status.style.color='#C0392B'; return; }
+  if (role==='admin' && resolveTier(currentUserData).tier!=='admin') { status.textContent='adminロールはadminのみ付与できます'; status.style.color='#C0392B'; return; }
   // 自分自身の無効化・ロール変更を防止
   if (uid === currentUserData?.uid && disabled) { status.textContent='自分自身を無効化することはできません'; status.style.color='#C0392B'; return; }
 
@@ -1180,6 +1221,7 @@ window.saveUser = async function() {
   try {
     await setDoc(doc(db,'users',uid), {
       displayName: name, role,
+      permissions: role === 'editor' ? getPermChecks('edit') : [],
       position: document.getElementById('edit-user-position').value || null,
       supervisorUid: supervisorUid || null,
       officeId: officeId||null,
