@@ -1279,6 +1279,9 @@ window.selectOffice=async function(name){
     document.getElementById('lafore-weekly-planned-area').style.display='block';
     document.getElementById('weekly-planned-area').style.display='none';
     document.getElementById('lafore-weekly-plan-panel').style.display='none';
+    // 前回選択した通常事業所のブロックが残って表示されないよう明示的に隠す
+    document.getElementById('input-progress-area').style.display='none';
+    document.getElementById('history-area').style.display='none';
     await window.loadHistory();
   }else{
     document.getElementById('normal-input').style.display='block';
@@ -1309,6 +1312,9 @@ window.selectOffice=async function(name){
     document.getElementById('lafore-weekly-planned-area').style.display='none';
     document.getElementById('weekly-plan-panel').style.display='none';
     document.getElementById('lafore-weekly-plan-panel').style.display='none';
+    // 前回選択したラフォーレ事業所のブロックが残って表示されないよう明示的に隠す
+    document.getElementById('lafore-progress-area').style.display='none';
+    document.getElementById('lafore-history-area').style.display='none';
     await window.loadHistory();
   }
   document.getElementById('office-selector').style.display='none';
