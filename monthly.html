@@ -293,6 +293,7 @@ let viewMonth = now.getMonth() + 1; // 1-indexed
 
 // -------- データキャッシュ --------
 let capacities = {};   // office → capacity
+let officePrices = {}; // office → 単価
 let workdays   = {};   // office → { "YYYY-MM-DD": 0|1 }
 let reports    = {};   // "YYYY-MM-DD" → { office → {kids, care, work} }
 let dailyPlanned = {}; // office → { "YYYY-MM-DD": 予定人数 }
@@ -379,6 +380,7 @@ async function init() {
     const o = d.data();
     const p = prices[o.priceId];
     if (p && p.capacity) capacities[o.name] = p.capacity;
+    officePrices[o.name] = o.price ?? p?.price ?? 0;
   });
   await loadMonth();
 }
@@ -517,14 +519,15 @@ function render(fiscalYear, year, month, monthStr) {
       <span class="d-dow">${DOW_JP[dow]}</span>
     </th>`;
   });
-  html += `<th class="th-summary" style="min-width:20px;font-size:9px"></th>
-    <th class="th-summary" style="min-width:36px;font-size:9px">予実</th>
-    <th class="th-summary" style="min-width:36px;font-size:9px">目標</th>
+  html += `<th class="th-summary" style="min-width:36px;font-size:9px">目標</th>
+    <th class="th-summary" style="min-width:36px;font-size:9px">実績</th>
     <th class="th-summary" style="min-width:32px;font-size:9px">達成率</th>
+    <th class="th-summary" style="min-width:32px;font-size:9px">平均</th>
+    <th class="th-summary" style="min-width:36px;font-size:9px">予定</th>
     <th class="th-summary" style="min-width:28px;font-size:9px">キャン<br>セル</th>
+    <th class="th-summary" style="min-width:44px;font-size:9px">キャンセル<br>概算</th>
     <th class="th-summary" style="min-width:28px;font-size:9px">稼働<br>予定</th>
-    <th class="th-summary" style="min-width:28px;font-size:9px">稼働<br>実績</th>
-    <th class="th-summary" style="min-width:32px;font-size:9px">平均</th>`;
+    <th class="th-summary" style="min-width:28px;font-size:9px">稼働<br>実績</th>`;
   html += '</tr></thead>';
 
   // ===== ボディ =====
@@ -597,6 +600,7 @@ function officeRows(o, dates, goals, actuals, explicitPlanned, todayStr) {
     if (ep == null || av == null) return s;
     return s + Math.max(0, ep - av);
   }, 0);
+  const cancelEstimate = monthCancel * (officePrices[o] || 0);
 
   // === 予約行 ===
   html += `<tr>`;
@@ -619,16 +623,16 @@ function officeRows(o, dates, goals, actuals, explicitPlanned, todayStr) {
     </td>`;
   });
 
-  // 月計1列目：予ラベル（予約行）
-  html += `<td class="td-sum" rowspan="1" style="vertical-align:middle;text-align:center;padding:0 4px;font-size:9px;color:#5B9BD5;font-weight:700;border-right:1px solid #E8EAED">予</td>`;
-  // 月計2列目以降：予約値（予約行rowspan=1）
-  html += `<td class="td-sum planned-sum" rowspan="1" style="vertical-align:middle">${monthPlanned||'—'}</td>`;
+  // 月計：目標・実績・達成率・平均・予定・キャンセル人数・キャンセル概算・稼働予定日数・稼働実績日数（全てrowspanで縦結合）
   html += `<td class="td-sum goal-sum" rowspan="${rowspan}" style="vertical-align:middle">${monthGoal||'—'}</td>`;
+  html += `<td class="td-sum actual-sum${monthActual < monthGoal && monthGoal>0 ? ' under' : ''}" rowspan="${rowspan}" style="vertical-align:middle">${monthActual||'—'}</td>`;
   html += `<td class="td-sum rate-sum" rowspan="${rowspan}" style="vertical-align:middle">${achRate !== null ? achRate+'%' : '—'}</td>`;
+  html += `<td class="td-sum avg-sum" rowspan="${rowspan}" style="vertical-align:middle">${avgActual !== null ? avgActual : '—'}</td>`;
+  html += `<td class="td-sum planned-sum" rowspan="${rowspan}" style="vertical-align:middle">${monthPlanned||'—'}</td>`;
   html += `<td class="td-sum cancel-sum" rowspan="${rowspan}" style="vertical-align:middle;${monthCancel>0?'color:#C0392B;font-weight:700':''}">${monthCancel>0 ? monthCancel : '—'}</td>`;
+  html += `<td class="td-sum cancel-est-sum" rowspan="${rowspan}" style="vertical-align:middle;${cancelEstimate>0?'color:#C0392B;font-weight:700':''}">${cancelEstimate>0 ? '¥'+cancelEstimate.toLocaleString('ja-JP') : '—'}</td>`;
   html += `<td class="td-sum days-sum" rowspan="${rowspan}" style="vertical-align:middle">${planDays||'—'}</td>`;
   html += `<td class="td-sum days-sum" rowspan="${rowspan}" style="vertical-align:middle">${actDays||'—'}</td>`;
-  html += `<td class="td-sum avg-sum" rowspan="${rowspan}" style="vertical-align:middle">${avgActual !== null ? avgActual : '—'}</td>`;
   html += `</tr>`;
 
   // === 実績行 ===
@@ -653,9 +657,6 @@ function officeRows(o, dates, goals, actuals, explicitPlanned, todayStr) {
       </td>`;
     }
   });
-  // 実績行の月計：実ラベル＋実績値
-  html += `<td class="td-sum" rowspan="1" style="vertical-align:middle;text-align:center;padding:0 4px;font-size:9px;color:#1D9E75;font-weight:700;border-right:1px solid #E8EAED">実</td>`;
-  html += `<td class="td-sum actual-sum${monthActual < monthGoal && monthGoal>0 ? ' under' : ''}" rowspan="1" style="vertical-align:middle">${monthActual||'—'}</td>`;
   html += `</tr>`;
 
   // === 詳細モード ===
@@ -705,15 +706,25 @@ function areaSum(offices, dates, goals, actuals, explicitPlanned, label, todaySt
   let html = `<tr class="tr-area-sum">`;
   html += `<td class="td-office" style="color:#2471A3;font-weight:600;padding-left:12px;border-right:2px solid #D6E8F8">▸ ${label}　合計</td>`;
 
-  let mGoal = 0, mActual = 0, hasActual = false;
-  let mCancel = dates.reduce((s,{dateStr}) => s + offices.reduce((s2,o) => {
-    const ep = explicitPlanned[o][dateStr];
-    const av = actuals[o]?.[dateStr];
-    if (ep == null || av == null) return s2;
-    return s2 + Math.max(0, ep - av);
-  }, 0), 0);
+  let mPlanned = 0, mActual = 0, hasActual = false;
+  let mGoalCapacity = 0;
+  offices.forEach(o => {
+    const cap = capacities[o] || 10;
+    dates.forEach(({ dateStr }) => { if (workdays[o]?.[dateStr] === 1) mGoalCapacity += cap; });
+  });
+  let mCancel = 0, mCancelEstimate = 0;
+  dates.forEach(({ dateStr }) => {
+    offices.forEach(o => {
+      const ep = explicitPlanned[o][dateStr];
+      const av = actuals[o]?.[dateStr];
+      if (ep == null || av == null) return;
+      const c = Math.max(0, ep - av);
+      mCancel += c;
+      mCancelEstimate += c * (officePrices[o] || 0);
+    });
+  });
   dates.forEach(({ dateStr, dow }) => {
-    const dayGoal   = offices.reduce((s, o) => s + (goals[o][dateStr] ?? 0), 0);
+    const dayPlanned = offices.reduce((s, o) => s + (goals[o][dateStr] ?? 0), 0);
     const dayActual = offices.reduce((s, o) => s + (actuals[o][dateStr] ?? 0), 0);
     const anyOpen   = offices.some(o => goals[o][dateStr] !== null);
     const anyActual = offices.some(o => actuals[o][dateStr] !== null);
@@ -725,25 +736,26 @@ function areaSum(offices, dates, goals, actuals, explicitPlanned, label, todaySt
       html += `<td style="background:#F0F0F2;border-right:1px solid #E8EAED"><div class="cell-inner"><span style="font-size:9px;color:#CCC">閉</span></div></td>`;
       return;
     }
-    mGoal += dayGoal;
+    mPlanned += dayPlanned;
     if (anyActual) { mActual += dayActual; hasActual = true; }
-    const pctCls = anyActual && dayGoal > 0 && dayActual < dayGoal ? 'color:#C0392B' : 'color:#1D6E3E';
+    const pctCls = anyActual && dayPlanned > 0 && dayActual < dayPlanned ? 'color:#C0392B' : 'color:#1D6E3E';
     html += `<td style="${colBg?'background:'+colBg+';':''}border-right:1px solid #E8EAED;text-align:right;padding:1px 4px">
-      <span style="font-size:10px;color:#5B9BD5;font-weight:500;display:block">${dayGoal}</span>
+      <span style="font-size:10px;color:#5B9BD5;font-weight:500;display:block">${dayPlanned}</span>
       <span style="font-size:11px;font-weight:700;display:block;${anyActual?pctCls:'color:#CCC'}">${anyActual ? dayActual : '—'}</span>
     </td>`;
   });
 
-  const areRate = mGoal > 0 && hasActual ? Math.round(mActual/mGoal*100)+'%' : '—';
+  const areRate = mGoalCapacity > 0 && hasActual ? Math.round(mActual/mGoalCapacity*100)+'%' : '—';
   const s = 'background:#E8F4FF;text-align:right;padding:2px 6px;font-size:10px;border-left:1px solid #D6E8F8';
-  html += `<td class="td-sum" rowspan="1" style="${s};border-left:2px solid #D6E8F8;text-align:center;font-size:9px;color:#aaa"></td>`;
-  html += `<td class="td-sum" style="${s};font-weight:700;color:${hasActual && mActual < mGoal ? '#C0392B' : '#1D6E3E'}">${hasActual ? mActual : '—'}</td>`;
-  html += `<td class="td-sum" style="${s};font-weight:600;color:#2471A3">${mGoal}</td>`;
+  html += `<td class="td-sum" style="${s};border-left:2px solid #D6E8F8;font-weight:600;color:#2471A3">${mGoalCapacity||'—'}</td>`;
+  html += `<td class="td-sum" style="${s};font-weight:700;color:${hasActual && mActual < mGoalCapacity ? '#C0392B' : '#1D6E3E'}">${hasActual ? mActual : '—'}</td>`;
   html += `<td class="td-sum" style="${s};color:#888">${areRate}</td>`;
-  html += `<td class="td-sum" style="${s};${mCancel>0?'color:#C0392B;font-weight:700':'color:#888'}">${mCancel>0 ? mCancel : '—'}</td>`;
-  html += `<td class="td-sum" style="${s};color:#888">—</td>`;
-  html += `<td class="td-sum" style="${s};color:#888">—</td>`;
   html += `<td class="td-sum" style="${s};color:#555">—</td>`;
+  html += `<td class="td-sum" style="${s};color:#5B9BD5;font-weight:600">${mPlanned||'—'}</td>`;
+  html += `<td class="td-sum" style="${s};${mCancel>0?'color:#C0392B;font-weight:700':'color:#888'}">${mCancel>0 ? mCancel : '—'}</td>`;
+  html += `<td class="td-sum" style="${s};${mCancelEstimate>0?'color:#C0392B;font-weight:700':'color:#888'}">${mCancelEstimate>0 ? '¥'+mCancelEstimate.toLocaleString('ja-JP') : '—'}</td>`;
+  html += `<td class="td-sum" style="${s};color:#888">—</td>`;
+  html += `<td class="td-sum" style="${s};color:#888">—</td>`;
   html += `</tr>`;
   return html;
 }
@@ -753,15 +765,25 @@ function catSum(offices, dates, goals, actuals, explicitPlanned, label, todayStr
   let html = `<tr class="tr-cat-sum">`;
   html += `<td class="td-office" style="color:#1D9E75;font-weight:700;border-right:2px solid #B2DFDB">${label}　計</td>`;
 
-  let mGoal = 0, mActual = 0, hasActual = false;
-  let mCancel = dates.reduce((s,{dateStr}) => s + offices.reduce((s2,o) => {
-    const ep = explicitPlanned[o][dateStr];
-    const av = actuals[o]?.[dateStr];
-    if (ep == null || av == null) return s2;
-    return s2 + Math.max(0, ep - av);
-  }, 0), 0);
+  let mPlanned = 0, mActual = 0, hasActual = false;
+  let mGoalCapacity = 0;
+  offices.forEach(o => {
+    const cap = capacities[o] || 10;
+    dates.forEach(({ dateStr }) => { if (workdays[o]?.[dateStr] === 1) mGoalCapacity += cap; });
+  });
+  let mCancel = 0, mCancelEstimate = 0;
+  dates.forEach(({ dateStr }) => {
+    offices.forEach(o => {
+      const ep = explicitPlanned[o][dateStr];
+      const av = actuals[o]?.[dateStr];
+      if (ep == null || av == null) return;
+      const c = Math.max(0, ep - av);
+      mCancel += c;
+      mCancelEstimate += c * (officePrices[o] || 0);
+    });
+  });
   dates.forEach(({ dateStr, dow }) => {
-    const dayGoal   = offices.reduce((s, o) => s + (goals[o][dateStr] ?? 0), 0);
+    const dayPlanned = offices.reduce((s, o) => s + (goals[o][dateStr] ?? 0), 0);
     const dayActual = offices.reduce((s, o) => s + (actuals[o][dateStr] ?? 0), 0);
     const anyOpen   = offices.some(o => goals[o][dateStr] !== null);
     const anyActual = offices.some(o => actuals[o][dateStr] !== null);
@@ -773,25 +795,26 @@ function catSum(offices, dates, goals, actuals, explicitPlanned, label, todayStr
       html += `<td style="background:#F2F5F2;border-right:1px solid #d4f4e8"></td>`;
       return;
     }
-    mGoal += dayGoal;
+    mPlanned += dayPlanned;
     if (anyActual) { mActual += dayActual; hasActual = true; }
-    const pctCls = anyActual && dayGoal > 0 && dayActual < dayGoal ? 'color:#C0392B' : 'color:#0F6E56';
+    const pctCls = anyActual && dayPlanned > 0 && dayActual < dayPlanned ? 'color:#C0392B' : 'color:#0F6E56';
     html += `<td style="${colBg?'background:'+colBg+';':''}border-right:1px solid #d4f4e8;text-align:right;padding:1px 4px">
-      <span style="font-size:10px;color:#1D9E75;font-weight:500;display:block">${dayGoal}</span>
+      <span style="font-size:10px;color:#1D9E75;font-weight:500;display:block">${dayPlanned}</span>
       <span style="font-size:11px;font-weight:700;display:block;${anyActual?pctCls:'color:#CCC'}">${anyActual ? dayActual : '—'}</span>
     </td>`;
   });
 
-  const catRate = mGoal > 0 && hasActual ? Math.round(mActual/mGoal*100)+'%' : '—';
+  const catRate = mGoalCapacity > 0 && hasActual ? Math.round(mActual/mGoalCapacity*100)+'%' : '—';
   const s2 = 'background:#E0F5ED;text-align:right;padding:2px 6px;font-size:10px;border-left:1px solid #B2DFDB';
-  html += `<td class="td-sum" style="${s2};border-left:2px solid #B2DFDB;text-align:center;font-size:9px;color:#aaa"></td>`;
-  html += `<td class="td-sum" style="${s2};font-weight:700;color:${hasActual && mActual < mGoal ? '#C0392B' : '#0F6E56'}">${hasActual ? mActual : '—'}</td>`;
-  html += `<td class="td-sum" style="${s2};font-weight:600;color:#1D9E75">${mGoal}</td>`;
+  html += `<td class="td-sum" style="${s2};border-left:2px solid #B2DFDB;font-weight:600;color:#1D9E75">${mGoalCapacity||'—'}</td>`;
+  html += `<td class="td-sum" style="${s2};font-weight:700;color:${hasActual && mActual < mGoalCapacity ? '#C0392B' : '#0F6E56'}">${hasActual ? mActual : '—'}</td>`;
   html += `<td class="td-sum" style="${s2};color:#888">${catRate}</td>`;
-  html += `<td class="td-sum" style="${s2};${mCancel>0?'color:#C0392B;font-weight:700':'color:#888'}">${mCancel>0 ? mCancel : '—'}</td>`;
-  html += `<td class="td-sum" style="${s2};color:#888">—</td>`;
-  html += `<td class="td-sum" style="${s2};color:#888">—</td>`;
   html += `<td class="td-sum" style="${s2};color:#555">—</td>`;
+  html += `<td class="td-sum" style="${s2};color:#1D9E75;font-weight:600">${mPlanned||'—'}</td>`;
+  html += `<td class="td-sum" style="${s2};${mCancel>0?'color:#C0392B;font-weight:700':'color:#888'}">${mCancel>0 ? mCancel : '—'}</td>`;
+  html += `<td class="td-sum" style="${s2};${mCancelEstimate>0?'color:#C0392B;font-weight:700':'color:#888'}">${mCancelEstimate>0 ? '¥'+mCancelEstimate.toLocaleString('ja-JP') : '—'}</td>`;
+  html += `<td class="td-sum" style="${s2};color:#888">—</td>`;
+  html += `<td class="td-sum" style="${s2};color:#888">—</td>`;
   html += `</tr>`;
   return html;
 }
