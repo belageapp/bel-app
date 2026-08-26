@@ -154,7 +154,7 @@ th{background:#f5f5f5;text-align:center;font-weight:600;color:#555;font-size:11p
       <div id="warn-section" class="hidden" style="margin-bottom:16px">
         <div class="warn-section-title">⚠️ 未登録コード（serviceCodesに存在しないコード）— 取込対象外</div>
         <table class="warn-table">
-          <thead><tr><th>サービスコード</th><th>件数</th><th style="text-align:right">単位数合計</th></tr></thead>
+          <thead><tr><th>サービスコード</th><th>件数</th><th style="text-align:right">単位数合計</th><th>内訳（事業所・提供月）</th></tr></thead>
           <tbody id="warn-body"></tbody>
         </table>
       </div>
@@ -364,9 +364,12 @@ function parseCSV(text, filename) {
 
     const sc = serviceCodesMap[code];
     if (!sc) {
-      if (!unknownCodes[code]) unknownCodes[code] = {count:0,units:0};
+      if (!unknownCodes[code]) unknownCodes[code] = {count:0,units:0,byMonth:{}};
       unknownCodes[code].count++;
       unknownCodes[code].units += units * count;
+      if (!unknownCodes[code].byMonth[ym]) unknownCodes[code].byMonth[ym] = {count:0,units:0};
+      unknownCodes[code].byMonth[ym].count++;
+      unknownCodes[code].byMonth[ym].units += units * count;
       continue;
     }
 
@@ -443,11 +446,17 @@ function showPreview(results) {
 
   results.forEach(r => {
     const months = Object.keys(r.monthData).sort();
-    // 未登録コードをまとめる
+    // 未登録コードをまとめる（事業所・提供月ごとの内訳を保持）
     Object.entries(r.unknownCodes).forEach(([code,v])=>{
-      if(!allUnknownCodes[code]) allUnknownCodes[code]={count:0,units:0};
+      if(!allUnknownCodes[code]) allUnknownCodes[code]={count:0,units:0,byOffice:{}};
       allUnknownCodes[code].count+=v.count;
       allUnknownCodes[code].units+=v.units;
+      Object.entries(v.byMonth).forEach(([ym,mv])=>{
+        const key = `${r.office.name}｜${ym.slice(0,4)}年${parseInt(ym.slice(4))}月`;
+        if (!allUnknownCodes[code].byOffice[key]) allUnknownCodes[code].byOffice[key] = {count:0,units:0};
+        allUnknownCodes[code].byOffice[key].count += mv.count;
+        allUnknownCodes[code].byOffice[key].units += mv.units;
+      });
     });
 
     let officeBlock = `<div style="margin-bottom:28px">
@@ -522,9 +531,12 @@ function showPreview(results) {
   const unknownCount = Object.keys(allUnknownCodes).length;
   if (unknownCount > 0) {
     ws.classList.remove('hidden');
-    document.getElementById('warn-body').innerHTML = Object.entries(allUnknownCodes).map(([code,v])=>`
-      <tr><td class="warn-code">${code}</td><td class="warn-num">${v.count}</td><td class="warn-num">${v.units.toLocaleString()}</td></tr>
-    `).join('');
+    document.getElementById('warn-body').innerHTML = Object.entries(allUnknownCodes).map(([code,v])=>{
+      const detail = Object.entries(v.byOffice).map(([key,mv])=>
+        `${key}：${mv.count}件（${mv.units.toLocaleString()}単位）`
+      ).join('<br>');
+      return `<tr><td class="warn-code">${code}</td><td class="warn-num">${v.count}</td><td class="warn-num">${v.units.toLocaleString()}</td><td style="font-size:11px;color:#666">${detail}</td></tr>`;
+    }).join('');
   } else { ws.classList.add('hidden'); }
 }
 
