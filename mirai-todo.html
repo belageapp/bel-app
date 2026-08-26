@@ -160,6 +160,12 @@ textarea.prog-textarea:focus{outline:none;border-color:#2563EB}
       <option value="this_month">今月中</option>
       <option value="next_month">来月中</option>
     </select>
+    <select class="filter-select" id="f-dept" onchange="applyFilters()">
+      <option value="">すべての部署</option>
+    </select>
+    <select class="filter-select" id="f-name" onchange="applyFilters()">
+      <option value="">すべての担当者</option>
+    </select>
     <input type="text" class="filter-input" id="f-kw" placeholder="キーワード検索…" oninput="applyFilters()">
     <button class="btn-add" id="btn-add" style="display:none" onclick="openAddModal()">＋ ToDo追加</button>
   </div>
@@ -378,12 +384,16 @@ function applyFilters() {
   const cat  = document.getElementById('f-cat').value;
   const st   = document.getElementById('f-st').value;
   const due  = document.getElementById('f-due').value;
+  const dept = document.getElementById('f-dept').value;
+  const name = document.getElementById('f-name').value;
   const kw   = document.getElementById('f-kw').value.toLowerCase();
   const now  = new Date(); now.setHours(0,0,0,0);
   const y    = now.getFullYear(), m = now.getMonth();
   filtered = allTodos.filter(t => {
-    if (cat && t.category !== cat) return false;
-    if (st  && t.status   !== st)  return false;
+    if (cat  && t.category   !== cat)  return false;
+    if (st   && t.status     !== st)   return false;
+    if (dept && t.department !== dept) return false;
+    if (name && !todoPersonNames(t).includes(name)) return false;
     if (kw && ![t.title,t.check_item,t.category,t.sub_category,(t.tags||[]).join(',')].some(s=>s&&s.toLowerCase().includes(kw))) return false;
     if (due) {
       const dueDate = new Date(t.due_date);
@@ -394,6 +404,29 @@ function applyFilters() {
     return true;
   });
   renderList();
+}
+
+// ── ToDoに紐づく担当者・メンバー名の一覧 ──────────────────
+function todoPersonNames(t) {
+  const names = [...(t.assignees||[]).map(a=>a.name), ...(t.members||[]).map(m=>m.name)];
+  if (t.assigneeName) names.push(t.assigneeName);
+  return names.filter(Boolean);
+}
+
+// ── 部署・担当者フィルタの選択肢をToDoデータから構築 ──────
+function populateFilterOptions() {
+  const deptSel = document.getElementById('f-dept');
+  const nameSel = document.getElementById('f-name');
+  const prevDept = deptSel.value, prevName = nameSel.value;
+
+  const depts = [...new Set(allTodos.map(t=>t.department).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja'));
+  const names = [...new Set(allTodos.flatMap(todoPersonNames))].sort((a,b)=>a.localeCompare(b,'ja'));
+
+  deptSel.innerHTML = '<option value="">すべての部署</option>' + depts.map(d=>`<option value="${d}">${d}</option>`).join('');
+  nameSel.innerHTML = '<option value="">すべての担当者</option>' + names.map(n=>`<option value="${n}">${n}</option>`).join('');
+
+  if (depts.includes(prevDept)) deptSel.value = prevDept;
+  if (names.includes(prevName)) nameSel.value = prevName;
 }
 
 // ── カードレンダリング ────────────────────────────────────
@@ -658,6 +691,7 @@ async function loadTodos() {
     const snap = await getDocs(query(collection(db,'miraiTodos'), orderBy('due_date','asc')));
     allTodos = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
     updateStats();
+    populateFilterOptions();
     applyFilters();
   } catch(e) {
     console.error('loadTodos:', e);
