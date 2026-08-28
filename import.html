@@ -244,13 +244,13 @@ const SERVICE_DISPLAY = {
   '保育所等訪問支援':     { label:'保育所等訪問支援',     cls:'st-hoiku' },
 };
 
-// 保育所等訪問支援は障害児通所支援等の単価区分のため、児童発達支援・放課後等デイサービスと同一単価
+// 実際のCSV（K122/J121-04レコード）から検算して確定した単価。
+// 341008＝広島市：児童通所系（放デイ・児発・保訪）と短期入所は同一単価、生活介護・就労B型は個別単価。
+// 342025／342122＝東広島市：児童通所系のみ確認済み（生活介護等のデータ未確認のため未設定）。
 const REGION_PRICES = {
-  '341008': { '放課後等デイサービス':10.27,'児童発達支援':10.27,'生活介護':10.57,'就労継続支援B型':10.57,'短期入所':10.27,'保育所等訪問支援':10.27 },
-  '341012': { '放課後等デイサービス':10.27,'児童発達支援':10.27,'生活介護':10.57,'就労継続支援B型':10.57,'短期入所':10.27,'保育所等訪問支援':10.27 },
-  '345250': { '放課後等デイサービス':10.14,'児童発達支援':10.14,'生活介護':10.42,'就労継続支援B型':10.42,'短期入所':10.14,'保育所等訪問支援':10.14 },
-  '345310': { '放課後等デイサービス':10.14,'児童発達支援':10.14,'生活介護':10.42,'就労継続支援B型':10.42,'短期入所':10.14,'保育所等訪問支援':10.14 },
-  '345100': { '放課後等デイサービス':10.14,'児童発達支援':10.14,'生活介護':10.42,'就労継続支援B型':10.42,'短期入所':10.14,'保育所等訪問支援':10.14 },
+  '341008': { '放課後等デイサービス':10.60,'児童発達支援':10.60,'保育所等訪問支援':10.60,'短期入所':10.60,'生活介護':10.61,'就労継続支援B型':10.57 },
+  '342025': { '放課後等デイサービス':10.18,'児童発達支援':10.18,'保育所等訪問支援':10.18 },
+  '342122': { '放課後等デイサービス':10.18,'児童発達支援':10.18,'保育所等訪問支援':10.18 },
 };
 const DEFAULT_PRICES = { '放課後等デイサービス':10.00,'児童発達支援':10.00,'生活介護':10.00,'就労継続支援B型':10.00,'短期入所':10.00,'保育所等訪問支援':10.00 };
 
@@ -323,6 +323,7 @@ function readFileAsShiftJIS(file) {
 function parseCSV(text, filename) {
   const lines = text.split(/\r?\n/).map(l => l.split(','));
   let officeNo = null, regionCode = null;
+  const regionCodesSeen = new Set(); // 利用者（受給者証）ごとに地域区分が異なる場合があるため、出現した全コードを記録
 
   // K112（放デイ・児発）または J111（生活介護・就労B・短期入所）subtype=01 から事業者番号・地域区分コードを取得
   for (const cols of lines) {
@@ -333,6 +334,8 @@ function parseCSV(text, filename) {
         officeNo   = cols[6]?.replace(/"/g,'').trim();
         regionCode = cols[5]?.replace(/"/g,'').trim();
       }
+      const rc = cols[5]?.replace(/"/g,'').trim();
+      if (rc) regionCodesSeen.add(rc);
     }
   }
 
@@ -357,6 +360,7 @@ function parseCSV(text, filename) {
     if ((rt !== 'K122' && rt !== 'J121') || st !== '03') continue;
 
     const ym    = cols[4]?.replace(/"/g,'').trim();
+    const lineRegion = cols[5]?.replace(/"/g,'').trim(); // この明細行（＝この利用者）の地域区分コード
     const code  = cols[8]?.replace(/"/g,'').trim();
     const units = parseInt(cols[9]) || 0;
     const count = parseInt(cols[10]) || 0;
@@ -376,21 +380,25 @@ function parseCSV(text, filename) {
     const svcCat = sc.serviceCategory || '不明';
     const cat    = sc.category;
     const totalUnits = units * count;
+    // 単価は事業所固定ではなく、利用者（明細行）ごとの地域区分コードで個別に計算する
+    const linePrice = getUnitPrice(lineRegion, svcCat);
+    const totalAmt  = totalUnits * linePrice;
 
     if (!monthData[ym]) monthData[ym] = {};
-    if (!monthData[ym][svcCat]) monthData[ym][svcCat] = {basicUnits:0,bodyUnits:0,actUnits:0,treatUnits:0,basicCount:0,details:[]};
+    if (!monthData[ym][svcCat]) monthData[ym][svcCat] = {basicUnits:0,bodyUnits:0,actUnits:0,treatUnits:0,basicAmt:0,bodyAmt:0,actAmt:0,treatAmt:0,basicCount:0,details:[]};
 
     const d = monthData[ym][svcCat];
-    if      (cat === '基本報酬')     { d.basicUnits += totalUnits; d.basicCount += count; }
-    else if (cat === '体制加算')     { d.bodyUnits  += totalUnits; }
-    else if (cat === '実績加算')     { d.actUnits   += totalUnits; }
-    else if (cat === '処遇改善加算') { d.treatUnits += totalUnits; }
+    if      (cat === '基本報酬')     { d.basicUnits += totalUnits; d.basicAmt += totalAmt; d.basicCount += count; }
+    else if (cat === '体制加算')     { d.bodyUnits  += totalUnits; d.bodyAmt  += totalAmt; }
+    else if (cat === '実績加算')     { d.actUnits   += totalUnits; d.actAmt   += totalAmt; }
+    else if (cat === '処遇改善加算') { d.treatUnits += totalUnits; d.treatAmt += totalAmt; }
 
-    // サービスコード別詳細を保存
+    // サービスコード別詳細を保存（利用者ごとに地域区分が違っても同一コードは合算）
     const existing = d.details.find(x => x.code === code);
     if (existing) {
       existing.count += count;
       existing.totalUnits += totalUnits;
+      existing.amount += totalAmt;
     } else {
       d.details.push({
         code,
@@ -399,11 +407,12 @@ function parseCSV(text, filename) {
         unitPrice: units,
         count,
         totalUnits,
+        amount: totalAmt,
       });
     }
   }
 
-  return { office, officeNo, regionCode, monthData, unknownCodes, filename, rawText: text };
+  return { office, officeNo, regionCode, regionCodesSeen: [...regionCodesSeen], monthData, unknownCodes, filename, rawText: text };
 }
 
 function showPreview(results) {
@@ -416,11 +425,9 @@ function showPreview(results) {
     totUnknown += Object.keys(r.unknownCodes).length;
     Object.values(r.monthData).forEach(svcs => {
       Object.entries(svcs).forEach(([svc,d]) => {
-        const up = getUnitPrice(r.regionCode, svc);
         totPeople += d.basicCount;
-        const u = d.basicUnits+d.bodyUnits+d.actUnits+d.treatUnits;
-        totUnits  += u;
-        totAmt    += Math.round(u*up);
+        totUnits  += d.basicUnits+d.bodyUnits+d.actUnits+d.treatUnits;
+        totAmt    += Math.round(d.basicAmt+d.bodyAmt+d.actAmt+d.treatAmt);
       });
     });
   });
@@ -462,7 +469,7 @@ function showPreview(results) {
     let officeBlock = `<div style="margin-bottom:28px">
       <div style="font-size:14px;font-weight:700;color:#1D9E75;padding:8px 14px;background:#E0F5ED;border-radius:6px;margin-bottom:10px">
         🏢 ${r.office.name}
-        <span style="font-size:11px;font-weight:400;color:#555;margin-left:8px">事業者番号：${r.officeNo}　地域区分：${r.regionCode||'不明'}</span>
+        <span style="font-size:11px;font-weight:400;color:#555;margin-left:8px">事業者番号：${r.officeNo}　地域区分：${(r.regionCodesSeen&&r.regionCodesSeen.length>1) ? r.regionCodesSeen.join('・')+'（利用者ごとに異なる）' : (r.regionCode||'不明')}</span>
       </div>`;
 
     months.forEach(ym => {
@@ -473,9 +480,9 @@ function showPreview(results) {
 
       let rows = svcKeys.map(svc => {
         const d = svcs[svc];
-        const up = getUnitPrice(r.regionCode, svc);
         const allU = d.basicUnits+d.bodyUnits+d.actUnits+d.treatUnits;
-        const amt = Math.round(allU*up);
+        const amt = Math.round(d.basicAmt+d.bodyAmt+d.actAmt+d.treatAmt);
+        const avgPrice = allU ? (amt/allU) : 0; // 利用者ごとに単価が異なる場合の加重平均（表示用）
         mPeople+=d.basicCount; mBasic+=d.basicUnits; mBody+=d.bodyUnits;
         mAct+=d.actUnits; mTreat+=d.treatUnits; mAmt+=amt;
         const disp = SERVICE_DISPLAY[svc]||{label:svc,cls:'st-other'};
@@ -488,7 +495,7 @@ function showPreview(results) {
           <td class="td-treat">${d.treatUnits.toLocaleString()}</td>
           <td class="td-total">${allU.toLocaleString()}</td>
           <td class="td-total">${amt.toLocaleString()}</td>
-          <td style="color:#888;font-size:11px;text-align:center">${up}円</td>
+          <td style="color:#888;font-size:11px;text-align:center">${avgPrice.toFixed(2)}円</td>
         </tr>`;
       }).join('');
 
@@ -572,21 +579,22 @@ window.saveToFirestore = async function() {
 
       const services = {};
       Object.entries(r.monthData[ym]).forEach(([svc,d]) => {
-        const up = getUnitPrice(r.regionCode, svc);
+        const allU = d.basicUnits+d.bodyUnits+d.actUnits+d.treatUnits;
+        const allAmt = d.basicAmt+d.bodyAmt+d.actAmt+d.treatAmt;
         services[svc] = {
           people:      d.basicCount,
-          basicRev:    Math.round(d.basicUnits  * up),
-          bodyRev:     Math.round(d.bodyUnits   * up),
-          actualRev:   Math.round(d.actUnits    * up),
-          treatRev:    Math.round(d.treatUnits  * up),
+          basicRev:    Math.round(d.basicAmt),
+          bodyRev:     Math.round(d.bodyAmt),
+          actualRev:   Math.round(d.actAmt),
+          treatRev:    Math.round(d.treatAmt),
           basicUnits:  d.basicUnits,
           bodyUnits:   d.bodyUnits,
           actualUnits: d.actUnits,
           treatUnits:  d.treatUnits,
-          unitPrice:   up,
+          unitPrice:   allU ? +(allAmt/allU).toFixed(4) : 0, // 利用者ごとに単価が異なる場合の加重平均（参考値）
           details: (d.details || []).map(x => ({
             ...x,
-            amount: Math.round(x.totalUnits * up),
+            amount: Math.round(x.amount),
           })),
         };
       });
