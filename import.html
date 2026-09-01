@@ -254,7 +254,12 @@ const REGION_PRICES = {
 };
 const DEFAULT_PRICES = { '放課後等デイサービス':10.00,'児童発達支援':10.00,'生活介護':10.00,'就労継続支援B型':10.00,'短期入所':10.00,'保育所等訪問支援':10.00 };
 
-function getUnitPrice(regionCode, svcCat) {
+// はれのいえ・にじのいえ（安芸郡熊野町）は地域区分コードが東広島市の一部と数字上重複するが、
+// 給付費明細書（公式書類）で地域区分「その他」＝10.00円と確認済みのため、事業所名で固定する。
+const OFFICE_OTHER_GRADE = ['はれのいえ', 'にじのいえ'];
+
+function getUnitPrice(regionCode, svcCat, officeName) {
+  if (officeName && OFFICE_OTHER_GRADE.includes(officeName)) return DEFAULT_PRICES[svcCat] || 10.00;
   if (!regionCode) return DEFAULT_PRICES[svcCat] || 10.00;
   const tbl = REGION_PRICES[regionCode] || REGION_PRICES[regionCode.slice(0,6)] || DEFAULT_PRICES;
   return tbl[svcCat] || 10.00;
@@ -381,7 +386,7 @@ function parseCSV(text, filename) {
     const cat    = sc.category;
     const totalUnits = units * count;
     // 単価は事業所固定ではなく、利用者（明細行）ごとの地域区分コードで個別に計算する
-    const linePrice = getUnitPrice(lineRegion, svcCat);
+    const linePrice = getUnitPrice(lineRegion, svcCat, office.name);
     const totalAmt  = totalUnits * linePrice;
 
     if (!monthData[ym]) monthData[ym] = {};
