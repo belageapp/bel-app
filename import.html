@@ -321,13 +321,17 @@ function getUnitPrice(regionCode, svcCat, officeName) {
   return DEFAULT_PRICES[svcCat] || 10.00;
 }
 
-async function init() {
-  const [oSnap, scSnap] = await Promise.all([
-    getDocs(collection(db,'offices')),
-    getDocs(collection(db,'serviceCodes'))
-  ]);
-  oSnap.forEach(d => offices.push({id:d.id,...d.data()}));
-  scSnap.forEach(d => { serviceCodesMap[d.id] = d.data(); });
+let initPromise = null;
+function init() {
+  initPromise = (async () => {
+    const [oSnap, scSnap] = await Promise.all([
+      getDocs(collection(db,'offices')),
+      getDocs(collection(db,'serviceCodes'))
+    ]);
+    oSnap.forEach(d => offices.push({id:d.id,...d.data()}));
+    scSnap.forEach(d => { serviceCodesMap[d.id] = d.data(); });
+  })();
+  return initPromise;
 }
 
 const dropZone = document.getElementById('drop-zone');
@@ -388,11 +392,12 @@ function readFileAsShiftJIS(file) {
 
 let manualRowSeq = 0;
 
-window.toggleManualSection = function() {
+window.toggleManualSection = async function() {
   const sec = document.getElementById('manual-section');
   const opening = sec.classList.contains('hidden');
   sec.classList.toggle('hidden');
   if (opening) {
+    await initPromise; // offices/serviceCodesMapの読み込み完了を待ってからプルダウンを作る
     populateManualOfficeSelect();
     if (!document.getElementById('manual-rows-body').children.length) addManualRow();
   }
