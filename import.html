@@ -546,10 +546,13 @@ window.confirmManualEntry = function() {
 // テキスト抽出すると数字が1文字ずつ分離して連結された状態になる（ラベルとの対応も崩れやすい）。
 // そこで「単位数×回数＝サービス単位数」という検算が成立する桁の切り方だけを採用することで、
 // 位置情報だけに頼らず、値そのものの整合性で明細行を復元する。
-function extractDigitGroups(digitStr) {
-  const codeCandidate = digitStr.slice(0, 6);
-  if (!/^\d{6}$/.test(codeCandidate) || !serviceCodesMap[codeCandidate]) return null;
-  const rest = digitStr.slice(6);
+function extractDigitGroups(raw) {
+  // サービスコードは6桁の数字とは限らず、基本報酬コードなど英字（例：63H592）を
+  // 含む場合があるため、数字限定ではなくserviceCodesMapとの一致で判定する。
+  const codeCandidate = raw.slice(0, 6);
+  if (!serviceCodesMap[codeCandidate]) return null;
+  const rest = raw.slice(6);
+  if (!/^\d+$/.test(rest)) return null; // コードより後ろ（単位数・回数・サービス単位数）は数字のみのはず
   for (let uLen = 1; uLen <= 4; uLen++) {
     for (let cLen = 1; cLen <= 3; cLen++) {
       const tLen = rest.length - uLen - cLen;
@@ -586,11 +589,13 @@ async function parsePDFFile(file) {
 
     for (const line of lines) {
       const lineStr = line.items.map(i => i.str).join('');
-      const digitsOnly = lineStr.replace(/[^0-9]/g, '');
-      allDigits += digitsOnly;
-      const label = lineStr.replace(/[0-9\s]/g, '');
-      if (label.length >= 2 && digitsOnly.length >= 8) {
-        const g = extractDigitGroups(digitsOnly);
+      allDigits += lineStr.replace(/[^0-9]/g, '');
+      // 縦書きの欄名（給付費明細欄など）がすぐ隣の行にずれて混ざることがあり、
+      // 同じ行内にラベル文字があるとは限らないため、ラベルの有無では絞り込まず
+      // 英数字が一定長ある行はすべて検算にかける（誤検出はコード一致＋検算で防ぐ）。
+      const raw = lineStr.replace(/[^0-9A-Za-z]/g, '');
+      if (raw.length >= 8) {
+        const g = extractDigitGroups(raw);
         if (g) detailRows.push(g);
       }
     }
@@ -611,9 +616,11 @@ async function handlePDFFile(file) {
     if (detailRows.length) detailRows.forEach(r => addManualRow(r.code, r.units, r.count));
     else addManualRow();
 
+    const totalUnits = detailRows.reduce((s,r) => s + r.units*r.count, 0);
+    const totalLabel = `明細${detailRows.length}件・サービス単位数合計${totalUnits.toLocaleString()}単位`;
     statusEl.textContent = matchedOffice
-      ? `✅ ${matchedOffice.name}・明細${detailRows.length}件を自動入力しました。内容と提供年月を必ず確認してください。`
-      : `⚠️ 事業所を自動特定できませんでした。明細${detailRows.length}件は入力しましたが、事業所・提供年月・内容を確認してください。`;
+      ? `✅ ${matchedOffice.name}・${totalLabel}を自動入力しました。明細書の「給付単位数」欄と一致するか必ず照合し、提供年月も入力してください。`
+      : `⚠️ 事業所を自動特定できませんでした。${totalLabel}は入力しましたが、明細書の「給付単位数」欄と一致するか必ず照合し、事業所・提供年月も確認してください。`;
   } catch (e) {
     console.error(e);
     statusEl.textContent = '⚠️ PDFの自動読み取りに失敗しました。お手数ですが手入力してください。';
