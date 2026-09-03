@@ -94,6 +94,15 @@ th{background:#f5f5f5;text-align:center;font-weight:600;color:#555;font-size:11p
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .progress{font-size:12px;color:#888;margin-top:6px}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:12px;color:#555;margin-bottom:4px;font-weight:600}
+.fg input,.fg select{width:100%;padding:8px 10px;border:1px solid #E8EAED;border-radius:6px;font-size:13px;font-family:inherit}
+.manual-row-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.manual-row-table th,.manual-row-table td{border:1px solid #e0e0e0;padding:6px 8px;text-align:left}
+.manual-row-table input{width:100%;border:1px solid #e0e0e0;border-radius:4px;padding:4px 6px;font-size:12px;font-family:inherit}
+.code-hint{font-size:11px;color:#1D9E75;margin-top:2px}
+.code-hint.err{color:#C0392B}
+.row-remove{color:#C0392B;cursor:pointer;font-size:16px;text-align:center;user-select:none}
 </style>
 </head>
 <body>
@@ -120,6 +129,41 @@ th{background:#f5f5f5;text-align:center;font-weight:600;color:#555;font-size:11p
     <div class="step active" id="step1"><span class="step-num">1</span>ファイル選択</div>
     <div class="step" id="step2"><span class="step-num">2</span>内容確認</div>
     <div class="step" id="step3"><span class="step-num">3</span>保存完了</div>
+  </div>
+
+  <div style="margin-bottom:16px">
+    <button class="btn-secondary" onclick="toggleManualSection()" id="manual-toggle-btn">📝 個別明細書を追加（CSVに無い利用者）</button>
+  </div>
+  <div class="card hidden" id="manual-section">
+    <div class="card-title">個別明細書を追加</div>
+    <div class="notice" style="margin-bottom:14px">
+      国保連CSVに含まれない利用者（返戻・追加請求など）の分を、給付費明細書をもとに1件だけ追加できます。CSVを読み込み済みの場合はその内容に追加されます。<br>
+      PDFをドラッグすると事業所・明細行の自動入力を試みますが、読み取り精度に限りがあるため<strong>提供年月は必ず手動で入力・確認</strong>し、次の画面で保存前に内容を必ず確認してください。うまく読み取れない場合は下のフォームに直接手入力してください。
+    </div>
+    <div class="drop-zone" id="pdf-drop-zone" style="padding:20px;margin-bottom:14px">
+      <div class="drop-zone-text">📄 給付費明細書PDFをドラッグ（自動入力・任意）</div>
+      <div class="drop-zone-sub">読み取れなかった場合は下のフォームに手入力してください</div>
+    </div>
+    <input type="file" id="pdf-file-input" accept=".pdf" class="hidden">
+    <div id="pdf-parse-status" style="font-size:12px;color:#888;margin-bottom:14px"></div>
+
+    <div class="fg"><label>事業所 *</label><select id="manual-office"><option value="">選択してください</option></select></div>
+    <div class="fg"><label>提供年月 *</label><input type="month" id="manual-ym"></div>
+
+    <div class="fg">
+      <label>明細行（サービスコード・単位数・回数）*</label>
+      <table class="manual-row-table">
+        <thead><tr><th style="width:32%">サービスコード</th><th>単位数</th><th>回数</th><th>サービス単位数</th><th></th></tr></thead>
+        <tbody id="manual-rows-body"></tbody>
+      </table>
+      <button class="btn-secondary" onclick="addManualRow()" style="margin-top:8px;font-size:12px;padding:6px 14px">＋ 行を追加</button>
+    </div>
+
+    <div id="manual-status" style="font-size:12px;color:#C0392B;margin:10px 0;min-height:16px"></div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="confirmManualEntry()">内容確認へ進む</button>
+      <button class="btn-secondary" onclick="closeManualSection()">キャンセル</button>
+    </div>
   </div>
 
   <!-- STEP1 -->
@@ -186,6 +230,8 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getFirestore, doc, getDoc, setDoc, getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { can } from './perm.js';
+import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.min.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.worker.min.mjs';
 
 const firebaseConfig = {
   apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
@@ -334,6 +380,252 @@ function readFileAsShiftJIS(file) {
     reader.readAsArrayBuffer(file);
   });
 }
+
+// ===== 個別明細書（PDF/手入力）追加 =====
+// CSVに含まれない利用者（返戻・追加請求など）を、給付費明細書1枚から手動で追加するための機能。
+// CSV取込と同じ monthData/unknownCodes 構造を作って parseResults に足し込み、
+// showPreview()/saveToFirestore() をそのまま再利用する。
+
+let manualRowSeq = 0;
+
+window.toggleManualSection = function() {
+  const sec = document.getElementById('manual-section');
+  const opening = sec.classList.contains('hidden');
+  sec.classList.toggle('hidden');
+  if (opening) {
+    populateManualOfficeSelect();
+    if (!document.getElementById('manual-rows-body').children.length) addManualRow();
+  }
+};
+window.closeManualSection = function() {
+  document.getElementById('manual-section').classList.add('hidden');
+};
+
+function populateManualOfficeSelect() {
+  const sel = document.getElementById('manual-office');
+  if (sel.options.length > 1) return;
+  offices.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja')).forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.id; opt.textContent = o.name;
+    sel.appendChild(opt);
+  });
+}
+
+window.addManualRow = function(code='', units='', count='') {
+  const id = manualRowSeq++;
+  const tbody = document.getElementById('manual-rows-body');
+  const tr = document.createElement('tr');
+  tr.dataset.rowId = id;
+  tr.innerHTML = `
+    <td>
+      <input type="text" class="mr-code" value="${code}" placeholder="例：634400">
+      <div class="code-hint" id="mr-hint-${id}"></div>
+    </td>
+    <td><input type="number" class="mr-units" value="${units}"></td>
+    <td><input type="number" class="mr-count" value="${count}"></td>
+    <td class="mr-total" id="mr-total-${id}" style="text-align:right">0</td>
+    <td class="row-remove" onclick="removeManualRow(${id})">✕</td>
+  `;
+  tbody.appendChild(tr);
+  tr.querySelector('.mr-code').addEventListener('blur', () => updateRowHint(id));
+  tr.querySelector('.mr-units').addEventListener('input', () => updateRowTotal(id));
+  tr.querySelector('.mr-count').addEventListener('input', () => updateRowTotal(id));
+  if (code) updateRowHint(id);
+};
+window.removeManualRow = function(id) {
+  const tr = document.querySelector(`#manual-rows-body tr[data-row-id="${id}"]`);
+  if (tr) tr.remove();
+};
+function updateRowHint(id) {
+  const tr = document.querySelector(`#manual-rows-body tr[data-row-id="${id}"]`);
+  if (!tr) return;
+  const code = tr.querySelector('.mr-code').value.trim();
+  const hintEl = document.getElementById(`mr-hint-${id}`);
+  if (!code) { hintEl.textContent = ''; hintEl.className = 'code-hint'; return; }
+  const sc = serviceCodesMap[code];
+  if (sc) { hintEl.textContent = `${sc.name}（${sc.category}・${sc.serviceCategory}）`; hintEl.className = 'code-hint'; }
+  else { hintEl.textContent = '⚠️ 未登録コードです'; hintEl.className = 'code-hint err'; }
+  updateRowTotal(id);
+}
+function updateRowTotal(id) {
+  const tr = document.querySelector(`#manual-rows-body tr[data-row-id="${id}"]`);
+  if (!tr) return;
+  const units = parseInt(tr.querySelector('.mr-units').value) || 0;
+  const count = parseInt(tr.querySelector('.mr-count').value) || 0;
+  document.getElementById(`mr-total-${id}`).textContent = (units*count).toLocaleString();
+}
+
+window.confirmManualEntry = function() {
+  const statusEl = document.getElementById('manual-status');
+  statusEl.textContent = '';
+
+  const officeId = document.getElementById('manual-office').value;
+  const ymInput  = document.getElementById('manual-ym').value; // "2026-07"
+  if (!officeId) { statusEl.textContent = '事業所を選択してください'; return; }
+  if (!ymInput)  { statusEl.textContent = '提供年月を入力してください'; return; }
+  const office = offices.find(o => o.id === officeId);
+  const ym = ymInput.replace('-', '');
+
+  const rowEls = [...document.querySelectorAll('#manual-rows-body tr')];
+  if (!rowEls.length) { statusEl.textContent = '明細行を1件以上入力してください'; return; }
+
+  const monthData = {};
+  const unknownCodes = {};
+  let hasEmptyRow = false;
+
+  rowEls.forEach(tr => {
+    const code  = tr.querySelector('.mr-code').value.trim();
+    const units = parseInt(tr.querySelector('.mr-units').value) || 0;
+    const count = parseInt(tr.querySelector('.mr-count').value) || 0;
+    if (!code || !units || !count) { hasEmptyRow = true; return; }
+
+    const sc = serviceCodesMap[code];
+    if (!sc) {
+      if (!unknownCodes[code]) unknownCodes[code] = {count:0,units:0,byMonth:{}};
+      unknownCodes[code].count++;
+      unknownCodes[code].units += units*count;
+      if (!unknownCodes[code].byMonth[ym]) unknownCodes[code].byMonth[ym] = {count:0,units:0};
+      unknownCodes[code].byMonth[ym].count++;
+      unknownCodes[code].byMonth[ym].units += units*count;
+      return;
+    }
+
+    const svcCat = sc.serviceCategory || '不明';
+    const cat = sc.category;
+    const totalUnits = units*count;
+    const linePrice = getUnitPrice(null, svcCat, office.name);
+    const totalAmt = totalUnits * linePrice;
+
+    if (!monthData[ym]) monthData[ym] = {};
+    if (!monthData[ym][svcCat]) monthData[ym][svcCat] = {basicUnits:0,bodyUnits:0,actUnits:0,treatUnits:0,basicAmt:0,bodyAmt:0,actAmt:0,treatAmt:0,basicCount:0,details:[]};
+    const d = monthData[ym][svcCat];
+    if      (cat === '基本報酬')     { d.basicUnits += totalUnits; d.basicAmt += totalAmt; d.basicCount += count; }
+    else if (cat === '体制加算')     { d.bodyUnits  += totalUnits; d.bodyAmt  += totalAmt; }
+    else if (cat === '実績加算')     { d.actUnits   += totalUnits; d.actAmt   += totalAmt; }
+    else if (cat === '処遇改善加算') { d.treatUnits += totalUnits; d.treatAmt += totalAmt; }
+
+    const existing = d.details.find(x => x.code === code);
+    if (existing) {
+      existing.count += count;
+      existing.totalUnits += totalUnits;
+      existing.amount += totalAmt;
+    } else {
+      d.details.push({ code, name: sc.name||code, category:cat, unitPrice:units, count, totalUnits, amount: totalAmt });
+    }
+  });
+
+  if (hasEmptyRow) { statusEl.textContent = 'サービスコード・単位数・回数を全ての行に入力してください'; return; }
+  if (!Object.keys(monthData).length && !Object.keys(unknownCodes).length) {
+    statusEl.textContent = '有効な明細行がありません'; return;
+  }
+
+  parseResults.push({
+    office, officeNo: office.providerNumber, regionCode: null, regionCodesSeen: [],
+    monthData, unknownCodes,
+    filename: `個別明細書（手入力）：${office.name} ${ymInput}`,
+    rawText: '',
+  });
+
+  document.getElementById('manual-section').classList.add('hidden');
+  document.getElementById('manual-rows-body').innerHTML = '';
+  document.getElementById('manual-office').value = '';
+  document.getElementById('manual-ym').value = '';
+  document.getElementById('pdf-parse-status').textContent = '';
+  manualRowSeq = 0;
+
+  showPreview(parseResults);
+};
+
+// ---- PDF自動読み取り ----
+// 給付費明細書は「サービスコード＋単位数＋回数＋サービス単位数」が桁ごとの升目に印字されており、
+// テキスト抽出すると数字が1文字ずつ分離して連結された状態になる（ラベルとの対応も崩れやすい）。
+// そこで「単位数×回数＝サービス単位数」という検算が成立する桁の切り方だけを採用することで、
+// 位置情報だけに頼らず、値そのものの整合性で明細行を復元する。
+function extractDigitGroups(digitStr) {
+  const codeCandidate = digitStr.slice(0, 6);
+  if (!/^\d{6}$/.test(codeCandidate) || !serviceCodesMap[codeCandidate]) return null;
+  const rest = digitStr.slice(6);
+  for (let uLen = 1; uLen <= 4; uLen++) {
+    for (let cLen = 1; cLen <= 3; cLen++) {
+      const tLen = rest.length - uLen - cLen;
+      if (tLen <= 0) continue;
+      const uStr = rest.slice(0, uLen), cStr = rest.slice(uLen, uLen+cLen), tStr = rest.slice(uLen+cLen);
+      if (uStr[0] === '0' || cStr[0] === '0' || (tStr.length > 1 && tStr[0] === '0')) continue;
+      const units = parseInt(uStr), count = parseInt(cStr), total = parseInt(tStr);
+      if (units * count === total) return { code: codeCandidate, units, count };
+    }
+  }
+  return null;
+}
+
+async function parsePDFFile(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let allDigits = '';
+  const detailRows = [];
+
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const items = content.items
+      .map(it => ({ str: it.str, x: it.transform[4], y: Math.round(it.transform[5]) }))
+      .filter(it => it.str.trim() !== '');
+    items.sort((a,b) => b.y - a.y || a.x - b.x);
+
+    const lines = [];
+    let cur = null;
+    for (const it of items) {
+      if (!cur || Math.abs(cur.y - it.y) > 3) { cur = { y: it.y, items: [] }; lines.push(cur); }
+      cur.items.push(it);
+    }
+
+    for (const line of lines) {
+      const lineStr = line.items.map(i => i.str).join('');
+      const digitsOnly = lineStr.replace(/[^0-9]/g, '');
+      allDigits += digitsOnly;
+      const label = lineStr.replace(/[0-9\s]/g, '');
+      if (label.length >= 2 && digitsOnly.length >= 8) {
+        const g = extractDigitGroups(digitsOnly);
+        if (g) detailRows.push(g);
+      }
+    }
+  }
+
+  const matchedOffice = offices.find(o => o.providerNumber && allDigits.includes(o.providerNumber.trim()));
+  return { matchedOffice, detailRows };
+}
+
+async function handlePDFFile(file) {
+  const statusEl = document.getElementById('pdf-parse-status');
+  statusEl.textContent = '読み込み中...';
+  try {
+    const { matchedOffice, detailRows } = await parsePDFFile(file);
+    document.getElementById('manual-rows-body').innerHTML = '';
+    manualRowSeq = 0;
+    if (matchedOffice) document.getElementById('manual-office').value = matchedOffice.id;
+    if (detailRows.length) detailRows.forEach(r => addManualRow(r.code, r.units, r.count));
+    else addManualRow();
+
+    statusEl.textContent = matchedOffice
+      ? `✅ ${matchedOffice.name}・明細${detailRows.length}件を自動入力しました。内容と提供年月を必ず確認してください。`
+      : `⚠️ 事業所を自動特定できませんでした。明細${detailRows.length}件は入力しましたが、事業所・提供年月・内容を確認してください。`;
+  } catch (e) {
+    console.error(e);
+    statusEl.textContent = '⚠️ PDFの自動読み取りに失敗しました。お手数ですが手入力してください。';
+    if (!document.getElementById('manual-rows-body').children.length) addManualRow();
+  }
+}
+
+const pdfDropZone = document.getElementById('pdf-drop-zone');
+const pdfFileInput = document.getElementById('pdf-file-input');
+pdfDropZone.addEventListener('click', () => pdfFileInput.click());
+pdfDropZone.addEventListener('dragover', e => { e.preventDefault(); pdfDropZone.classList.add('over'); });
+pdfDropZone.addEventListener('dragleave', () => pdfDropZone.classList.remove('over'));
+pdfDropZone.addEventListener('drop', e => {
+  e.preventDefault(); pdfDropZone.classList.remove('over');
+  if (e.dataTransfer.files.length) handlePDFFile(e.dataTransfer.files[0]);
+});
+pdfFileInput.addEventListener('change', e => { if (e.target.files.length) handlePDFFile(e.target.files[0]); });
 
 function parseCSV(text, filename) {
   const lines = text.split(/\r?\n/).map(l => l.split(','));
