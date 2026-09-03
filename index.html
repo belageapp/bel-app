@@ -206,6 +206,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
       <div class="menu-desc">国保連請求データ取込</div>
     </a>
 
+    <a href="salary.html" class="menu-card" id="menu-salary">
+      <div class="menu-card-inner">
+        <div class="menu-icon" style="background:#FDF4FF">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#86198F" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+        </div>
+        <div class="menu-name">給与取込</div>
+      </div>
+      <div class="menu-desc">賃金台帳PDF取込</div>
+    </a>
+
     <a href="invoice.html" class="menu-card" id="menu-invoice">
       <div class="menu-card-inner">
         <div class="menu-icon" style="background:#FFF0F9">
@@ -506,8 +516,13 @@ function applyMenuByRole(userData) {
   if (!can(userData, 'import.use')) {
     document.getElementById('menu-import').classList.add('hidden');
   }
+  // 給与取込（賃金台帳PDF）はadmin/supporterのみ
+  const tier = resolveTier(userData).tier;
+  if (tier !== 'admin' && tier !== 'supporter') {
+    document.getElementById('menu-salary').classList.add('hidden');
+  }
   // 一般ユーザー（自事業所入力のみ）は朝礼報告を非表示
-  if (resolveTier(userData).tier === 'user') {
+  if (tier === 'user') {
     document.getElementById('menu-morning-report').classList.add('hidden');
   }
 }
