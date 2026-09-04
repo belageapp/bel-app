@@ -551,8 +551,10 @@ function renderAreaTable(data, title, isSummary=false, officeCount=0) {
 
 // サービス種別ごとの簡易表（目標・稼働日数・給与は事業所単位でしか持てないため、
 // 貢献人数・貢献報酬とその内訳4区分のみを表示する）
-function renderServiceTable(sv, title) {
+function renderServiceTable(sv, title, aWd) {
   const { aPpl, aBasic, aBody, aActR, aTreat, aRev } = sv;
+  // 貢献人数／日は事業所（グループ）単位の実績稼働日数で割った値（稼働日数はサービス別に持てないため）
+  const aPpd = MONTHS_ARR.map((_,i)=> (aWd && aWd[i]) ? aPpl[i]/aWd[i] : 0);
   function cols(arr, fmt) {
     const h1 = arr.slice(0,6).map(v=>`<td>${fmt(v)}</td>`).join('');
     const sh1 = sum(arr.slice(0,6));
@@ -560,9 +562,22 @@ function renderServiceTable(sv, title) {
     const sh2 = sum(arr.slice(6));
     return `${h1}<td class="td-area-h1">${fmt(sh1)}</td>${h2}<td class="td-area-h2">${fmt(sh2)}</td><td class="td-area-tot">${fmt(sh1+sh2)}</td>`;
   }
+  function colsAvgD(arr) {
+    const fmtD = v => (v && v>0) ? v.toFixed(1) : '－';
+    const h1 = arr.slice(0,6).map(v=>`<td>${fmtD(v)}</td>`).join('');
+    const av1 = arr.slice(0,6).filter(v=>v>0);
+    const sh1 = av1.length ? av1.reduce((a,b)=>a+b,0)/av1.length : null;
+    const h2 = arr.slice(6).map(v=>`<td>${fmtD(v)}</td>`).join('');
+    const av2 = arr.slice(6).filter(v=>v>0);
+    const sh2 = av2.length ? av2.reduce((a,b)=>a+b,0)/av2.length : null;
+    const ava = arr.filter(v=>v>0);
+    const tot = ava.length ? ava.reduce((a,b)=>a+b,0)/ava.length : null;
+    return `${h1}<td class="td-area-h1">${fmtD(sh1)}</td>${h2}<td class="td-area-h2">${fmtD(sh2)}</td><td class="td-area-tot">${fmtD(tot)}</td>`;
+  }
   const fmtN = v => (!v&&v!==0)||v===null?'－':Math.round(v).toLocaleString();
   const rows = [
-    `<tr class="tr-actual"><td class="row-cat-actual" rowspan="6">実　績</td><td class="row-label">貢献人数／月</td>${cols(aPpl,fmtN)}</tr>`,
+    `<tr class="tr-actual"><td class="row-cat-actual" rowspan="7">実　績</td><td class="row-label">貢献人数／月</td>${cols(aPpl,fmtN)}</tr>`,
+    `<tr class="tr-actual"><td class="row-label">貢献人数／日</td>${colsAvgD(aPpd)}</tr>`,
     `<tr class="tr-actual"><td class="row-label">貢献報酬</td>${cols(aRev,fmtN)}</tr>`,
     `<tr class="tr-actual"><td class="row-label-sub">　基本報酬</td>${cols(aBasic,fmtN)}</tr>`,
     `<tr class="tr-actual"><td class="row-label-sub">　体制加算</td>${cols(aBody,fmtN)}</tr>`,
@@ -600,7 +615,7 @@ function renderOfficeOrGroupTables(data, title, isSummary=false, officeCount=0) 
   }
   let html = renderAreaTable(data, `${title}（全体合計）`, isSummary, officeCount);
   for (const svc of svcNames) {
-    html += renderServiceTable(data.byService[svc], `${title}（${svc}）`);
+    html += renderServiceTable(data.byService[svc], `${title}（${svc}）`, data.aWd);
   }
   return html;
 }
@@ -704,17 +719,24 @@ function buildSheetRows(data, title) {
 }
 
 // サービス種別ごとのシート用AOA（renderServiceTableと同じ6行構成）
-function buildServiceSheetRows(sv, title) {
+function buildServiceSheetRows(sv, title, aWd) {
   const { aPpl, aBasic, aBody, aActR, aTreat, aRev } = sv;
+  const aPpd = MONTHS_ARR.map((_,i)=> (aWd && aWd[i]) ? aPpl[i]/aWd[i] : 0);
   const rowSum = (arr) => {
     const h1 = sum(arr.slice(0,6)), h2 = sum(arr.slice(6));
     return [...arr.slice(0,6), h1, ...arr.slice(6), h2, h1+h2];
+  };
+  const avgOf = (a) => { const v = a.filter(x=>x>0); return v.length ? v.reduce((s,x)=>s+x,0)/v.length : null; };
+  const rowAvg = (arr) => {
+    const h1 = avgOf(arr.slice(0,6)), h2 = avgOf(arr.slice(6));
+    return [...arr.slice(0,6), h1, ...arr.slice(6), h2, avgOf(arr)];
   };
   const header = ['分類','項目','4月','5月','6月','7月','8月','9月','上半期','10月','11月','12月','1月','2月','3月','下半期','通期'];
   return [
     [title],
     header,
     ['実績','貢献人数／月',    ...rowSum(aPpl)],
+    ['実績','貢献人数／日',    ...rowAvg(aPpd)],
     ['実績','貢献報酬',       ...rowSum(aRev)],
     ['実績','　基本報酬',     ...rowSum(aBasic)],
     ['実績','　体制加算',     ...rowSum(aBody)],
@@ -735,7 +757,7 @@ function addUnitSheets(wb, used, data, baseName) {
   const wsTotal = XLSX.utils.aoa_to_sheet(buildSheetRows(data, `${baseName}（全体合計）`));
   XLSX.utils.book_append_sheet(wb, wsTotal, safeSheetName(`${baseName}_合計`, used));
   for (const svc of svcNames) {
-    const ws = XLSX.utils.aoa_to_sheet(buildServiceSheetRows(data.byService[svc], `${baseName}（${svc}）`));
+    const ws = XLSX.utils.aoa_to_sheet(buildServiceSheetRows(data.byService[svc], `${baseName}（${svc}）`, data.aWd));
     XLSX.utils.book_append_sheet(wb, ws, safeSheetName(`${baseName}_${svc}`, used));
   }
 }
@@ -1188,7 +1210,7 @@ window.loadReport = async function(){
         <td class="val-total" id="atwd">${atWd||'－'}</td>
       </tr>
       <!-- 貢献人数（合計） -->
-      <tr><td class="row-label">貢献人数／月${multiSvc?'（合計）':''}</td>
+      <tr><td class="row-label">貢献人数／月</td>
         ${aPpl.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         ${aPpl.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atppl">${atPpl?atPpl.toLocaleString():'－'}</td>
@@ -1208,27 +1230,27 @@ window.loadReport = async function(){
         <td class="val-total" id="atpdef">${atPdef?(atPdef*100).toFixed(1)+'%':'－'}</td>
       </tr>
       <!-- 貢献報酬（合計） -->
-      <tr><td class="row-label">貢献報酬${multiSvc?'（合計）':''}</td>
+      <tr><td class="row-label">貢献報酬</td>
         ${aRev.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         ${aRev.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atrev">${atRev?atRev.toLocaleString():'－'}</td>
       </tr>
-      <tr><td class="row-label-sub">基本報酬${multiSvc?'（合計）':''}</td>
+      <tr><td class="row-label-sub">基本報酬</td>
         ${aBasic.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         ${aBasic.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atbasic">${atBasic?atBasic.toLocaleString():'－'}</td>
       </tr>
-      <tr><td class="row-label-sub">体制加算${multiSvc?'（合計）':''}</td>
+      <tr><td class="row-label-sub">体制加算</td>
         ${aBody.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         ${aBody.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atbody">${atBody?atBody.toLocaleString():'－'}</td>
       </tr>
-      <tr><td class="row-label-sub">実績加算${multiSvc?'（合計）':''}</td>
+      <tr><td class="row-label-sub">実績加算</td>
         ${aAct.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         ${aAct.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atactrev">${atAct?atAct.toLocaleString():'－'}</td>
       </tr>
-      <tr><td class="row-label-sub">処遇改善加算${multiSvc?'（合計）':''}</td>
+      <tr><td class="row-label-sub">処遇改善加算</td>
         ${aTreat.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         ${aTreat.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="attreat">${atTreat?atTreat.toLocaleString():'－'}</td>
@@ -1293,7 +1315,7 @@ window.loadReport = async function(){
       </tr>
     </tbody>
   </table></div>
-  ${multiSvc ? allSvcs.map(svc => renderServiceTable(byServiceLR[svc], `${currentOffice.name}（${svc}）`)).join('') : ''}`;
+  ${multiSvc ? allSvcs.map(svc => renderServiceTable(byServiceLR[svc], `${currentOffice.name}（${svc}）`, aWd)).join('') : ''}`;
 
   document.getElementById('report-area').innerHTML = html;
   window._tpm=tpm; window._tRev=tRev; window._capacity=capacity;
