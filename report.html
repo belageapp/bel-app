@@ -50,6 +50,7 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 .val{color:#185FA5}
 .val-break{color:#CC6600}
 .val-actual{color:#1D6E3E;font-weight:500}
+.val-sub{color:#999;font-size:10px;font-weight:400}
 .val-svc{color:#555;font-size:10px}
 .val-achieve{color:#6B3FA0;font-weight:500}
 .val-subtotal{background:#F0FAF6 !important;color:#0F6E56;font-weight:600}
@@ -547,10 +548,10 @@ function renderAreaTable(data, title, isSummary=false, officeCount=0) {
     `<tr class="${trCls} tr-actual">${lbl('貢献人数／月',!isSummary)}${cols(aPpl,fmtN)}</tr>`,
     `<tr class="${trCls} tr-actual">${lbl('貢献人数／定員',!isSummary)}${colsPeriodRatio(fmtP)}</tr>`,
     `<tr class="${trCls} tr-actual">${lbl('貢献報酬',!isSummary)}${cols(aRev,fmtN)}</tr>`,
-    `<tr class="${trCls} tr-actual">${lbl('　基本報酬',true)}${cols(aBasic,fmtN)}</tr>`,
-    `<tr class="${trCls} tr-actual">${lbl('　体制加算',true)}${cols(aBody,fmtN)}</tr>`,
-    `<tr class="${trCls} tr-actual">${lbl('　実績加算',true)}${cols(aActR,fmtN)}</tr>`,
-    `<tr class="${trCls} tr-actual">${lbl('　処遇改善加算',true)}${cols(aTreat,fmtN)}</tr>`,
+    `<tr class="${trCls} tr-actual">${lbl('　基本報酬',true)}${cols(aBasic,fmtN,'val-sub')}</tr>`,
+    `<tr class="${trCls} tr-actual">${lbl('　体制加算',true)}${cols(aBody,fmtN,'val-sub')}</tr>`,
+    `<tr class="${trCls} tr-actual">${lbl('　実績加算',true)}${cols(aActR,fmtN,'val-sub')}</tr>`,
+    `<tr class="${trCls} tr-actual">${lbl('　処遇改善加算',true)}${cols(aTreat,fmtN,'val-sub')}</tr>`,
     // 貢献度
     `<tr class="${trCls} tr-achieve"><td class="row-cat-achieve" rowspan="4">貢献度</td>${lbl('稼働日数',!isSummary)}${colsAch(achWd)}</tr>`,
     `<tr class="${trCls} tr-achieve">${lbl('貢献人数／月',!isSummary)}${colsAch(achPpl)}</tr>`,
@@ -596,10 +597,10 @@ function renderServiceTable(sv, title, aWd) {
   const { aPpl, aBasic, aBody, aActR, aTreat, aRev } = sv;
   // 貢献人数／日は事業所（グループ）単位の実績稼働日数で割った値（稼働日数はサービス別に持てないため）
   const aPpd = MONTHS_ARR.map((_,i)=> (aWd && aWd[i]) ? aPpl[i]/aWd[i] : 0);
-  function cols(arr, fmt) {
-    const h1 = arr.slice(0,6).map(v=>`<td>${fmt(v)}</td>`).join('');
+  function cols(arr, fmt, cls='') {
+    const h1 = arr.slice(0,6).map(v=>`<td class="${cls}">${fmt(v)}</td>`).join('');
     const sh1 = sum(arr.slice(0,6));
-    const h2 = arr.slice(6).map(v=>`<td>${fmt(v)}</td>`).join('');
+    const h2 = arr.slice(6).map(v=>`<td class="${cls}">${fmt(v)}</td>`).join('');
     const sh2 = sum(arr.slice(6));
     return `${h1}<td class="td-area-h1">${fmt(sh1)}</td>${h2}<td class="td-area-h2">${fmt(sh2)}</td><td class="td-area-tot">${fmt(sh1+sh2)}</td>`;
   }
@@ -620,10 +621,10 @@ function renderServiceTable(sv, title, aWd) {
     `<tr class="tr-actual"><td class="row-cat-actual" rowspan="7">実　績</td><td class="row-label">貢献人数／月</td>${cols(aPpl,fmtN)}</tr>`,
     `<tr class="tr-actual"><td class="row-label">貢献人数／日</td>${colsAvgD(aPpd)}</tr>`,
     `<tr class="tr-actual"><td class="row-label">貢献報酬</td>${cols(aRev,fmtN)}</tr>`,
-    `<tr class="tr-actual"><td class="row-label-sub">　基本報酬</td>${cols(aBasic,fmtN)}</tr>`,
-    `<tr class="tr-actual"><td class="row-label-sub">　体制加算</td>${cols(aBody,fmtN)}</tr>`,
-    `<tr class="tr-actual"><td class="row-label-sub">　実績加算</td>${cols(aActR,fmtN)}</tr>`,
-    `<tr class="tr-actual"><td class="row-label-sub">　処遇改善加算</td>${cols(aTreat,fmtN)}</tr>`,
+    `<tr class="tr-actual"><td class="row-label-sub">　基本報酬</td>${cols(aBasic,fmtN,'val-sub')}</tr>`,
+    `<tr class="tr-actual"><td class="row-label-sub">　体制加算</td>${cols(aBody,fmtN,'val-sub')}</tr>`,
+    `<tr class="tr-actual"><td class="row-label-sub">　実績加算</td>${cols(aActR,fmtN,'val-sub')}</tr>`,
+    `<tr class="tr-actual"><td class="row-label-sub">　処遇改善加算</td>${cols(aTreat,fmtN,'val-sub')}</tr>`,
   ].join('');
   return `
   <div class="area-section">
@@ -792,23 +793,23 @@ function renderOfficeDetailTable(data, title) {
       <td class="val-total">${atRev?atRev.toLocaleString():'－'}</td>
     </tr>
     <tr><td class="row-label-sub">基本報酬</td>
-      ${aBasic.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-      ${aBasic.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aBasic.slice(0,6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aBasic.slice(6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
       <td class="val-total">${atBasic?atBasic.toLocaleString():'－'}</td>
     </tr>
     <tr><td class="row-label-sub">体制加算</td>
-      ${aBody.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-      ${aBody.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aBody.slice(0,6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aBody.slice(6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
       <td class="val-total">${atBody?atBody.toLocaleString():'－'}</td>
     </tr>
     <tr><td class="row-label-sub">実績加算</td>
-      ${aActR.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-      ${aActR.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aActR.slice(0,6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aActR.slice(6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
       <td class="val-total">${atAct?atAct.toLocaleString():'－'}</td>
     </tr>
     <tr><td class="row-label-sub">処遇改善加算</td>
-      ${aTreat.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-      ${aTreat.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aTreat.slice(0,6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aTreat.slice(6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
       <td class="val-total">${atTreat?atTreat.toLocaleString():'－'}</td>
     </tr>
     <tr><td class="row-label">単価</td>
@@ -824,13 +825,13 @@ function renderOfficeDetailTable(data, title) {
       <td class="val-total">${atSal?atSal.toLocaleString():'－'}</td>
     </tr>
     <tr><td class="row-label-sub">正社員</td>
-      ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalS[i]?aSalS[i].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-      ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalS[i+6]?aSalS[i+6].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual val-sub">${aSalS[i]?aSalS[i].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual val-sub">${aSalS[i+6]?aSalS[i+6].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
       <td class="val-total">${atSalS?atSalS.toLocaleString():'－'}</td>
     </tr>
     <tr><td class="row-label-sub">パート</td>
-      ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalP[i]?aSalP[i].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-      ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalP[i+6]?aSalP[i+6].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual val-sub">${aSalP[i]?aSalP[i].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual val-sub">${aSalP[i+6]?aSalP[i+6].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
       <td class="val-total">${atSalP?atSalP.toLocaleString():'－'}</td>
     </tr>
     <tr><td class="row-label">給与比率</td>
@@ -1732,23 +1733,23 @@ window.loadReport = async function(){
         <td class="val-total" id="atrev">${atRev?atRev.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label-sub">基本報酬</td>
-        ${aBasic.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-        ${aBasic.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${aBasic.slice(0,6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${aBasic.slice(6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atbasic">${atBasic?atBasic.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label-sub">体制加算</td>
-        ${aBody.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-        ${aBody.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${aBody.slice(0,6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${aBody.slice(6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atbody">${atBody?atBody.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label-sub">実績加算</td>
-        ${aAct.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-        ${aAct.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${aAct.slice(0,6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${aAct.slice(6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atactrev">${atAct?atAct.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label-sub">処遇改善加算</td>
-        ${aTreat.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-        ${aTreat.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${aTreat.slice(0,6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${aTreat.slice(6).map(v=>`<td class="val-actual val-sub">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="attreat">${atTreat?atTreat.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label">単価</td>
@@ -1764,13 +1765,13 @@ window.loadReport = async function(){
         <td class="val-total" id="atsal">${atSal?atSal.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label-sub">正社員</td>
-        ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalaryS[i]?aSalaryS[i].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-        ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalaryS[i+6]?aSalaryS[i+6].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual val-sub">${aSalaryS[i]?aSalaryS[i].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual val-sub">${aSalaryS[i+6]?aSalaryS[i+6].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atsals">${atSalS?atSalS.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label-sub">パート</td>
-        ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalaryP[i]?aSalaryP[i].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-        ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalaryP[i+6]?aSalaryP[i+6].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual val-sub">${aSalaryP[i]?aSalaryP[i].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual val-sub">${aSalaryP[i+6]?aSalaryP[i+6].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atsalp">${atSalP?atSalP.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label">給与比率</td>
