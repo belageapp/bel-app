@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" sizes="512x512" href="assets/favicon_512.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>貢献実績表 | ベルアージュ</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333}
@@ -935,101 +935,222 @@ function mergeOfficeData(dataList) {
 }
 
 // ======================================================
-// ===== Excel出力（事業所別／エリア別／全社をシート分け） =====
+// ===== Excel出力（事業所別／エリア別／全社をシート分け、画面のトンマナを再現） =====
 // ======================================================
 
-// renderAreaTableと同じ15行（目標3・実績8・貢献度4）×12ヶ月＋上半期・下半期・通期を
-// 数値の配列（AOA）として組み立てる。画面表示のロジックと集計方法を揃えている。
-function buildSheetRows(data, title) {
-  const { wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal } = data;
-  const aPdef  = MONTHS_ARR.map((_,i)=>tpm[i]?aPpl[i]/tpm[i]:null);
-  const aGr    = MONTHS_ARR.map((_,i)=>aRev[i]&&aSal[i]?aSal[i]/aRev[i]:0);
-  const achWd  = MONTHS_ARR.map((_,i)=>wdPerMonth[i]&&aWd[i]  ?aWd[i]/wdPerMonth[i]:null);
-  const achPpl = MONTHS_ARR.map((_,i)=>tpm[i]        &&aPpl[i]?aPpl[i]/tpm[i]:null);
-  const achRev = MONTHS_ARR.map((_,i)=>tRev[i]       &&aRev[i]?aRev[i]/tRev[i]:null);
+// 画面のCSS配色をExcelのセルスタイルに対応させたもの（xlsx-js-styleで書き込み時に反映される）
+const XLS_STYLE = {
+  title:    { font: { bold: true, sz: 13 } },
+  section:  { font: { bold: true, sz: 11, color: { rgb: "1D9E75" } } },
+  meta:     { font: { sz: 9, color: { rgb: "888888" } } },
+  thHalf:   { font: { bold: true, sz: 9, color: { rgb: "555555" } }, fill: { patternType:"solid", fgColor:{rgb:"F4F6F8"} }, alignment:{horizontal:"center",vertical:"center"} },
+  thMonth:  { font: { bold: true, sz: 9, color: { rgb: "555555" } }, fill: { patternType:"solid", fgColor:{rgb:"F5F5F5"} }, alignment:{horizontal:"center",vertical:"center"} },
+  cat: {
+    target:  { font: { bold:true, sz:9, color:{rgb:"185FA5"} }, fill:{patternType:"solid",fgColor:{rgb:"EBF3FB"}}, alignment:{horizontal:"center",vertical:"center"} },
+    break:   { font: { bold:true, sz:9, color:{rgb:"CC6600"} }, fill:{patternType:"solid",fgColor:{rgb:"FFF3E0"}}, alignment:{horizontal:"center",vertical:"center"} },
+    actual:  { font: { bold:true, sz:9, color:{rgb:"1D6E3E"} }, fill:{patternType:"solid",fgColor:{rgb:"E8F5EE"}}, alignment:{horizontal:"center",vertical:"center"} },
+    achieve: { font: { bold:true, sz:9, color:{rgb:"6B3FA0"} }, fill:{patternType:"solid",fgColor:{rgb:"F3E8FF"}}, alignment:{horizontal:"center",vertical:"center"} },
+  },
+  label:    { font: { sz:9, color:{rgb:"555555"} }, alignment:{horizontal:"right"} },
+  labelSub: { font: { sz:9, color:{rgb:"888888"} }, alignment:{horizontal:"right",indent:1} },
+  val: {
+    target: { font:{sz:9,color:{rgb:"185FA5"}}, alignment:{horizontal:"right"} },
+    break:  { font:{sz:9,color:{rgb:"CC6600"}}, alignment:{horizontal:"right"} },
+    actual: { font:{sz:9,color:{rgb:"1D6E3E"}}, alignment:{horizontal:"right"} },
+  },
+  subtotal: { font:{sz:9,bold:true,color:{rgb:"0F6E56"}}, fill:{patternType:"solid",fgColor:{rgb:"F0FAF6"}}, alignment:{horizontal:"right"} },
+  total:    { font:{sz:9,bold:true,color:{rgb:"0F6E56"}}, fill:{patternType:"solid",fgColor:{rgb:"E0F5ED"}}, alignment:{horizontal:"right"} },
+  ach: {
+    good: { font:{sz:9,bold:true,color:{rgb:"1D9E75"}}, alignment:{horizontal:"right"} },
+    warn: { font:{sz:9,bold:true,color:{rgb:"CC6600"}}, alignment:{horizontal:"right"} },
+    bad:  { font:{sz:9,bold:true,color:{rgb:"E24B4A"}}, alignment:{horizontal:"right"} },
+    none: { font:{sz:9,color:{rgb:"CCCCCC"}}, alignment:{horizontal:"right"} },
+  },
+};
+const XL_HEADER = ['分類','項目','4月','5月','6月','7月','8月','9月','上半期','10月','11月','12月','1月','2月','3月','下半期','通期'];
+const XL_CAT_LABEL = { target:'目標', break:'損益分岐', actual:'実績', achieve:'貢献度' };
+
+function achStyleFor(v) {
+  if (v === null || v === undefined) return XLS_STYLE.ach.none;
+  if (v >= 1) return XLS_STYLE.ach.good;
+  if (v >= BREAK) return XLS_STYLE.ach.warn;
+  return XLS_STYLE.ach.bad;
+}
+
+// ---- 行データの集計ヘルパー（画面表示と同じ計算式） ----
+function xlRowSum(arr) {
+  const h1 = sum(arr.slice(0,6)), h2 = sum(arr.slice(6));
+  return [...arr.slice(0,6), h1, ...arr.slice(6), h2, h1+h2];
+}
+// 定員・単価・給与比率(目標)のような「月ごとに同じ値」の行は、合計欄は意味を持たないため空欄にする
+function xlRowFixed(v) {
+  return [v,v,v,v,v,v, null, v,v,v,v,v,v, null, null];
+}
+function xlAvgOf(a) { const v = a.filter(x=>x>0); return v.length ? v.reduce((s,x)=>s+x,0)/v.length : null; }
+function xlRowAvg(arr) {
+  const h1 = xlAvgOf(arr.slice(0,6)), h2 = xlAvgOf(arr.slice(6));
+  return [...arr.slice(0,6), h1, ...arr.slice(6), h2, xlAvgOf(arr)];
+}
+function xlAvgOfAch(a) { const v = a.filter(x=>x!==null); return v.length ? v.reduce((s,x)=>s+x,0)/v.length : null; }
+function xlRowAch(arr) {
+  const h1 = xlAvgOfAch(arr.slice(0,6)), h2 = xlAvgOfAch(arr.slice(6));
+  return [...arr.slice(0,6), h1, ...arr.slice(6), h2, xlAvgOfAch(arr)];
+}
+function xlRowRatio(aPpl, tpm) {
+  const aPdef = MONTHS_ARR.map((_,i)=>tpm[i]?aPpl[i]/tpm[i]:null);
+  const h1ppl=sum(aPpl.slice(0,6)), h1tpm=sum(tpm.slice(0,6));
+  const h2ppl=sum(aPpl.slice(6)),   h2tpm=sum(tpm.slice(6));
+  const totPpl=sum(aPpl), totTpm=sum(tpm);
+  return [...aPdef.slice(0,6), h1tpm?h1ppl/h1tpm:null, ...aPdef.slice(6), h2tpm?h2ppl/h2tpm:null, totTpm?totPpl/totTpm:null];
+}
+
+// renderOfficeDetailTableと同じ27行（目標6・損益分岐3・実績14・貢献度4）の行定義
+function officeDetailRowSpecs(data) {
+  const { cap, up, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, aSalS, aSalP } = data;
+  const bpm = tpm.map(t=>Math.ceil(t*BREAK));
+  const bpd = Math.ceil(cap*BREAK*10)/10;
+  const bRev = tRev.map(r=>Math.ceil(r*BREAK));
+  const aPpd = MONTHS_ARR.map((_,i)=>aWd[i]&&aPpl[i]?aPpl[i]/aWd[i]:0);
+  const aUnit = MONTHS_ARR.map((_,i)=>aPpl[i]&&aRev[i]?aRev[i]/aPpl[i]:0);
+  const aGr = MONTHS_ARR.map((_,i)=>aRev[i]&&aSal[i]?aSal[i]/aRev[i]:0);
+  const achWd  = MONTHS_ARR.map((_,i)=>wdPerMonth[i]&&aWd[i]?aWd[i]/wdPerMonth[i]:null);
+  const achPpl = MONTHS_ARR.map((_,i)=>tpm[i]&&aPpl[i]?aPpl[i]/tpm[i]:null);
+  const achRev = MONTHS_ARR.map((_,i)=>tRev[i]&&aRev[i]?aRev[i]/tRev[i]:null);
   const achGr  = MONTHS_ARR.map((_,i)=>SALARY&&aGr[i]?SALARY/aGr[i]:null);
 
-  const rowSum = (arr) => {
-    const h1 = sum(arr.slice(0,6)), h2 = sum(arr.slice(6));
-    return [...arr.slice(0,6), h1, ...arr.slice(6), h2, h1+h2];
-  };
-  const avgOf = (a) => { const v = a.filter(x=>x>0); return v.length ? v.reduce((s,x)=>s+x,0)/v.length : null; };
-  const rowRatio = () => {
-    const h1ppl=sum(aPpl.slice(0,6)), h1tpm=sum(tpm.slice(0,6));
-    const h2ppl=sum(aPpl.slice(6)),   h2tpm=sum(tpm.slice(6));
-    const totPpl=sum(aPpl), totTpm=sum(tpm);
-    return [...aPdef.slice(0,6), h1tpm?h1ppl/h1tpm:null, ...aPdef.slice(6), h2tpm?h2ppl/h2tpm:null, totTpm?totPpl/totTpm:null];
-  };
-  const avgOfAch = (a) => { const v = a.filter(x=>x!==null); return v.length ? v.reduce((s,x)=>s+x,0)/v.length : null; };
-  const rowAch = (arr) => {
-    const h1 = avgOfAch(arr.slice(0,6)), h2 = avgOfAch(arr.slice(6));
-    return [...arr.slice(0,6), h1, ...arr.slice(6), h2, avgOfAch(arr)];
-  };
-
-  const header = ['分類','項目','4月','5月','6月','7月','8月','9月','上半期','10月','11月','12月','1月','2月','3月','下半期','通期'];
   return [
-    [title],
-    header,
-    ['目標','稼働日数',        ...rowSum(wdPerMonth)],
-    ['目標','貢献人数／月',     ...rowSum(tpm)],
-    ['目標','貢献報酬',        ...rowSum(tRev)],
-    ['実績','稼働日数',        ...rowSum(aWd)],
-    ['実績','貢献人数／月',     ...rowSum(aPpl)],
-    ['実績','貢献人数／定員',   ...rowRatio()],
-    ['実績','貢献報酬',        ...rowSum(aRev)],
-    ['実績','　基本報酬',      ...rowSum(aBasic)],
-    ['実績','　体制加算',      ...rowSum(aBody)],
-    ['実績','　実績加算',      ...rowSum(aActR)],
-    ['実績','　処遇改善加算',   ...rowSum(aTreat)],
-    ['貢献度','稼働日数',      ...rowAch(achWd)],
-    ['貢献度','貢献人数／月',   ...rowAch(achPpl)],
-    ['貢献度','貢献報酬',      ...rowAch(achRev)],
-    ['貢献度','給与比率',      ...rowAch(achGr)],
+    { cat:'target', label:'稼働日数',      vals: xlRowSum(wdPerMonth), numFmt:'#,##0' },
+    { cat:'target', label:'貢献人数／月',   vals: xlRowSum(tpm), numFmt:'#,##0' },
+    { cat:'target', label:'貢献人数／日',   vals: xlRowFixed(cap), numFmt:'#,##0' },
+    { cat:'target', label:'貢献報酬',      vals: xlRowSum(tRev), numFmt:'#,##0' },
+    { cat:'target', label:'単価',         vals: xlRowFixed(up), numFmt:'#,##0' },
+    { cat:'target', label:'給与比率',      vals: xlRowFixed(SALARY), numFmt:'0.0%' },
+    { cat:'break',  label:'貢献人数／月',   vals: xlRowSum(bpm), numFmt:'#,##0' },
+    { cat:'break',  label:'貢献人数／日',   vals: xlRowFixed(bpd), numFmt:'0.0' },
+    { cat:'break',  label:'貢献報酬',      vals: xlRowSum(bRev), numFmt:'#,##0' },
+    { cat:'actual', label:'稼働日数',      vals: xlRowSum(aWd), numFmt:'#,##0' },
+    { cat:'actual', label:'貢献人数／月',   vals: xlRowSum(aPpl), numFmt:'#,##0' },
+    { cat:'actual', label:'貢献人数／日',   vals: xlRowAvg(aPpd), numFmt:'0.0' },
+    { cat:'actual', label:'貢献人数／定員', vals: xlRowRatio(aPpl, tpm), numFmt:'0.0%' },
+    { cat:'actual', label:'貢献報酬',      vals: xlRowSum(aRev), numFmt:'#,##0' },
+    { cat:'actual', label:'基本報酬', sub:true, vals: xlRowSum(aBasic), numFmt:'#,##0' },
+    { cat:'actual', label:'体制加算', sub:true, vals: xlRowSum(aBody), numFmt:'#,##0' },
+    { cat:'actual', label:'実績加算', sub:true, vals: xlRowSum(aActR), numFmt:'#,##0' },
+    { cat:'actual', label:'処遇改善加算', sub:true, vals: xlRowSum(aTreat), numFmt:'#,##0' },
+    { cat:'actual', label:'単価',        vals: xlRowAvg(aUnit), numFmt:'0.0' },
+    { cat:'actual', label:'給与額',       vals: xlRowSum(aSal), numFmt:'#,##0' },
+    { cat:'actual', label:'正社員', sub:true, vals: xlRowSum(aSalS), numFmt:'#,##0' },
+    { cat:'actual', label:'パート', sub:true, vals: xlRowSum(aSalP), numFmt:'#,##0' },
+    { cat:'actual', label:'給与比率',     vals: xlRowAvg(aGr), numFmt:'0.0%' },
+    { cat:'achieve', label:'稼働日数',     vals: xlRowAch(achWd), numFmt:'0.0%', achieve:true },
+    { cat:'achieve', label:'貢献人数／月',  vals: xlRowAch(achPpl), numFmt:'0.0%', achieve:true },
+    { cat:'achieve', label:'貢献報酬',     vals: xlRowAch(achRev), numFmt:'0.0%', achieve:true },
+    { cat:'achieve', label:'給与比率',     vals: xlRowAch(achGr), numFmt:'0.0%', achieve:true },
   ];
 }
 
-// サービス種別ごとのシート用AOA（renderServiceTableと同じ6行構成）
-function buildServiceSheetRows(sv, title, aWd) {
+// renderAreaTableと同じ15行（目標3・実績8・貢献度4）の行定義（エリア・全社集計用）
+function areaCompactRowSpecs(data) {
+  const { wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal } = data;
+  const aGr = MONTHS_ARR.map((_,i)=>aRev[i]&&aSal[i]?aSal[i]/aRev[i]:0);
+  const achWd  = MONTHS_ARR.map((_,i)=>wdPerMonth[i]&&aWd[i]?aWd[i]/wdPerMonth[i]:null);
+  const achPpl = MONTHS_ARR.map((_,i)=>tpm[i]&&aPpl[i]?aPpl[i]/tpm[i]:null);
+  const achRev = MONTHS_ARR.map((_,i)=>tRev[i]&&aRev[i]?aRev[i]/tRev[i]:null);
+  const achGr  = MONTHS_ARR.map((_,i)=>SALARY&&aGr[i]?SALARY/aGr[i]:null);
+  return [
+    { cat:'target', label:'稼働日数',      vals: xlRowSum(wdPerMonth), numFmt:'#,##0' },
+    { cat:'target', label:'貢献人数／月',   vals: xlRowSum(tpm), numFmt:'#,##0' },
+    { cat:'target', label:'貢献報酬',      vals: xlRowSum(tRev), numFmt:'#,##0' },
+    { cat:'actual', label:'稼働日数',      vals: xlRowSum(aWd), numFmt:'#,##0' },
+    { cat:'actual', label:'貢献人数／月',   vals: xlRowSum(aPpl), numFmt:'#,##0' },
+    { cat:'actual', label:'貢献人数／定員', vals: xlRowRatio(aPpl, tpm), numFmt:'0.0%' },
+    { cat:'actual', label:'貢献報酬',      vals: xlRowSum(aRev), numFmt:'#,##0' },
+    { cat:'actual', label:'基本報酬', sub:true, vals: xlRowSum(aBasic), numFmt:'#,##0' },
+    { cat:'actual', label:'体制加算', sub:true, vals: xlRowSum(aBody), numFmt:'#,##0' },
+    { cat:'actual', label:'実績加算', sub:true, vals: xlRowSum(aActR), numFmt:'#,##0' },
+    { cat:'actual', label:'処遇改善加算', sub:true, vals: xlRowSum(aTreat), numFmt:'#,##0' },
+    { cat:'achieve', label:'稼働日数',     vals: xlRowAch(achWd), numFmt:'0.0%', achieve:true },
+    { cat:'achieve', label:'貢献人数／月',  vals: xlRowAch(achPpl), numFmt:'0.0%', achieve:true },
+    { cat:'achieve', label:'貢献報酬',     vals: xlRowAch(achRev), numFmt:'0.0%', achieve:true },
+    { cat:'achieve', label:'給与比率',     vals: xlRowAch(achGr), numFmt:'0.0%', achieve:true },
+  ];
+}
+
+// renderServiceTableと同じ7行（貢献人数／月・貢献人数／日・貢献報酬とその内訳4区分）の行定義
+function serviceRowSpecs(sv, aWd) {
   const { aPpl, aBasic, aBody, aActR, aTreat, aRev } = sv;
   const aPpd = MONTHS_ARR.map((_,i)=> (aWd && aWd[i]) ? aPpl[i]/aWd[i] : 0);
-  const rowSum = (arr) => {
-    const h1 = sum(arr.slice(0,6)), h2 = sum(arr.slice(6));
-    return [...arr.slice(0,6), h1, ...arr.slice(6), h2, h1+h2];
-  };
-  const avgOf = (a) => { const v = a.filter(x=>x>0); return v.length ? v.reduce((s,x)=>s+x,0)/v.length : null; };
-  const rowAvg = (arr) => {
-    const h1 = avgOf(arr.slice(0,6)), h2 = avgOf(arr.slice(6));
-    return [...arr.slice(0,6), h1, ...arr.slice(6), h2, avgOf(arr)];
-  };
-  const header = ['分類','項目','4月','5月','6月','7月','8月','9月','上半期','10月','11月','12月','1月','2月','3月','下半期','通期'];
   return [
-    [title],
-    header,
-    ['実績','貢献人数／月',    ...rowSum(aPpl)],
-    ['実績','貢献人数／日',    ...rowAvg(aPpd)],
-    ['実績','貢献報酬',       ...rowSum(aRev)],
-    ['実績','　基本報酬',     ...rowSum(aBasic)],
-    ['実績','　体制加算',     ...rowSum(aBody)],
-    ['実績','　実績加算',     ...rowSum(aActR)],
-    ['実績','　処遇改善加算', ...rowSum(aTreat)],
+    { cat:'actual', label:'貢献人数／月', vals: xlRowSum(aPpl), numFmt:'#,##0' },
+    { cat:'actual', label:'貢献人数／日', vals: xlRowAvg(aPpd), numFmt:'0.0' },
+    { cat:'actual', label:'貢献報酬',    vals: xlRowSum(aRev), numFmt:'#,##0' },
+    { cat:'actual', label:'基本報酬', sub:true, vals: xlRowSum(aBasic), numFmt:'#,##0' },
+    { cat:'actual', label:'体制加算', sub:true, vals: xlRowSum(aBody), numFmt:'#,##0' },
+    { cat:'actual', label:'実績加算', sub:true, vals: xlRowSum(aActR), numFmt:'#,##0' },
+    { cat:'actual', label:'処遇改善加算', sub:true, vals: xlRowSum(aTreat), numFmt:'#,##0' },
   ];
 }
 
-// 複数サービスを提供する事業所／グループはサービス別シート＋全体合計シートを、
-// 単一サービスのみの場合は従来通り1枚のシートだけを追加する
-function addUnitSheets(wb, used, data, baseName) {
+// 行定義の配列を、値の行(aoa)とスタイルの行(styles)に変換して追記する
+function writeSpecRows(aoa, styles, specs) {
+  let prevCat = null;
+  for (const spec of specs) {
+    const showCat = spec.cat !== prevCat;
+    prevCat = spec.cat;
+    const row = [showCat ? XL_CAT_LABEL[spec.cat] : null, (spec.sub ? '　' : '') + spec.label];
+    const styleRow = [XLS_STYLE.cat[spec.cat], spec.sub ? XLS_STYLE.labelSub : XLS_STYLE.label];
+    for (let i = 0; i < 15; i++) {
+      const v = spec.vals[i];
+      let style;
+      if (spec.achieve) style = achStyleFor(v);
+      else if (i === 6 || i === 13) style = XLS_STYLE.subtotal;
+      else if (i === 14) style = XLS_STYLE.total;
+      else style = XLS_STYLE.val[spec.cat === 'achieve' ? 'actual' : spec.cat] || XLS_STYLE.val.actual;
+      row.push(v === null || v === undefined ? null : v);
+      styleRow.push({ ...style, numFmt: spec.numFmt });
+    }
+    aoa.push(row);
+    styles.push(styleRow);
+  }
+}
+
+// 1事業所／1エリア／全社の単位で1シート分のAOA+スタイルを組み立てる。
+// サービス別内訳は別シートに分けず、同一シートの下に続けて書く。
+function buildUnitSheet(data, title, meta, useDetail) {
+  const aoa = [];
+  const styles = [];
+
+  aoa.push([title]); styles.push([XLS_STYLE.title]);
+  if (meta) { aoa.push([meta]); styles.push([XLS_STYLE.meta]); }
+  aoa.push([]); styles.push([]);
+  aoa.push(XL_HEADER);
+  styles.push(XL_HEADER.map((_,i)=> i<2 ? XLS_STYLE.thHalf : XLS_STYLE.thMonth));
+
+  const specs = useDetail ? officeDetailRowSpecs(data) : areaCompactRowSpecs(data);
+  writeSpecRows(aoa, styles, specs);
+
   const svcNames = sortServices(Object.keys(data.byService||{}));
-  if (svcNames.length < 2) {
-    const ws = XLSX.utils.aoa_to_sheet(buildSheetRows(data, baseName));
-    XLSX.utils.book_append_sheet(wb, ws, safeSheetName(baseName, used));
-    return;
+  if (svcNames.length >= 2) {
+    for (const svc of svcNames) {
+      aoa.push([]); styles.push([]);
+      aoa.push([`${title}（${svc}）`]); styles.push([XLS_STYLE.section]);
+      aoa.push(XL_HEADER); styles.push(XL_HEADER.map((_,i)=> i<2 ? XLS_STYLE.thHalf : XLS_STYLE.thMonth));
+      writeSpecRows(aoa, styles, serviceRowSpecs(data.byService[svc], data.aWd));
+    }
   }
-  const wsTotal = XLSX.utils.aoa_to_sheet(buildSheetRows(data, `${baseName}（全体合計）`));
-  XLSX.utils.book_append_sheet(wb, wsTotal, safeSheetName(`${baseName}_合計`, used));
-  for (const svc of svcNames) {
-    const ws = XLSX.utils.aoa_to_sheet(buildServiceSheetRows(data.byService[svc], `${baseName}（${svc}）`, data.aWd));
-    XLSX.utils.book_append_sheet(wb, ws, safeSheetName(`${baseName}_${svc}`, used));
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  for (let r = 0; r < styles.length; r++) {
+    for (let c = 0; c < styles[r].length; c++) {
+      const style = styles[r][c];
+      if (!style) continue;
+      const addr = XLSX.utils.encode_cell({ r, c });
+      if (!ws[addr]) ws[addr] = { t: 'z' };
+      ws[addr].s = style;
+    }
   }
+  ws['!cols'] = [{ wch: 9 }, { wch: 14 }, ...Array(15).fill({ wch: 11 })];
+  return ws;
 }
 
 // Excelのシート名制約（31文字以内、: \ / ? * [ ] 禁止）に収め、重複があれば連番を付ける
@@ -1075,10 +1196,13 @@ window.exportExcel = async function() {
     const wb = XLSX.utils.book_new();
     const used = new Set();
 
-    // 事業所別シート（表示順のまま／複数サービス提供事業所はサービス別＋全体合計に分割）
+    // 事業所別シート（部課コード順、1事業所＝1シート。複数サービスの内訳も同一シートに続けて記載）
     for (const name of allOfficeNames) {
-      if (!dataMap[name]) continue;
-      addUnitSheets(wb, used, dataMap[name], name);
+      const data = dataMap[name];
+      if (!data) continue;
+      const meta = `種別／定員：${data.priceLabel}　単価：${data.up?data.up.toLocaleString()+'円':'未設定'}　給与比率：${(SALARY*100).toFixed(1)}%　損益分岐率：${(BREAK*100).toFixed(0)}%`;
+      const ws = buildUnitSheet(data, `${year}年度　${name}`, meta, true);
+      XLSX.utils.book_append_sheet(wb, ws, safeSheetName(name, used));
     }
 
     // エリア／グループ別シート
@@ -1088,13 +1212,15 @@ window.exportExcel = async function() {
       if (!groupData.length) continue;
       const merged = mergeOfficeData(groupData);
       groupMerged.push(merged);
-      addUnitSheets(wb, used, merged, `${group.label}集計`);
+      const ws = buildUnitSheet(merged, `${year}年度　${group.label}　集計`, null, false);
+      XLSX.utils.book_append_sheet(wb, ws, safeSheetName(`${group.label}集計`, used));
     }
 
     // 全社合計シート
     if (groupMerged.length) {
       const total = mergeOfficeData(groupMerged);
-      addUnitSheets(wb, used, total, '全社合計');
+      const ws = buildUnitSheet(total, `${year}年度　全社　合計`, null, false);
+      XLSX.utils.book_append_sheet(wb, ws, safeSheetName('全社合計', used));
     }
 
     XLSX.writeFile(wb, `貢献実績表_${year}年度.xlsx`);
