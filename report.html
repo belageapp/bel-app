@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" sizes="512x512" href="assets/favicon_512.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>貢献実績表 | ベルアージュ</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333}
@@ -135,6 +136,7 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
       <select id="sel-area" style="padding:5px 8px;border-radius:6px;border:1px solid #E8EAED;font-size:12px;font-family:inherit;color:#333;background:#fff;cursor:pointer;min-width:160px"></select>
       <button onclick="loadAreaReport()" style="padding:5px 14px;border-radius:6px;border:1px solid #1D9E75;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">表示</button>
     </div>
+    <button onclick="exportExcel()" id="btn-export-excel" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">📊 Excelでダウンロード</button>
     <div class="top-bar-divider"></div>
     <a href="daily.html" class="nav-link">速報入力</a>
     <a href="monthly.html" class="nav-link">貢献速報（月次）</a>
@@ -297,33 +299,37 @@ window.switchMode = function(mode) {
     '<div class="loading">' + (mode==='office' ? '年度と事業所を選択して「表示」を押してください' : '年度とエリアを選択して「表示」を押してください') + '</div>';
 };
 
-async function init(){
-  const [oSnap, pSnap, aSnap] = await Promise.all([
-    getDocs(collection(db,'offices')),
-    getDocs(collection(db,'prices')),
-    getDocs(collection(db,'areas'))
-  ]);
-  offices=[];
-  oSnap.forEach(d=>offices.push({id:d.id,...d.data()}));
-  offices.sort((a,b)=>(a.order||99)-(b.order||99));
-  prices=[];
-  pSnap.forEach(d=>prices.push({id:d.id,...d.data()}));
-  areas=[];
-  aSnap.forEach(d=>areas.push({id:d.id,...d.data()}));
-  areas.sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+let initPromise = null;
+function init(){
+  initPromise = (async () => {
+    const [oSnap, pSnap, aSnap] = await Promise.all([
+      getDocs(collection(db,'offices')),
+      getDocs(collection(db,'prices')),
+      getDocs(collection(db,'areas'))
+    ]);
+    offices=[];
+    oSnap.forEach(d=>offices.push({id:d.id,...d.data()}));
+    offices.sort((a,b)=>(a.order||99)-(b.order||99));
+    prices=[];
+    pSnap.forEach(d=>prices.push({id:d.id,...d.data()}));
+    areas=[];
+    aSnap.forEach(d=>areas.push({id:d.id,...d.data()}));
+    areas.sort((a,b)=>a.name.localeCompare(b.name,'ja'));
 
-  document.getElementById('sel-office').innerHTML =
-    offices.map(o=>`<option value="${o.id}">${o.name}</option>`).join('');
+    document.getElementById('sel-office').innerHTML =
+      offices.map(o=>`<option value="${o.id}">${o.name}</option>`).join('');
 
-  // エリアセレクター：Firestoreのエリア + 固定グループ
-  const areaOptions = [
-    ...areas.map(a=>`<option value="area:${a.name}">${a.name}</option>`),
-    `<optgroup label="────────"></optgroup>`,
-    `<option value="group:ラフォーレ">ラフォーレ（高陽・亀山）</option>`,
-    `<option value="group:レポ">レポ（白木）</option>`,
-    `<option value="group:全社">全社</option>`,
-  ];
-  document.getElementById('sel-area').innerHTML = areaOptions.join('');
+    // エリアセレクター：Firestoreのエリア + 固定グループ
+    const areaOptions = [
+      ...areas.map(a=>`<option value="area:${a.name}">${a.name}</option>`),
+      `<optgroup label="────────"></optgroup>`,
+      `<option value="group:ラフォーレ">ラフォーレ（高陽・亀山）</option>`,
+      `<option value="group:レポ">レポ（白木）</option>`,
+      `<option value="group:全社">全社</option>`,
+    ];
+    document.getElementById('sel-area').innerHTML = areaOptions.join('');
+  })();
+  return initPromise;
 }
 
 // ======================================================
@@ -549,6 +555,136 @@ function mergeOfficeData(dataList) {
   });
   return merged;
 }
+
+// ======================================================
+// ===== Excel出力（事業所別／エリア別／全社をシート分け） =====
+// ======================================================
+
+// renderAreaTableと同じ15行（目標3・実績8・貢献度4）×12ヶ月＋上半期・下半期・通期を
+// 数値の配列（AOA）として組み立てる。画面表示のロジックと集計方法を揃えている。
+function buildSheetRows(data, title) {
+  const { wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal } = data;
+  const aPdef  = MONTHS_ARR.map((_,i)=>tpm[i]?aPpl[i]/tpm[i]:null);
+  const aGr    = MONTHS_ARR.map((_,i)=>aRev[i]&&aSal[i]?aSal[i]/aRev[i]:0);
+  const achWd  = MONTHS_ARR.map((_,i)=>wdPerMonth[i]&&aWd[i]  ?aWd[i]/wdPerMonth[i]:null);
+  const achPpl = MONTHS_ARR.map((_,i)=>tpm[i]        &&aPpl[i]?aPpl[i]/tpm[i]:null);
+  const achRev = MONTHS_ARR.map((_,i)=>tRev[i]       &&aRev[i]?aRev[i]/tRev[i]:null);
+  const achGr  = MONTHS_ARR.map((_,i)=>SALARY&&aGr[i]?SALARY/aGr[i]:null);
+
+  const rowSum = (arr) => {
+    const h1 = sum(arr.slice(0,6)), h2 = sum(arr.slice(6));
+    return [...arr.slice(0,6), h1, ...arr.slice(6), h2, h1+h2];
+  };
+  const avgOf = (a) => { const v = a.filter(x=>x>0); return v.length ? v.reduce((s,x)=>s+x,0)/v.length : null; };
+  const rowRatio = () => {
+    const h1ppl=sum(aPpl.slice(0,6)), h1tpm=sum(tpm.slice(0,6));
+    const h2ppl=sum(aPpl.slice(6)),   h2tpm=sum(tpm.slice(6));
+    const totPpl=sum(aPpl), totTpm=sum(tpm);
+    return [...aPdef.slice(0,6), h1tpm?h1ppl/h1tpm:null, ...aPdef.slice(6), h2tpm?h2ppl/h2tpm:null, totTpm?totPpl/totTpm:null];
+  };
+  const avgOfAch = (a) => { const v = a.filter(x=>x!==null); return v.length ? v.reduce((s,x)=>s+x,0)/v.length : null; };
+  const rowAch = (arr) => {
+    const h1 = avgOfAch(arr.slice(0,6)), h2 = avgOfAch(arr.slice(6));
+    return [...arr.slice(0,6), h1, ...arr.slice(6), h2, avgOfAch(arr)];
+  };
+
+  const header = ['分類','項目','4月','5月','6月','7月','8月','9月','上半期','10月','11月','12月','1月','2月','3月','下半期','通期'];
+  return [
+    [title],
+    header,
+    ['目標','稼働日数',        ...rowSum(wdPerMonth)],
+    ['目標','貢献人数／月',     ...rowSum(tpm)],
+    ['目標','貢献報酬',        ...rowSum(tRev)],
+    ['実績','稼働日数',        ...rowSum(aWd)],
+    ['実績','貢献人数／月',     ...rowSum(aPpl)],
+    ['実績','貢献人数／定員',   ...rowRatio()],
+    ['実績','貢献報酬',        ...rowSum(aRev)],
+    ['実績','　基本報酬',      ...rowSum(aBasic)],
+    ['実績','　体制加算',      ...rowSum(aBody)],
+    ['実績','　実績加算',      ...rowSum(aActR)],
+    ['実績','　処遇改善加算',   ...rowSum(aTreat)],
+    ['貢献度','稼働日数',      ...rowAch(achWd)],
+    ['貢献度','貢献人数／月',   ...rowAch(achPpl)],
+    ['貢献度','貢献報酬',      ...rowAch(achRev)],
+    ['貢献度','給与比率',      ...rowAch(achGr)],
+  ];
+}
+
+// Excelのシート名制約（31文字以内、: \ / ? * [ ] 禁止）に収め、重複があれば連番を付ける
+function safeSheetName(name, used) {
+  let base = String(name).replace(/[:\\/?*\[\]]/g, '　').slice(0, 31);
+  let candidate = base;
+  let n = 2;
+  while (used.has(candidate)) {
+    const suffix = `(${n})`;
+    candidate = base.slice(0, 31 - suffix.length) + suffix;
+    n++;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+window.exportExcel = async function() {
+  const btn = document.getElementById('btn-export-excel');
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+  try {
+    await initPromise;
+    const year = parseInt(document.getElementById('sel-year').value);
+
+    const allOfficeNames = offices.map(o=>o.name);
+    const dataMap = {};
+    await Promise.all(allOfficeNames.map(async name => {
+      dataMap[name] = await loadOfficeData(name, year);
+    }));
+
+    const areaGroups = areas.map(a=>({
+      label: a.name,
+      officeNames: offices.filter(o=>o.area===a.name).map(o=>o.name)
+    })).filter(g=>g.officeNames.length>0);
+    const lafore = offices.filter(o=>['ラフォーレ高陽','ラフォーレ亀山'].includes(o.name)).map(o=>o.name);
+    const repo   = offices.filter(o=>o.name==='レポ白木').map(o=>o.name);
+    if (lafore.length) areaGroups.push({label:'ラフォーレ', officeNames:lafore});
+    if (repo.length)   areaGroups.push({label:'レポ',       officeNames:repo});
+
+    const wb = XLSX.utils.book_new();
+    const used = new Set();
+
+    // 事業所別シート（表示順のまま）
+    for (const name of allOfficeNames) {
+      if (!dataMap[name]) continue;
+      const ws = XLSX.utils.aoa_to_sheet(buildSheetRows(dataMap[name], name));
+      XLSX.utils.book_append_sheet(wb, ws, safeSheetName(name, used));
+    }
+
+    // エリア／グループ別シート
+    const groupMerged = [];
+    for (const group of areaGroups) {
+      const groupData = group.officeNames.map(n=>dataMap[n]).filter(Boolean);
+      if (!groupData.length) continue;
+      const merged = mergeOfficeData(groupData);
+      groupMerged.push(merged);
+      const ws = XLSX.utils.aoa_to_sheet(buildSheetRows(merged, `${group.label}　集計`));
+      XLSX.utils.book_append_sheet(wb, ws, safeSheetName(`${group.label}集計`, used));
+    }
+
+    // 全社合計シート
+    if (groupMerged.length) {
+      const total = mergeOfficeData(groupMerged);
+      const ws = XLSX.utils.aoa_to_sheet(buildSheetRows(total, '全社　合計'));
+      XLSX.utils.book_append_sheet(wb, ws, safeSheetName('全社合計', used));
+    }
+
+    XLSX.writeFile(wb, `貢献実績表_${year}年度.xlsx`);
+  } catch(e) {
+    console.error(e);
+    alert('Excel出力でエラーが発生しました: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
+};
 
 // エリア集計メイン
 window.loadAreaReport = async function() {
