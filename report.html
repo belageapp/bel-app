@@ -249,6 +249,17 @@ const SVC_CLS = {
   '就労継続支援B型':     'svc-syuroB',
   '短期入所':            'svc-tanki',
 };
+// サービス種別の表示順（放課後等デイサービス→保育所等訪問支援の順で統一）
+const SERVICE_ORDER = ['放課後等デイサービス','児童発達支援','生活介護','就労継続支援B型','短期入所','保育所等訪問支援'];
+function sortServices(names) {
+  return [...names].sort((a,b) => {
+    const ia = SERVICE_ORDER.indexOf(a), ib = SERVICE_ORDER.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b,'ja');
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+}
 function svcBadge(name) {
   const cls = SVC_CLS[name] || 'svc-other';
   return `<span class="svc-badge ${cls}">${name}</span>`;
@@ -583,7 +594,7 @@ function renderServiceTable(sv, title) {
 // 複数サービスを提供する事業所／グループはサービス別の表＋全体合計表を、
 // 単一サービスのみの場合は従来通り1枚の表だけを返す
 function renderOfficeOrGroupTables(data, title, isSummary=false, officeCount=0) {
-  const svcNames = Object.keys(data.byService||{}).sort((a,b)=>a.localeCompare(b,'ja'));
+  const svcNames = sortServices(Object.keys(data.byService||{}));
   if (svcNames.length < 2) {
     return renderAreaTable(data, title, isSummary, officeCount);
   }
@@ -715,7 +726,7 @@ function buildServiceSheetRows(sv, title) {
 // 複数サービスを提供する事業所／グループはサービス別シート＋全体合計シートを、
 // 単一サービスのみの場合は従来通り1枚のシートだけを追加する
 function addUnitSheets(wb, used, data, baseName) {
-  const svcNames = Object.keys(data.byService||{}).sort((a,b)=>a.localeCompare(b,'ja'));
+  const svcNames = sortServices(Object.keys(data.byService||{}));
   if (svcNames.length < 2) {
     const ws = XLSX.utils.aoa_to_sheet(buildSheetRows(data, baseName));
     XLSX.utils.book_append_sheet(wb, ws, safeSheetName(baseName, used));
@@ -1047,7 +1058,7 @@ window.loadReport = async function(){
     const svcs = getMonthServices(m);
     if(svcs) Object.keys(svcs).forEach(s=>allSvcSet.add(s));
   });
-  const allSvcs = [...allSvcSet];
+  const allSvcs = sortServices([...allSvcSet]);
   const multiSvc = allSvcs.length > 1;
 
   function inp(mi,key,val){
@@ -1085,52 +1096,22 @@ window.loadReport = async function(){
     return `${h1}<td class="val-subtotal">${fmt(h1s)}</td>${h2}<td class="val-subtotal">${fmt(h2s)}</td><td class="val-total">${fmt(tot)}</td>`;
   }
 
-  // 事業ごとに4区分（基本報酬・体制加算・実績加算・処遇改善加算）をまとめて表示
-  function svcCategoryRows(svc) {
-    const cats = [
-      ['basicRev','基本報酬'], ['bodyRev','体制加算'],
-      ['actualRev','実績加算'], ['treatRev','処遇改善加算'],
-    ];
-    return cats.map(([key,label]) => {
-      const vals = MONTHS_ARR.map((_,i)=>{
-        const svcs = getMonthServices(MONTHS_ARR[i]);
-        return svcs?.[svc]?.[key] || 0;
-      });
-      const h1 = vals.slice(0,6).map(v=>`<td class="val-svc">${v?v.toLocaleString():'－'}</td>`).join('');
-      const h2 = vals.slice(6).map(v=>`<td class="val-svc">${v?v.toLocaleString():'－'}</td>`).join('');
-      const h1s=sum(vals.slice(0,6)), h2s=sum(vals.slice(6)), tot=sum(vals);
-      return `<tr class="tr-svc-total">
-        <td class="row-label-svc">${svcBadge(svc)} ${label}</td>
-        ${h1}<td class="val-subtotal">${h1s?h1s.toLocaleString():'－'}</td>
-        ${h2}<td class="val-subtotal">${h2s?h2s.toLocaleString():'－'}</td>
-        <td class="val-total">${tot?tot.toLocaleString():'－'}</td>
-      </tr>`;
-    }).join('');
-  }
-  function svcAllRows() {
-    if (!multiSvc) return '';
-    return allSvcs.map(svc => svcCategoryRows(svc)).join('');
-  }
-
-  // 貢献人数の事業別行
-  function svcPeopleRows() {
-    if (!multiSvc) return '';
-    return allSvcs.map(svc => {
-      const vals = MONTHS_ARR.map((_,i)=>{
-        const svcs = getMonthServices(MONTHS_ARR[i]);
-        return svcs?.[svc]?.people || 0;
-      });
-      const h1 = vals.slice(0,6).map(v=>`<td class="val-svc">${v||'－'}</td>`).join('');
-      const h2 = vals.slice(6).map(v=>`<td class="val-svc">${v||'－'}</td>`).join('');
-      const tot=sum(vals);
-      return `<tr class="tr-svc-total">
-        <td class="row-label-svc">${svcBadge(svc)}</td>
-        ${h1}<td class="val-subtotal">－</td>
-        ${h2}<td class="val-subtotal">－</td>
-        <td class="val-total">${tot?tot.toLocaleString():'－'}</td>
-      </tr>`;
-    }).join('');
-  }
+  // サービス種別ごとの内訳（エリア集計モードと同じrenderServiceTableで下に別表として表示する）
+  const byServiceLR = {};
+  MONTHS_ARR.forEach((m,i)=>{
+    const svcs = getMonthServices(m);
+    if (!svcs) return;
+    Object.entries(svcs).forEach(([svc,s])=>{
+      if (!byServiceLR[svc]) byServiceLR[svc] = {aPpl:Array(12).fill(0),aBasic:Array(12).fill(0),aBody:Array(12).fill(0),aActR:Array(12).fill(0),aTreat:Array(12).fill(0),aRev:Array(12).fill(0)};
+      const sv = byServiceLR[svc];
+      sv.aPpl[i]   += s.people    || 0;
+      sv.aBasic[i] += s.basicRev  || 0;
+      sv.aBody[i]  += s.bodyRev   || 0;
+      sv.aActR[i]  += s.actualRev || 0;
+      sv.aTreat[i] += s.treatRev  || 0;
+      sv.aRev[i]   += (s.basicRev||0)+(s.bodyRev||0)+(s.actualRev||0)+(s.treatRev||0);
+    });
+  });
 
   const yearLabel=`${currentYear}年度（${currentYear}/4/1〜${currentYear+1}/3/31）`;
 
@@ -1198,7 +1179,7 @@ window.loadReport = async function(){
         <td class="val-total">${totalBrev?totalBrev.toLocaleString():'－'}</td>
       </tr>
       <!-- 実績 -->
-      <tr><td class="row-cat-actual" rowspan="${14 + (multiSvc ? allSvcs.length * 5 : 0)}">実　績</td><td class="row-label">稼働日数</td>
+      <tr><td class="row-cat-actual" rowspan="14">実　績</td><td class="row-label">稼働日数</td>
         ${aWd.slice(0,6).map(v=>`<td class="val-actual">${v||'－'}</td>`).join('')}
         <td class="val-subtotal" id="ah1wd">${ah1wd||'－'}</td>
         ${aWd.slice(6).map(v=>`<td class="val-actual">${v||'－'}</td>`).join('')}
@@ -1211,8 +1192,6 @@ window.loadReport = async function(){
         ${aPpl.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atppl">${atPpl?atPpl.toLocaleString():'－'}</td>
       </tr>
-      <!-- 貢献人数 事業別行 -->
-      ${svcPeopleRows()}
       <tr><td class="row-label">貢献人数／日</td>
         ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual" id="appd-${i}">${aPpd[i]?aPpd[i].toFixed(1):'－'}</td>`).join('')}
         <td class="val-subtotal" id="ah1ppd">${ah1ppd?ah1ppd.toFixed(1):'－'}</td>
@@ -1233,8 +1212,6 @@ window.loadReport = async function(){
         ${aRev.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atrev">${atRev?atRev.toLocaleString():'－'}</td>
       </tr>
-      <!-- 事業ごとの4区分内訳 -->
-      ${svcAllRows()}
       <tr><td class="row-label-sub">基本報酬${multiSvc?'（合計）':''}</td>
         ${aBasic.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         ${aBasic.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
@@ -1314,7 +1291,8 @@ window.loadReport = async function(){
         <td class="val-total ${achClass(avgNonNull(achGr))}">${fmtPct(avgNonNull(achGr))}</td>
       </tr>
     </tbody>
-  </table></div>`;
+  </table></div>
+  ${multiSvc ? allSvcs.map(svc => renderServiceTable(byServiceLR[svc], `${currentOffice.name}（${svc}）`)).join('') : ''}`;
 
   document.getElementById('report-area').innerHTML = html;
   window._tpm=tpm; window._tRev=tRev; window._capacity=capacity;
