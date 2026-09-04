@@ -359,13 +359,24 @@ async function loadOfficeData(officeName, year) {
   const tpm  = wdPerMonth.map(w=>w*cap);
   const tRev = tpm.map(t=>t*up);
 
-  // 実績
-  const aTotals = MONTHS_ARR.map(m=>{
+  // 実績（全サービス合算）＋ サービス種別ごとの内訳（byService）
+  // サービス種別ごとの目標・稼働日数・給与は算出根拠がない（定員・給与は事業所単位でしか
+  // 持っていない）ため、byServiceには実績の報酬・人数のみを持たせる。
+  const byService = {}; // svc -> {aPpl,aBasic,aBody,aActR,aTreat,aRev}（各12ヶ月分）
+  const zero12b = () => Array(12).fill(0);
+  const aTotals = MONTHS_ARR.map((m,i)=>{
     const md = act[m];
     if(!md) return {people:0,basicRev:0,bodyRev:0,actualRev:0,treatRev:0,totalRev:0};
     if(md.services){
       let p=0,b=0,bo=0,a=0,t=0;
-      Object.values(md.services).forEach(s=>{p+=s.people||0;b+=s.basicRev||0;bo+=s.bodyRev||0;a+=s.actualRev||0;t+=s.treatRev||0;});
+      Object.entries(md.services).forEach(([svc,s])=>{
+        p+=s.people||0;b+=s.basicRev||0;bo+=s.bodyRev||0;a+=s.actualRev||0;t+=s.treatRev||0;
+        if(!byService[svc]) byService[svc]={aPpl:zero12b(),aBasic:zero12b(),aBody:zero12b(),aActR:zero12b(),aTreat:zero12b(),aRev:zero12b()};
+        const sv=byService[svc];
+        sv.aPpl[i]+=s.people||0; sv.aBasic[i]+=s.basicRev||0; sv.aBody[i]+=s.bodyRev||0;
+        sv.aActR[i]+=s.actualRev||0; sv.aTreat[i]+=s.treatRev||0;
+        sv.aRev[i]+=(s.basicRev||0)+(s.bodyRev||0)+(s.actualRev||0)+(s.treatRev||0);
+      });
       return {people:p,basicRev:b,bodyRev:bo,actualRev:a,treatRev:t,totalRev:b+bo+a+t};
     }
     const b=md.basicRev||0,bo=md.bodyRev||0,a=md.actualRev||0,t=md.treatRev||0;
@@ -406,7 +417,7 @@ async function loadOfficeData(officeName, year) {
   });
   const aSal   = MONTHS_ARR.map((_,i)=>aSalS[i]+aSalP[i]);
 
-  return { officeName, cap, up, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal };
+  return { officeName, cap, up, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, byService };
 }
 
 // 抜粋表の15行を生成（1事業所または集計行）
@@ -527,6 +538,63 @@ function renderAreaTable(data, title, isSummary=false, officeCount=0) {
   </div>`;
 }
 
+// サービス種別ごとの簡易表（目標・稼働日数・給与は事業所単位でしか持てないため、
+// 貢献人数・貢献報酬とその内訳4区分のみを表示する）
+function renderServiceTable(sv, title) {
+  const { aPpl, aBasic, aBody, aActR, aTreat, aRev } = sv;
+  function cols(arr, fmt) {
+    const h1 = arr.slice(0,6).map(v=>`<td>${fmt(v)}</td>`).join('');
+    const sh1 = sum(arr.slice(0,6));
+    const h2 = arr.slice(6).map(v=>`<td>${fmt(v)}</td>`).join('');
+    const sh2 = sum(arr.slice(6));
+    return `${h1}<td class="td-area-h1">${fmt(sh1)}</td>${h2}<td class="td-area-h2">${fmt(sh2)}</td><td class="td-area-tot">${fmt(sh1+sh2)}</td>`;
+  }
+  const fmtN = v => (!v&&v!==0)||v===null?'－':Math.round(v).toLocaleString();
+  const rows = [
+    `<tr class="tr-actual"><td class="row-cat-actual" rowspan="5">実　績</td><td class="row-label">貢献人数／月</td>${cols(aPpl,fmtN)}</tr>`,
+    `<tr class="tr-actual"><td class="row-label">貢献報酬</td>${cols(aRev,fmtN)}</tr>`,
+    `<tr class="tr-actual"><td class="row-label-sub">　基本報酬</td>${cols(aBasic,fmtN)}</tr>`,
+    `<tr class="tr-actual"><td class="row-label-sub">　体制加算</td>${cols(aBody,fmtN)}</tr>`,
+    `<tr class="tr-actual"><td class="row-label-sub">　実績加算</td>${cols(aActR,fmtN)}</tr>`,
+    `<tr class="tr-actual"><td class="row-label-sub">　処遇改善加算</td>${cols(aTreat,fmtN)}</tr>`,
+  ].join('');
+  return `
+  <div class="area-section">
+    <div class="area-section-title">${title}<span class="badge">サービス別内訳</span></div>
+    <div class="area-table-wrap">
+      <table class="area-table">
+        <colgroup><col style="width:52px"><col style="width:105px"></colgroup>
+        <thead>
+          <tr>
+            <th colspan="2" style="background:#f5f5f5;text-align:center;font-size:11px;color:#555;font-weight:500">項目</th>
+            ${ML_ARR.slice(0,6).map(m=>`<th>${m}</th>`).join('')}
+            <th class="th-area-half">上半期</th>
+            ${ML_ARR.slice(6).map(m=>`<th>${m}</th>`).join('')}
+            <th class="th-area-half">下半期</th>
+            <th class="th-area-total">通期</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// 複数サービスを提供する事業所／グループはサービス別の表＋全体合計表を、
+// 単一サービスのみの場合は従来通り1枚の表だけを返す
+function renderOfficeOrGroupTables(data, title, isSummary=false, officeCount=0) {
+  const svcNames = Object.keys(data.byService||{}).sort((a,b)=>a.localeCompare(b,'ja'));
+  if (svcNames.length < 2) {
+    return renderAreaTable(data, title, isSummary, officeCount);
+  }
+  let html = '';
+  for (const svc of svcNames) {
+    html += renderServiceTable(data.byService[svc], `${title}（${svc}）`);
+  }
+  html += renderAreaTable(data, `${title}（全体合計）`, isSummary, officeCount);
+  return html;
+}
+
 // 複数事業所のデータを集計して1つのdataオブジェクトに合算
 function mergeOfficeData(dataList) {
   if (!dataList.length) return null;
@@ -537,6 +605,7 @@ function mergeOfficeData(dataList) {
     aWd: zero12(), aPpl: zero12(), aBasic: zero12(),
     aBody: zero12(), aActR: zero12(), aTreat: zero12(),
     aRev: zero12(), aSal: zero12(),
+    byService: {},
   };
   dataList.forEach(d=>{
     MONTHS_ARR.forEach((_,i)=>{
@@ -551,6 +620,20 @@ function mergeOfficeData(dataList) {
       merged.aTreat[i]     += d.aTreat[i]||0;
       merged.aRev[i]       += d.aRev[i]||0;
       merged.aSal[i]       += d.aSal[i]||0;
+    });
+    Object.entries(d.byService||{}).forEach(([svc,sv])=>{
+      if (!merged.byService[svc]) {
+        merged.byService[svc] = {aPpl:zero12(),aBasic:zero12(),aBody:zero12(),aActR:zero12(),aTreat:zero12(),aRev:zero12()};
+      }
+      const m = merged.byService[svc];
+      MONTHS_ARR.forEach((_,i)=>{
+        m.aPpl[i]   += sv.aPpl[i]||0;
+        m.aBasic[i] += sv.aBasic[i]||0;
+        m.aBody[i]  += sv.aBody[i]||0;
+        m.aActR[i]  += sv.aActR[i]||0;
+        m.aTreat[i] += sv.aTreat[i]||0;
+        m.aRev[i]   += sv.aRev[i]||0;
+      });
     });
   });
   return merged;
@@ -610,6 +693,43 @@ function buildSheetRows(data, title) {
   ];
 }
 
+// サービス種別ごとのシート用AOA（renderServiceTableと同じ6行構成）
+function buildServiceSheetRows(sv, title) {
+  const { aPpl, aBasic, aBody, aActR, aTreat, aRev } = sv;
+  const rowSum = (arr) => {
+    const h1 = sum(arr.slice(0,6)), h2 = sum(arr.slice(6));
+    return [...arr.slice(0,6), h1, ...arr.slice(6), h2, h1+h2];
+  };
+  const header = ['分類','項目','4月','5月','6月','7月','8月','9月','上半期','10月','11月','12月','1月','2月','3月','下半期','通期'];
+  return [
+    [title],
+    header,
+    ['実績','貢献人数／月',    ...rowSum(aPpl)],
+    ['実績','貢献報酬',       ...rowSum(aRev)],
+    ['実績','　基本報酬',     ...rowSum(aBasic)],
+    ['実績','　体制加算',     ...rowSum(aBody)],
+    ['実績','　実績加算',     ...rowSum(aActR)],
+    ['実績','　処遇改善加算', ...rowSum(aTreat)],
+  ];
+}
+
+// 複数サービスを提供する事業所／グループはサービス別シート＋全体合計シートを、
+// 単一サービスのみの場合は従来通り1枚のシートだけを追加する
+function addUnitSheets(wb, used, data, baseName) {
+  const svcNames = Object.keys(data.byService||{}).sort((a,b)=>a.localeCompare(b,'ja'));
+  if (svcNames.length < 2) {
+    const ws = XLSX.utils.aoa_to_sheet(buildSheetRows(data, baseName));
+    XLSX.utils.book_append_sheet(wb, ws, safeSheetName(baseName, used));
+    return;
+  }
+  for (const svc of svcNames) {
+    const ws = XLSX.utils.aoa_to_sheet(buildServiceSheetRows(data.byService[svc], `${baseName}（${svc}）`));
+    XLSX.utils.book_append_sheet(wb, ws, safeSheetName(`${baseName}_${svc}`, used));
+  }
+  const wsTotal = XLSX.utils.aoa_to_sheet(buildSheetRows(data, `${baseName}（全体合計）`));
+  XLSX.utils.book_append_sheet(wb, wsTotal, safeSheetName(`${baseName}_合計`, used));
+}
+
 // Excelのシート名制約（31文字以内、: \ / ? * [ ] 禁止）に収め、重複があれば連番を付ける
 function safeSheetName(name, used) {
   let base = String(name).replace(/[:\\/?*\[\]]/g, '　').slice(0, 31);
@@ -651,11 +771,10 @@ window.exportExcel = async function() {
     const wb = XLSX.utils.book_new();
     const used = new Set();
 
-    // 事業所別シート（表示順のまま）
+    // 事業所別シート（表示順のまま／複数サービス提供事業所はサービス別＋全体合計に分割）
     for (const name of allOfficeNames) {
       if (!dataMap[name]) continue;
-      const ws = XLSX.utils.aoa_to_sheet(buildSheetRows(dataMap[name], name));
-      XLSX.utils.book_append_sheet(wb, ws, safeSheetName(name, used));
+      addUnitSheets(wb, used, dataMap[name], name);
     }
 
     // エリア／グループ別シート
@@ -665,15 +784,13 @@ window.exportExcel = async function() {
       if (!groupData.length) continue;
       const merged = mergeOfficeData(groupData);
       groupMerged.push(merged);
-      const ws = XLSX.utils.aoa_to_sheet(buildSheetRows(merged, `${group.label}　集計`));
-      XLSX.utils.book_append_sheet(wb, ws, safeSheetName(`${group.label}集計`, used));
+      addUnitSheets(wb, used, merged, `${group.label}集計`);
     }
 
     // 全社合計シート
     if (groupMerged.length) {
       const total = mergeOfficeData(groupMerged);
-      const ws = XLSX.utils.aoa_to_sheet(buildSheetRows(total, '全社　合計'));
-      XLSX.utils.book_append_sheet(wb, ws, safeSheetName('全社合計', used));
+      addUnitSheets(wb, used, total, '全社合計');
     }
 
     XLSX.writeFile(wb, `貢献実績表_${year}年度.xlsx`);
@@ -740,7 +857,7 @@ window.loadAreaReport = async function() {
     if (!isZensha) {
       for (const name of group.officeNames) {
         if (dataMap[name]) {
-          html += renderAreaTable(dataMap[name], name, false);
+          html += renderOfficeOrGroupTables(dataMap[name], name, false);
         }
       }
     }
@@ -748,7 +865,7 @@ window.loadAreaReport = async function() {
     // グループ集計
     const merged = mergeOfficeData(groupData);
     if (merged) {
-      html += renderAreaTable(merged, `${group.label}　集計`, true, groupData.length);
+      html += renderOfficeOrGroupTables(merged, `${group.label}　集計`, true, groupData.length);
       groupMerged.push(merged);
     }
   }
@@ -758,7 +875,7 @@ window.loadAreaReport = async function() {
     const total = mergeOfficeData(groupMerged);
     if (total) {
       html += `<div style="height:4px;background:#E8EAED;border-radius:2px;margin:8px 0"></div>`;
-      html += renderAreaTable(total, '全社　合計', true, allOfficeNames.length);
+      html += renderOfficeOrGroupTables(total, '全社　合計', true, allOfficeNames.length);
     }
   }
 
