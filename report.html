@@ -107,12 +107,14 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 
 /* 印刷（PDF保存）：1事業所／1エリア／全社ごとに改ページする */
 @media print {
-  @page { size: landscape; margin: 8mm; }
+  @page { size: landscape; margin: 12mm; }
   .top-bar, #btn-export-excel, #btn-export-pdf, .loading { display: none !important; }
   body, .content { background: #fff; padding: 0; }
-  .print-page-group { break-after: page; }
-  .print-page-group:last-child { break-after: auto; }
-  .area-section, .table-wrap, .office-info { break-inside: avoid; }
+  .print-page-group { break-after: page; page-break-after: always; }
+  .print-page-group:last-child { break-after: auto; page-break-after: auto; }
+  .area-section, .table-wrap, .office-info { break-inside: avoid; page-break-inside: avoid; }
+  /* 事業所単位のサービス別内訳は全体合計表とは別ページから表示する（エリア・全社集計は対象外） */
+  .svc-next-page { break-before: page; page-break-before: always; }
   table, .area-table { font-size: 9px; min-width: 0; }
   .table-wrap, .area-table-wrap { overflow: visible; box-shadow: none; }
 }
@@ -149,7 +151,7 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
       <button onclick="loadAreaReport()" style="padding:5px 14px;border-radius:6px;border:1px solid #1D9E75;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">表示</button>
     </div>
     <button onclick="exportExcel()" id="btn-export-excel" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">📊 Excelでダウンロード</button>
-    <button onclick="window.print()" id="btn-export-pdf" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">🖨️ PDFで保存（印刷）</button>
+    <button onclick="printFullReport()" id="btn-export-pdf" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">🖨️ 全情報PDF保存</button>
     <div class="top-bar-divider"></div>
     <a href="daily.html" class="nav-link">速報入力</a>
     <a href="monthly.html" class="nav-link">貢献速報（月次）</a>
@@ -273,6 +275,17 @@ function sortServices(names) {
     return ia - ib;
   });
 }
+// エリアの表示順（広島→安芸→東広島の順で統一。未知のエリアは末尾に五十音順で追加）
+const AREA_ORDER = ['広島エリア','安芸エリア','東広島エリア'];
+function sortAreas(areaList) {
+  return [...areaList].sort((a,b) => {
+    const ia = AREA_ORDER.indexOf(a.name), ib = AREA_ORDER.indexOf(b.name);
+    if (ia === -1 && ib === -1) return a.name.localeCompare(b.name,'ja');
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+}
 function svcBadge(name) {
   const cls = SVC_CLS[name] || 'svc-other';
   return `<span class="svc-badge ${cls}">${name}</span>`;
@@ -379,6 +392,7 @@ async function loadOfficeData(officeName, year) {
   const price  = prices.find(p=>p.id===office?.priceId);
   const cap    = price?.capacity || 0;
   const up     = price?.price    || 0;
+  const priceLabel = price ? `${price.type}　定員${cap>0?cap:'－'}` : '未設定';
 
   const tpm  = wdPerMonth.map(w=>w*cap);
   const tRev = tpm.map(t=>t*up);
@@ -441,7 +455,7 @@ async function loadOfficeData(officeName, year) {
   });
   const aSal   = MONTHS_ARR.map((_,i)=>aSalS[i]+aSalP[i]);
 
-  return { officeName, cap, up, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, byService };
+  return { officeName, cap, up, priceLabel, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, aSalS, aSalP, byService };
 }
 
 // 抜粋表の15行を生成（1事業所または集計行）
@@ -617,6 +631,246 @@ function renderServiceTable(sv, title, aWd) {
       </table>
     </div>
   </div>`;
+}
+
+// 事業所モード（loadReport）と同じ目標・損益分岐・実績・貢献度の詳細表（27行）を、
+// 印刷／PDF出力の事業所単位の「全体合計」表として静的に描画する（入力欄・再計算は持たない）。
+function renderOfficeDetailTable(data, title) {
+  const { cap, up, priceLabel, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, aSalS, aSalP, byService } = data;
+
+  const bpm  = tpm.map(t=>Math.ceil(t*BREAK));
+  const bpd  = Math.ceil(cap*BREAK*10)/10;
+  const bRev = tRev.map(r=>Math.ceil(r*BREAK));
+
+  const h1wd=sum(wdPerMonth.slice(0,6)), h2wd=sum(wdPerMonth.slice(6)), totalWd=h1wd+h2wd;
+  const totalTpm=sum(tpm), totalTrev=sum(tRev);
+  const totalBpm=sum(bpm), totalBrev=sum(bRev);
+
+  const aPpd  = MONTHS_ARR.map((_,i)=>aWd[i]&&aPpl[i]?aPpl[i]/aWd[i]:0);
+  const aPdef = MONTHS_ARR.map((_,i)=>cap&&aPpd[i]?aPpd[i]/cap:0);
+  const aUnit = MONTHS_ARR.map((_,i)=>aPpl[i]&&aRev[i]?aRev[i]/aPpl[i]:0);
+  const aGr   = MONTHS_ARR.map((_,i)=>aRev[i]&&aSal[i]?aSal[i]/aRev[i]:0);
+
+  const ah1wd=sum(aWd.slice(0,6)), ah2wd=sum(aWd.slice(6)), atWd=ah1wd+ah2wd;
+  const atPpl=sum(aPpl), atRev=sum(aRev);
+  const atBasic=sum(aBasic), atBody=sum(aBody), atAct=sum(aActR), atTreat=sum(aTreat);
+  const atSalS=sum(aSalS), atSalP=sum(aSalP), atSal=sum(aSal);
+  const ah1ppd=avg(aPpd.slice(0,6).filter(v=>v>0));
+  const ah2ppd=avg(aPpd.slice(6).filter(v=>v>0));
+  const atPpd=avg(aPpd.filter(v=>v>0));
+  const h1ppl=sum(aPpl.slice(0,6)), h2ppl=sum(aPpl.slice(6));
+  const h1tpm=sum(tpm.slice(0,6)), h2tpm=sum(tpm.slice(6)), totTpm=sum(tpm);
+  const ah1pdef = h1tpm ? h1ppl/h1tpm : null;
+  const ah2pdef = h2tpm ? h2ppl/h2tpm : null;
+  const atPdef  = totTpm ? atPpl/totTpm : null;
+  const ah1unit=avg(aUnit.slice(0,6).filter(v=>v>0));
+  const ah2unit=avg(aUnit.slice(6).filter(v=>v>0));
+  const atUnit=avg(aUnit.filter(v=>v>0));
+  const ah1gr=avg(aGr.slice(0,6).filter(v=>v>0));
+  const ah2gr=avg(aGr.slice(6).filter(v=>v>0));
+  const atGr=avg(aGr.filter(v=>v>0));
+
+  const achWd  = MONTHS_ARR.map((_,i)=>wdPerMonth[i]&&aWd[i]?aWd[i]/wdPerMonth[i]:null);
+  const achPpl = MONTHS_ARR.map((_,i)=>tpm[i]&&aPpl[i]?aPpl[i]/tpm[i]:null);
+  const achRev = MONTHS_ARR.map((_,i)=>tRev[i]&&aRev[i]?aRev[i]/tRev[i]:null);
+  const achGr  = MONTHS_ARR.map((_,i)=>SALARY&&aGr[i]?SALARY/aGr[i]:null);
+
+  const fmtPctD = v => v===null||v===undefined?'－':(v*100).toFixed(1)+'%';
+  const achClassD = v => { if(v===null)return'val-dash'; if(v>=1)return'achieve-good'; if(v>=BREAK)return'achieve-warn'; return'achieve-bad'; };
+  const avgNonNullD = arr => { const v=arr.filter(x=>x!==null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
+
+  function headerRow() {
+    return `
+      <tr>
+        <th colspan="2" style="background:#f5f5f5"></th>
+        <th colspan="6" class="th-half">上半期（4〜9月）</th>
+        <th class="th-total">小計</th>
+        <th colspan="6" class="th-half">下半期（10〜3月）</th>
+        <th class="th-total">小計</th>
+        <th class="th-total">通期</th>
+      </tr>
+      <tr>
+        <th colspan="2" style="background:#f5f5f5"></th>
+        ${ML_ARR.slice(0,6).map(m=>`<th class="th-month">${m}</th>`).join('')}
+        <th class="th-total">合計</th>
+        ${ML_ARR.slice(6).map(m=>`<th class="th-month">${m}</th>`).join('')}
+        <th class="th-total">合計</th>
+        <th class="th-total">合計</th>
+      </tr>`;
+  }
+
+  const allSvcs = sortServices(Object.keys(byService||{}));
+  const multiSvc = allSvcs.length > 1;
+
+  const rows = `
+    <tr><td class="row-cat-target" rowspan="6">目　標</td><td class="row-label">稼働日数</td>
+      ${wdPerMonth.slice(0,6).map(v=>`<td class="val">${v||'－'}</td>`).join('')}<td class="val-subtotal">${h1wd||'－'}</td>
+      ${wdPerMonth.slice(6).map(v=>`<td class="val">${v||'－'}</td>`).join('')}<td class="val-subtotal">${h2wd||'－'}</td>
+      <td class="val-total">${totalWd||'－'}</td>
+    </tr>
+    <tr><td class="row-label">貢献人数／月</td>
+      ${tpm.slice(0,6).map(v=>`<td class="val">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${tpm.slice(6).map(v=>`<td class="val">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${totalTpm?totalTpm.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-label">貢献人数／日</td>
+      ${Array(6).fill(`<td class="val val-fixed">${cap||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${Array(6).fill(`<td class="val val-fixed">${cap||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">－</td>
+    </tr>
+    <tr><td class="row-label">貢献報酬</td>
+      ${tRev.slice(0,6).map(v=>`<td class="val">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${tRev.slice(6).map(v=>`<td class="val">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${totalTrev?totalTrev.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-label">単価</td>
+      ${Array(6).fill(`<td class="val val-fixed">${up?up.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${Array(6).fill(`<td class="val val-fixed">${up?up.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">－</td>
+    </tr>
+    <tr><td class="row-label">給与比率</td>
+      ${Array(6).fill(`<td class="val val-fixed">${(SALARY*100).toFixed(1)}%</td>`).join('')}<td class="val-subtotal">－</td>
+      ${Array(6).fill(`<td class="val val-fixed">${(SALARY*100).toFixed(1)}%</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">－</td>
+    </tr>
+    <tr><td class="row-cat-break" rowspan="3">損益<br>分岐</td><td class="row-label">貢献人数／月</td>
+      ${bpm.slice(0,6).map(v=>`<td class="val-break">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${bpm.slice(6).map(v=>`<td class="val-break">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${totalBpm?totalBpm.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-label">貢献人数／日</td>
+      ${Array(6).fill(`<td class="val-break">${bpd||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${Array(6).fill(`<td class="val-break">${bpd||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">－</td>
+    </tr>
+    <tr><td class="row-label">貢献報酬</td>
+      ${bRev.slice(0,6).map(v=>`<td class="val-break">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${bRev.slice(6).map(v=>`<td class="val-break">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${totalBrev?totalBrev.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-cat-actual" rowspan="14">実　績</td><td class="row-label">稼働日数</td>
+      ${aWd.slice(0,6).map(v=>`<td class="val-actual">${v||'－'}</td>`).join('')}<td class="val-subtotal">${ah1wd||'－'}</td>
+      ${aWd.slice(6).map(v=>`<td class="val-actual">${v||'－'}</td>`).join('')}<td class="val-subtotal">${ah2wd||'－'}</td>
+      <td class="val-total">${atWd||'－'}</td>
+    </tr>
+    <tr><td class="row-label">貢献人数／月</td>
+      ${aPpl.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aPpl.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${atPpl?atPpl.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-label">貢献人数／日</td>
+      ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual">${aPpd[i]?aPpd[i].toFixed(1):'－'}</td>`).join('')}
+      <td class="val-subtotal">${ah1ppd?ah1ppd.toFixed(1):'－'}</td>
+      ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual">${aPpd[i+6]?aPpd[i+6].toFixed(1):'－'}</td>`).join('')}
+      <td class="val-subtotal">${ah2ppd?ah2ppd.toFixed(1):'－'}</td>
+      <td class="val-total">${atPpd?atPpd.toFixed(1):'－'}</td>
+    </tr>
+    <tr><td class="row-label">貢献人数／定員</td>
+      ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual">${aPdef[i]?(aPdef[i]*100).toFixed(1)+'%':'－'}</td>`).join('')}
+      <td class="val-subtotal">${ah1pdef?(ah1pdef*100).toFixed(1)+'%':'－'}</td>
+      ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual">${aPdef[i+6]?(aPdef[i+6]*100).toFixed(1)+'%':'－'}</td>`).join('')}
+      <td class="val-subtotal">${ah2pdef?(ah2pdef*100).toFixed(1)+'%':'－'}</td>
+      <td class="val-total">${atPdef?(atPdef*100).toFixed(1)+'%':'－'}</td>
+    </tr>
+    <tr><td class="row-label">貢献報酬</td>
+      ${aRev.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aRev.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${atRev?atRev.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-label-sub">基本報酬</td>
+      ${aBasic.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aBasic.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${atBasic?atBasic.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-label-sub">体制加算</td>
+      ${aBody.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aBody.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${atBody?atBody.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-label-sub">実績加算</td>
+      ${aActR.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aActR.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${atAct?atAct.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-label-sub">処遇改善加算</td>
+      ${aTreat.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aTreat.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${atTreat?atTreat.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-label">単価</td>
+      ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual">${aUnit[i]?aUnit[i].toFixed(1):'－'}</td>`).join('')}
+      <td class="val-subtotal">${ah1unit?ah1unit.toFixed(1):'－'}</td>
+      ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual">${aUnit[i+6]?aUnit[i+6].toFixed(1):'－'}</td>`).join('')}
+      <td class="val-subtotal">${ah2unit?ah2unit.toFixed(1):'－'}</td>
+      <td class="val-total">${atUnit?atUnit.toFixed(1):'－'}</td>
+    </tr>
+    <tr><td class="row-label">給与額</td>
+      ${aSal.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${aSal.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${atSal?atSal.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-label-sub">正社員</td>
+      ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalS[i]?aSalS[i].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalS[i+6]?aSalS[i+6].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${atSalS?atSalS.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-label-sub">パート</td>
+      ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalP[i]?aSalP[i].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual" style="color:#1D9E75;font-size:11px">${aSalP[i+6]?aSalP[i+6].toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      <td class="val-total">${atSalP?atSalP.toLocaleString():'－'}</td>
+    </tr>
+    <tr><td class="row-label">給与比率</td>
+      ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual">${aGr[i]?(aGr[i]*100).toFixed(1)+'%':'－'}</td>`).join('')}
+      <td class="val-subtotal">${ah1gr?(ah1gr*100).toFixed(1)+'%':'－'}</td>
+      ${MONTHS_ARR.slice(6).map((_,i)=>`<td class="val-actual">${aGr[i+6]?(aGr[i+6]*100).toFixed(1)+'%':'－'}</td>`).join('')}
+      <td class="val-subtotal">${ah2gr?(ah2gr*100).toFixed(1)+'%':'－'}</td>
+      <td class="val-total">${atGr?(atGr*100).toFixed(1)+'%':'－'}</td>
+    </tr>
+    <tr><td class="row-cat-achieve" rowspan="4">貢献度</td><td class="row-label">稼働日数</td>
+      ${achWd.slice(0,6).map(v=>`<td class="${achClassD(v)}">${fmtPctD(v)}</td>`).join('')}
+      <td class="val-subtotal ${achClassD(avgNonNullD(achWd.slice(0,6)))}">${fmtPctD(avgNonNullD(achWd.slice(0,6)))}</td>
+      ${achWd.slice(6).map(v=>`<td class="${achClassD(v)}">${fmtPctD(v)}</td>`).join('')}
+      <td class="val-subtotal ${achClassD(avgNonNullD(achWd.slice(6)))}">${fmtPctD(avgNonNullD(achWd.slice(6)))}</td>
+      <td class="val-total ${achClassD(avgNonNullD(achWd))}">${fmtPctD(avgNonNullD(achWd))}</td>
+    </tr>
+    <tr><td class="row-label">貢献人数／月</td>
+      ${achPpl.slice(0,6).map(v=>`<td class="${achClassD(v)}">${fmtPctD(v)}</td>`).join('')}
+      <td class="val-subtotal ${achClassD(avgNonNullD(achPpl.slice(0,6)))}">${fmtPctD(avgNonNullD(achPpl.slice(0,6)))}</td>
+      ${achPpl.slice(6).map(v=>`<td class="${achClassD(v)}">${fmtPctD(v)}</td>`).join('')}
+      <td class="val-subtotal ${achClassD(avgNonNullD(achPpl.slice(6)))}">${fmtPctD(avgNonNullD(achPpl.slice(6)))}</td>
+      <td class="val-total ${achClassD(avgNonNullD(achPpl))}">${fmtPctD(avgNonNullD(achPpl))}</td>
+    </tr>
+    <tr><td class="row-label">貢献報酬</td>
+      ${achRev.slice(0,6).map(v=>`<td class="${achClassD(v)}">${fmtPctD(v)}</td>`).join('')}
+      <td class="val-subtotal ${achClassD(avgNonNullD(achRev.slice(0,6)))}">${fmtPctD(avgNonNullD(achRev.slice(0,6)))}</td>
+      ${achRev.slice(6).map(v=>`<td class="${achClassD(v)}">${fmtPctD(v)}</td>`).join('')}
+      <td class="val-subtotal ${achClassD(avgNonNullD(achRev.slice(6)))}">${fmtPctD(avgNonNullD(achRev.slice(6)))}</td>
+      <td class="val-total ${achClassD(avgNonNullD(achRev))}">${fmtPctD(avgNonNullD(achRev))}</td>
+    </tr>
+    <tr><td class="row-label">給与比率</td>
+      ${achGr.slice(0,6).map(v=>`<td class="${achClassD(v)}">${fmtPctD(v)}</td>`).join('')}
+      <td class="val-subtotal ${achClassD(avgNonNullD(achGr.slice(0,6)))}">${fmtPctD(avgNonNullD(achGr.slice(0,6)))}</td>
+      ${achGr.slice(6).map(v=>`<td class="${achClassD(v)}">${fmtPctD(v)}</td>`).join('')}
+      <td class="val-subtotal ${achClassD(avgNonNullD(achGr.slice(6)))}">${fmtPctD(avgNonNullD(achGr.slice(6)))}</td>
+      <td class="val-total ${achClassD(avgNonNullD(achGr))}">${fmtPctD(avgNonNullD(achGr))}</td>
+    </tr>`;
+
+  return `
+  <div class="office-info">
+    <div class="office-name">${title}</div>
+    <div class="office-meta">
+      <span><strong>種別／定員：</strong>${priceLabel}</span>
+      <span><strong>単価：</strong>${up?up.toLocaleString()+'円':'未設定'}</span>
+      <span><strong>給与比率：</strong>${(SALARY*100).toFixed(1)}%</span>
+      <span><strong>損益分岐率：</strong>${(BREAK*100).toFixed(0)}%</span>
+      ${multiSvc?`<span><strong>事業：</strong>${allSvcs.map(s=>svcBadge(s)).join(' ')}</span>`:''}
+    </div>
+  </div>
+  <div class="table-wrap"><table>
+    <colgroup><col style="width:52px"><col style="width:105px"></colgroup>
+    <thead>${headerRow()}</thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
 }
 
 // 複数サービスを提供する事業所／グループはサービス別の表＋全体合計表を、
@@ -801,18 +1055,20 @@ window.exportExcel = async function() {
     await initPromise;
     const year = parseInt(document.getElementById('sel-year').value);
 
-    const allOfficeNames = offices.map(o=>o.name);
+    // 事業所の並び順は部課コード順
+    const byDeptCode = (a,b) => (a.deptCode||'').localeCompare(b.deptCode||'');
+    const allOfficeNames = offices.slice().sort(byDeptCode).map(o=>o.name);
     const dataMap = {};
     await Promise.all(allOfficeNames.map(async name => {
       dataMap[name] = await loadOfficeData(name, year);
     }));
 
-    const areaGroups = areas.map(a=>({
+    const areaGroups = sortAreas(areas).map(a=>({
       label: a.name,
-      officeNames: offices.filter(o=>o.area===a.name).map(o=>o.name)
+      officeNames: offices.filter(o=>o.area===a.name).sort(byDeptCode).map(o=>o.name)
     })).filter(g=>g.officeNames.length>0);
-    const lafore = offices.filter(o=>['ラフォーレ高陽','ラフォーレ亀山'].includes(o.name)).map(o=>o.name);
-    const repo   = offices.filter(o=>o.name==='レポ白木').map(o=>o.name);
+    const lafore = offices.filter(o=>['ラフォーレ高陽','ラフォーレ亀山'].includes(o.name)).sort(byDeptCode).map(o=>o.name);
+    const repo   = offices.filter(o=>o.name==='レポ白木').sort(byDeptCode).map(o=>o.name);
     if (lafore.length) areaGroups.push({label:'ラフォーレ', officeNames:lafore});
     if (repo.length)   areaGroups.push({label:'レポ',       officeNames:repo});
 
@@ -851,6 +1107,91 @@ window.exportExcel = async function() {
   }
 };
 
+// PDF出力（印刷）：画面表示（エリア集計モードの「全社」は事業所別表を省略）とは独立に、
+// 事業所別（詳細版）・エリア別・全社合計のフル構成を必ず生成して印刷する
+// 各印刷ページの先頭に必ず出す見出し（ブラウザの「ヘッダーとフッター」設定に依存しない）
+// ページ番号は事業所の改ページ・内容量によって実際の物理ページ数が変動し自前での計算が
+// 不正確になるため出さない（ブラウザの「ヘッダーとフッター」機能に任せる）。
+// 会社名・印刷日時は物理ページ数に依存しないため確実に表示できる。
+function officePrintPage(data, name) {
+  const svcNames = sortServices(Object.keys(data.byService||{}));
+  let html = renderOfficeDetailTable(data, name);
+  // 単一サービスのみの事業所はサービス別内訳が全体合計と同じ内容になるため省略する。
+  // 複数サービスがある場合のみ、サービス別内訳を改ページして次ページから表示する。
+  if (svcNames.length >= 2) {
+    const svcHtml = svcNames.map(svc => renderServiceTable(data.byService[svc], `${name}（${svc}）`, data.aWd)).join('');
+    html += `<div class="svc-next-page">${svcHtml}</div>`;
+  }
+  return `<div class="print-page-group">${html}</div>`;
+}
+
+window.printFullReport = async function() {
+  const btn = document.getElementById('btn-export-pdf');
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+  try {
+    await initPromise;
+    const year = parseInt(document.getElementById('sel-year').value);
+
+    // 事業所の並び順は部課コード順
+    const byDeptCode = (a,b) => (a.deptCode||'').localeCompare(b.deptCode||'');
+    const allOfficeNames = offices.slice().sort(byDeptCode).map(o=>o.name);
+    const dataMap = {};
+    await Promise.all(allOfficeNames.map(async name => {
+      dataMap[name] = await loadOfficeData(name, year);
+    }));
+
+    const areaGroups = sortAreas(areas).map(a=>({
+      label: a.name,
+      officeNames: offices.filter(o=>o.area===a.name).sort(byDeptCode).map(o=>o.name)
+    })).filter(g=>g.officeNames.length>0);
+    const lafore = offices.filter(o=>['ラフォーレ高陽','ラフォーレ亀山'].includes(o.name)).sort(byDeptCode).map(o=>o.name);
+    const repo   = offices.filter(o=>o.name==='レポ白木').sort(byDeptCode).map(o=>o.name);
+    if (lafore.length) areaGroups.push({label:'ラフォーレ', officeNames:lafore});
+    if (repo.length)   areaGroups.push({label:'レポ',       officeNames:repo});
+
+    // 印刷時は事業所ごとにページが分かれるため、選択した年度を各ページの見出しに含める
+    let html = '';
+    const groupMerged = [];
+    for (const group of areaGroups) {
+      const groupData = group.officeNames.map(n=>dataMap[n]).filter(Boolean);
+      if (!groupData.length) continue;
+      for (const name of group.officeNames) {
+        if (dataMap[name]) html += officePrintPage(dataMap[name], `${year}年度　${name}`);
+      }
+      const merged = mergeOfficeData(groupData);
+      if (merged) {
+        html += renderOfficeOrGroupTables(merged, `${year}年度　${group.label}　集計`, true, groupData.length);
+        groupMerged.push(merged);
+      }
+    }
+    if (groupMerged.length) {
+      const total = mergeOfficeData(groupMerged);
+      html += `<div style="height:4px;background:#E8EAED;border-radius:2px;margin:8px 0"></div>`;
+      html += renderOfficeOrGroupTables(total, `${year}年度　全社　合計`, true, allOfficeNames.length);
+    }
+
+    document.getElementById('report-area').innerHTML = html;
+
+    // 会社名・貢献実績表・ページ番号・印刷日時は、印刷ダイアログの「ヘッダーとフッター」に
+    // 表示されるブラウザ純正のヘッダー／フッターに一本化する（自前表示との二重表示を避けるため）。
+    // 会社名がヘッダーに出るようdocument.titleを印刷用に一時的に差し替える。
+    const prevTitle = document.title;
+    document.title = '株式会社ベルアージュ　貢献実績表';
+    const restoreTitle = () => { document.title = prevTitle; window.removeEventListener('afterprint', restoreTitle); };
+    window.addEventListener('afterprint', restoreTitle);
+
+    setTimeout(() => window.print(), 100);
+  } catch(e) {
+    console.error(e);
+    alert('PDF生成でエラーが発生しました: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
+};
+
 // エリア集計メイン
 window.loadAreaReport = async function() {
   const year = parseInt(document.getElementById('sel-year').value);
@@ -862,7 +1203,7 @@ window.loadAreaReport = async function() {
 
   if (areaVal === 'group:全社') {
     // 全社：エリアごと＋ラフォーレ・レポ
-    const areaGroups = areas.map(a=>({
+    const areaGroups = sortAreas(areas).map(a=>({
       label: a.name,
       officeNames: offices.filter(o=>o.area===a.name).map(o=>o.name)
     })).filter(g=>g.officeNames.length>0);
