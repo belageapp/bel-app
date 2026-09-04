@@ -150,7 +150,7 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
       <select id="sel-area" style="padding:5px 8px;border-radius:6px;border:1px solid #E8EAED;font-size:12px;font-family:inherit;color:#333;background:#fff;cursor:pointer;min-width:160px"></select>
       <button onclick="loadAreaReport()" style="padding:5px 14px;border-radius:6px;border:1px solid #1D9E75;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">表示</button>
     </div>
-    <button onclick="exportExcel()" id="btn-export-excel" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">📊 Excelでダウンロード</button>
+    <button onclick="exportExcel()" id="btn-export-excel" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">📊 全情報Excel保存</button>
     <button onclick="printFullReport()" id="btn-export-pdf" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">🖨️ 全情報PDF保存</button>
     <div class="top-bar-divider"></div>
     <a href="daily.html" class="nav-link">速報入力</a>
@@ -286,6 +286,20 @@ function sortAreas(areaList) {
     return ia - ib;
   });
 }
+// Excel出力のシート順（指定の固定順）：エリアごとに「事業所→そのエリアの集計」を繰り返す
+const EXCEL_SHEET_ORDER = [
+  'HUGくみのいえ', 'ReadyGO井口', 'ReadyGO八木', 'ReadyGO川内', 'ここいろのいえ',
+  { group: '広島エリア' },
+  'にじのいえ', 'はれのいえ',
+  { group: '安芸エリア' },
+  'まなびあいのいえ', 'ReadyGO高屋', 'ReadyGO黒瀬', 'ぐらっちぇ黒瀬',
+  { group: '東広島エリア' },
+  'ラフォーレ高陽', 'ラフォーレ亀山',
+  { group: 'ラフォーレ' },
+  'レポ白木',
+  { group: 'レポ' },
+  { group: '全社' },
+];
 function svcBadge(name) {
   const cls = SVC_CLS[name] || 'svc-other';
   return `<span class="svc-badge ${cls}">${name}</span>`;
@@ -1176,51 +1190,50 @@ window.exportExcel = async function() {
     await initPromise;
     const year = parseInt(document.getElementById('sel-year').value);
 
-    // 事業所の並び順は部課コード順
-    const byDeptCode = (a,b) => (a.deptCode||'').localeCompare(b.deptCode||'');
-    const allOfficeNames = offices.slice().sort(byDeptCode).map(o=>o.name);
+    const allOfficeNames = offices.map(o=>o.name);
     const dataMap = {};
     await Promise.all(allOfficeNames.map(async name => {
       dataMap[name] = await loadOfficeData(name, year);
     }));
 
-    const areaGroups = sortAreas(areas).map(a=>({
-      label: a.name,
-      officeNames: offices.filter(o=>o.area===a.name).sort(byDeptCode).map(o=>o.name)
-    })).filter(g=>g.officeNames.length>0);
-    const lafore = offices.filter(o=>['ラフォーレ高陽','ラフォーレ亀山'].includes(o.name)).sort(byDeptCode).map(o=>o.name);
-    const repo   = offices.filter(o=>o.name==='レポ白木').sort(byDeptCode).map(o=>o.name);
-    if (lafore.length) areaGroups.push({label:'ラフォーレ', officeNames:lafore});
-    if (repo.length)   areaGroups.push({label:'レポ',       officeNames:repo});
+    // グループ（エリア・ラフォーレ・レポ）ごとの合算データを準備
+    const groupOfficeNames = {
+      '広島エリア':   offices.filter(o=>o.area==='広島エリア').map(o=>o.name),
+      '安芸エリア':   offices.filter(o=>o.area==='安芸エリア').map(o=>o.name),
+      '東広島エリア': offices.filter(o=>o.area==='東広島エリア').map(o=>o.name),
+      'ラフォーレ':   offices.filter(o=>['ラフォーレ高陽','ラフォーレ亀山'].includes(o.name)).map(o=>o.name),
+      'レポ':         offices.filter(o=>o.name==='レポ白木').map(o=>o.name),
+    };
+    const groupMergedByLabel = {};
+    for (const [label, names] of Object.entries(groupOfficeNames)) {
+      const groupData = names.map(n=>dataMap[n]).filter(Boolean);
+      if (groupData.length) groupMergedByLabel[label] = mergeOfficeData(groupData);
+    }
+    const zenshaMerged = Object.keys(groupMergedByLabel).length
+      ? mergeOfficeData(Object.values(groupMergedByLabel))
+      : null;
 
     const wb = XLSX.utils.book_new();
     const used = new Set();
 
-    // 事業所別シート（部課コード順、1事業所＝1シート。複数サービスの内訳も同一シートに続けて記載）
-    for (const name of allOfficeNames) {
-      const data = dataMap[name];
-      if (!data) continue;
-      const meta = `種別／定員：${data.priceLabel}　単価：${data.up?data.up.toLocaleString()+'円':'未設定'}　給与比率：${(SALARY*100).toFixed(1)}%　損益分岐率：${(BREAK*100).toFixed(0)}%`;
-      const ws = buildUnitSheet(data, `${year}年度　${name}`, meta, true);
-      XLSX.utils.book_append_sheet(wb, ws, safeSheetName(name, used));
-    }
-
-    // エリア／グループ別シート
-    const groupMerged = [];
-    for (const group of areaGroups) {
-      const groupData = group.officeNames.map(n=>dataMap[n]).filter(Boolean);
-      if (!groupData.length) continue;
-      const merged = mergeOfficeData(groupData);
-      groupMerged.push(merged);
-      const ws = buildUnitSheet(merged, `${year}年度　${group.label}　集計`, null, false);
-      XLSX.utils.book_append_sheet(wb, ws, safeSheetName(`${group.label}集計`, used));
-    }
-
-    // 全社合計シート
-    if (groupMerged.length) {
-      const total = mergeOfficeData(groupMerged);
-      const ws = buildUnitSheet(total, `${year}年度　全社　合計`, null, false);
-      XLSX.utils.book_append_sheet(wb, ws, safeSheetName('全社合計', used));
+    // EXCEL_SHEET_ORDERの固定順にシートを追加（事業所シートは同一シートにサービス別内訳も続けて記載）
+    for (const entry of EXCEL_SHEET_ORDER) {
+      if (typeof entry === 'string') {
+        const data = dataMap[entry];
+        if (!data) continue;
+        const meta = `種別／定員：${data.priceLabel}　単価：${data.up?data.up.toLocaleString()+'円':'未設定'}　給与比率：${(SALARY*100).toFixed(1)}%　損益分岐率：${(BREAK*100).toFixed(0)}%`;
+        const ws = buildUnitSheet(data, `${year}年度　${entry}`, meta, true);
+        XLSX.utils.book_append_sheet(wb, ws, safeSheetName(entry, used));
+      } else if (entry.group === '全社') {
+        if (!zenshaMerged) continue;
+        const ws = buildUnitSheet(zenshaMerged, `${year}年度　全社　合計`, null, false);
+        XLSX.utils.book_append_sheet(wb, ws, safeSheetName('全社合計', used));
+      } else {
+        const merged = groupMergedByLabel[entry.group];
+        if (!merged) continue;
+        const ws = buildUnitSheet(merged, `${year}年度　${entry.group}　集計`, null, false);
+        XLSX.utils.book_append_sheet(wb, ws, safeSheetName(`${entry.group}集計`, used));
+      }
     }
 
     XLSX.writeFile(wb, `貢献実績表_${year}年度.xlsx`);
