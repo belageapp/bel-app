@@ -551,7 +551,7 @@ function renderServiceTable(sv, title) {
   }
   const fmtN = v => (!v&&v!==0)||v===null?'－':Math.round(v).toLocaleString();
   const rows = [
-    `<tr class="tr-actual"><td class="row-cat-actual" rowspan="5">実　績</td><td class="row-label">貢献人数／月</td>${cols(aPpl,fmtN)}</tr>`,
+    `<tr class="tr-actual"><td class="row-cat-actual" rowspan="6">実　績</td><td class="row-label">貢献人数／月</td>${cols(aPpl,fmtN)}</tr>`,
     `<tr class="tr-actual"><td class="row-label">貢献報酬</td>${cols(aRev,fmtN)}</tr>`,
     `<tr class="tr-actual"><td class="row-label-sub">　基本報酬</td>${cols(aBasic,fmtN)}</tr>`,
     `<tr class="tr-actual"><td class="row-label-sub">　体制加算</td>${cols(aBody,fmtN)}</tr>`,
