@@ -33,6 +33,12 @@
     '205': 'ReadyGO高屋', '301': 'ラフォーレ高陽', '302': 'ラフォーレ亀山',
     '401': 'ぐらっちぇ黒瀬', '501': 'レポ白木', '900': '本社',
   };
+  // TKC側の部課コード変更に対応するためのエイリアス（旧コード→offices.deptCodeの正規コード）
+  // 例：ラフォーレ亀山は2026年7月分給与データから302→311に変更された。
+  // offices側のdeptCodeは302で固定のため、保存先を合わせるためここで正規化する。
+  const CODE_ALIAS = {
+    '311': '302', // ラフォーレ亀山（2026年7月分〜）
+  };
 
   let currentUser = null;
   let currentRole = null;
@@ -107,7 +113,8 @@
       }
       if (!type && idxTaikei >= 0 && (cols[idxTaikei]||'').includes('パート')) type = 'part';
 
-      const code = (cols[idxDept]||'').split(':')[0].trim();
+      let code = (cols[idxDept]||'').split(':')[0].trim();
+      if (CODE_ALIAS[code]) code = CODE_ALIAS[code];
       if (!code || !DEPT_MAP[code]) continue;
       const totalStr = (cols[idxTotal]||'').replace(/,/g,'').trim();
       const total = totalStr ? parseInt(totalStr, 10) : 0;
