@@ -104,6 +104,18 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 .tr-summary .td-area-tot{background:#B2DFDB;color:#004D40;font-weight:700}
 .tr-office-name td{background:#F4F6F8;font-size:12px;font-weight:700;color:#333;border-top:2px solid #E8EAED}
 .tr-office-name .td-rowlabel{background:#F0F2F5;color:#185FA5;font-weight:700}
+
+/* 印刷（PDF保存）：1事業所／1エリア／全社ごとに改ページする */
+@media print {
+  @page { size: landscape; margin: 8mm; }
+  .top-bar, #btn-export-excel, #btn-export-pdf, .loading { display: none !important; }
+  body, .content { background: #fff; padding: 0; }
+  .print-page-group { break-after: page; }
+  .print-page-group:last-child { break-after: auto; }
+  .area-section, .table-wrap, .office-info { break-inside: avoid; }
+  table, .area-table { font-size: 9px; min-width: 0; }
+  .table-wrap, .area-table-wrap { overflow: visible; box-shadow: none; }
+}
 </style>
 </head>
 <body>
@@ -137,6 +149,7 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
       <button onclick="loadAreaReport()" style="padding:5px 14px;border-radius:6px;border:1px solid #1D9E75;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">表示</button>
     </div>
     <button onclick="exportExcel()" id="btn-export-excel" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">📊 Excelでダウンロード</button>
+    <button onclick="window.print()" id="btn-export-pdf" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">🖨️ PDFで保存（印刷）</button>
     <div class="top-bar-divider"></div>
     <a href="daily.html" class="nav-link">速報入力</a>
     <a href="monthly.html" class="nav-link">貢献速報（月次）</a>
@@ -610,14 +623,17 @@ function renderServiceTable(sv, title, aWd) {
 // 単一サービスのみの場合は従来通り1枚の表だけを返す
 function renderOfficeOrGroupTables(data, title, isSummary=false, officeCount=0) {
   const svcNames = sortServices(Object.keys(data.byService||{}));
+  let html;
   if (svcNames.length < 2) {
-    return renderAreaTable(data, title, isSummary, officeCount);
+    html = renderAreaTable(data, title, isSummary, officeCount);
+  } else {
+    html = renderAreaTable(data, `${title}（全体合計）`, isSummary, officeCount);
+    for (const svc of svcNames) {
+      html += renderServiceTable(data.byService[svc], `${title}（${svc}）`, data.aWd);
+    }
   }
-  let html = renderAreaTable(data, `${title}（全体合計）`, isSummary, officeCount);
-  for (const svc of svcNames) {
-    html += renderServiceTable(data.byService[svc], `${title}（${svc}）`, data.aWd);
-  }
-  return html;
+  // print-page-group：印刷時にこの単位（1事業所／1エリア／全社）ごとに改ページする
+  return `<div class="print-page-group">${html}</div>`;
 }
 
 // 複数事業所のデータを集計して1つのdataオブジェクトに合算
