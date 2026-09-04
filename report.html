@@ -1191,7 +1191,7 @@ window.loadReport = async function(){
         <td class="val-total">${totalBrev?totalBrev.toLocaleString():'－'}</td>
       </tr>
       <!-- 実績 -->
-      <tr><td class="row-cat-actual" rowspan="${14 + (multiSvc ? allSvcs.length * 2 : 0)}">実　績</td><td class="row-label">稼働日数</td>
+      <tr><td class="row-cat-actual" rowspan="${14 + (multiSvc ? allSvcs.length * 5 : 0)}">実　績</td><td class="row-label">稼働日数</td>
         ${aWd.slice(0,6).map(v=>`<td class="val-actual">${v||'－'}</td>`).join('')}
         <td class="val-subtotal" id="ah1wd">${ah1wd||'－'}</td>
         ${aWd.slice(6).map(v=>`<td class="val-actual">${v||'－'}</td>`).join('')}
@@ -1226,28 +1226,34 @@ window.loadReport = async function(){
         ${aRev.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atrev">${atRev?atRev.toLocaleString():'－'}</td>
       </tr>
-      <!-- 貢献報酬 事業別行 -->
-      ${svcRows('basicRev').replace(/svcRows/g,'')}
       <tr><td class="row-label-sub">基本報酬${multiSvc?'（合計）':''}</td>
         ${aBasic.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         ${aBasic.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atbasic">${atBasic?atBasic.toLocaleString():'－'}</td>
       </tr>
+      <!-- 基本報酬 事業別行 -->
+      ${svcRows('basicRev')}
       <tr><td class="row-label-sub">体制加算${multiSvc?'（合計）':''}</td>
         ${aBody.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         ${aBody.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atbody">${atBody?atBody.toLocaleString():'－'}</td>
       </tr>
+      <!-- 体制加算 事業別行 -->
+      ${svcRows('bodyRev')}
       <tr><td class="row-label-sub">実績加算${multiSvc?'（合計）':''}</td>
         ${aAct.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         ${aAct.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="atactrev">${atAct?atAct.toLocaleString():'－'}</td>
       </tr>
+      <!-- 実績加算 事業別行 -->
+      ${svcRows('actualRev')}
       <tr><td class="row-label-sub">処遇改善加算${multiSvc?'（合計）':''}</td>
         ${aTreat.slice(0,6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         ${aTreat.slice(6).map(v=>`<td class="val-actual">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total" id="attreat">${atTreat?atTreat.toLocaleString():'－'}</td>
       </tr>
+      <!-- 処遇改善加算 事業別行 -->
+      ${svcRows('treatRev')}
       <tr><td class="row-label">単価</td>
         ${MONTHS_ARR.slice(0,6).map((_,i)=>`<td class="val-actual" id="aunitp-${i}">${aUnit[i]?aUnit[i].toFixed(1):'－'}</td>`).join('')}
         <td class="val-subtotal" id="ah1unit">${ah1unit?ah1unit.toFixed(1):'－'}</td>
