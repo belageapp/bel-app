@@ -13,38 +13,14 @@
 <meta name="apple-mobile-web-app-title" content="貢献速報（日次）">
 <meta name="theme-color" content="#ffffff">
 <title>貢献速報（日次）</title>
+<link rel="stylesheet" href="sidebar.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#F4F6F8;min-height:100dvh}
 .app{max-width:600px;margin:0 auto;padding:0 0 80px}
 
-/* サイドバー（PC）＋上部バー構成 */
-.sidebar{width:224px;flex-shrink:0;background:linear-gradient(180deg,#2FAF87,#239269);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .25s ease}
-.sidebar::after{content:'';position:absolute;top:57px;right:-10px;bottom:0;width:10px;background:linear-gradient(to right,rgba(0,0,0,0.14),transparent);pointer-events:none}
-.sb-logo{height:54px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#F4F6F8;border-bottom:1px solid rgba(0,0,0,0.06)}
-.sb-logo img{height:28px;max-width:160px;object-fit:contain;display:block}
-.sb-scroll{flex:1;overflow-y:auto;padding:10px 0}
-.sb-item{display:flex;align-items:center;gap:10px;padding:11px 18px;font-size:13px;color:rgba(255,255,255,0.85);text-decoration:none;border-left:4px solid transparent;font-weight:500;white-space:nowrap;transition:background .15s,color .15s}
-.sb-item .sb-ic{font-size:14px;width:18px;text-align:center;flex-shrink:0;opacity:.95}
-.sb-item:hover{background:rgba(255,255,255,0.12);color:#fff}
-.sb-item.active{background:rgba(255,255,255,0.2);color:#fff;border-left-color:#FFD54A;font-weight:600}
-.sb-foot{border-top:1px solid rgba(255,255,255,0.18);padding:12px 16px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
-.sb-foot .logout-btn{padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:11px;cursor:pointer;font-family:inherit;width:100%;transition:background .15s}
-.sb-foot .logout-btn:hover{background:rgba(255,255,255,0.2)}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:190;backdrop-filter:blur(1px)}
-.sidebar-overlay.open{display:block}
-.main{margin-left:224px;min-height:100vh}
-.topbar{background:#F4F6F8;border-bottom:3px solid #2FAF87;padding:0 22px;display:flex;align-items:center;gap:12px;height:57px;flex-shrink:0;position:sticky;top:0;z-index:100}
-.topbar-title{font-size:15px;font-weight:700;color:#1D6E56;white-space:nowrap;letter-spacing:.3px}
 .top-bar-back{border:none;background:none;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;padding:0;white-space:nowrap;display:none}
 .top-bar-date{font-size:11px;color:#999;white-space:nowrap}
-.hamburger{display:none;background:none;border:none;font-size:20px;cursor:pointer;color:#1D9E75;padding:4px 6px;line-height:1}
-@media (max-width:900px){
-  .sidebar{transform:translateX(-100%)}
-  .sidebar.open{transform:translateX(0)}
-  .main{margin-left:0}
-  .hamburger{display:block}
-}
 
 /* ===== タブバー ===== */
 .tab-bar{display:flex;background:#fff;border-bottom:1px solid #E8EAED;position:sticky;top:57px;z-index:99}
@@ -210,27 +186,7 @@ textarea:focus{border-color:#1D9E75}
 </style>
 </head>
 <body>
-<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
-<div class="sidebar" id="sidebar">
-  <div class="sb-logo">
-    <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
-  </div>
-  <div class="sb-scroll">
-    <a href="daily.html" class="sb-item active"><span class="sb-ic">📋</span>貢献速報（日次）</a>
-    <a href="monthly.html" class="sb-item"><span class="sb-ic">📈</span>貢献速報（月次）</a>
-    <a href="morning-report.html" class="sb-item"><span class="sb-ic">📢</span>朝礼報告（週次）</a>
-    <a href="report.html" class="sb-item"><span class="sb-ic">📊</span>貢献実績表</a>
-    <a href="import.html" class="sb-item"><span class="sb-ic">📥</span>CSV取込</a>
-    <a href="salary.html" class="sb-item"><span class="sb-ic">💰</span>給与取込</a>
-    <a href="invoice.html" class="sb-item"><span class="sb-ic">🧾</span>報酬内容明細</a>
-    <a href="settings.html" class="sb-item"><span class="sb-ic">⚙️</span>設定</a>
-    <a href="mirai-todo.html" class="sb-item"><span class="sb-ic">✅</span>未来創造企業ToDo</a>
-    <a href="index.html" class="sb-item"><span class="sb-ic">🏠</span>ポータル</a>
-  </div>
-  <div class="sb-foot">
-    <button onclick="_logout()" class="logout-btn">ログアウト</button>
-  </div>
-</div>
+<script src="sidebar.js"></script>
 <div class="main">
   <!-- トップバー -->
   <div class="topbar">
@@ -530,16 +486,6 @@ textarea:focus{border-color:#1D9E75}
 </div>
 </div><!-- /.main -->
 <div class="toast" id="toast"></div>
-<script>
-function toggleSidebar(){
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebar-overlay').classList.toggle('open');
-}
-function closeSidebar(){
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebar-overlay').classList.remove('open');
-}
-</script>
 <div id="numpad-overlay" class="numpad-overlay" style="display:none" onclick="numpadClose()">
   <div class="numpad-sheet" onclick="event.stopPropagation()">
     <div class="numpad-hdr">
@@ -590,11 +536,6 @@ const db = getFirestore(app);
 
 // ===== 認証チェック =====
 const auth = getAuth(app);
-const ROLE_LABELS = {
-  admin:'admin｜システム管理者', supporter:'supporter｜全編集', support:'supporter｜全編集（旧）',
-  editor:'editor｜編集者', area_manager:'editor｜編集者（旧AM）', unit_manager:'editor｜編集者（旧UM）',
-  user:'user｜一般', manager:'user｜一般（旧）'
-};
 let currentUserData = null;
 
 onAuthStateChanged(auth, async user => {
@@ -606,12 +547,7 @@ onAuthStateChanged(auth, async user => {
     }
     currentUserData = snap.data();
     await loadMasterData();
-    const el = document.getElementById('top-bar-user-info');
-    if (el) {
-      el.innerHTML = `<span style="font-size:10px;color:#fff;background:linear-gradient(135deg,#2FAF87,#0E9F6E);font-weight:600;padding:2px 9px;border-radius:10px;white-space:nowrap">${ROLE_LABELS[currentUserData.role]||currentUserData.role}</span>
-        <span style="font-size:11px;color:#888;white-space:nowrap">${user.email}</span>
-        <span style="font-size:12px;color:#333;font-weight:500;white-space:nowrap">${currentUserData.displayName||''}</span>`;
-    }
+    renderUserBadge(document.getElementById('top-bar-user-info'), currentUserData, user.email);
     // users.officeId を優先し、なければ offices.managerUid にフォールバック
     const resolvedOfficeId = currentUserData.officeId || MANAGER_UID_TO_OFFICE_ID[user.uid];
     if (resolvedOfficeId) {
