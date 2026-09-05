@@ -72,6 +72,7 @@ textarea:focus{border-color:#1D9E75}
 .ip-flex{display:flex;align-items:center;gap:12px}
 .ip-flex-main{flex:1;min-width:0}
 .ip-mood-icon{width:68px;height:68px;flex-shrink:0}
+.ip-mood-icon.behind{width:80px;height:80px}
 .ip-mood-icon.pop{animation:ip-mood-pop 0.4s cubic-bezier(.34,1.56,.64,1)}
 @keyframes ip-mood-pop{0%{transform:scale(0.6);opacity:0}100%{transform:scale(1);opacity:1}}
 .input-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
@@ -1190,6 +1191,7 @@ function applyPaceDisplay(prefix, office, mt){
   if(mood){
     mood.src = diff>0 ? 'assets/beruru_kanryo.png?v=2' : diff===0 ? 'assets/beruru_nikoniko.png?v=2' : 'assets/beruru_komarigao.png?v=3';
     mood.style.display='block';
+    mood.classList.toggle('behind', diff<0);
     mood.classList.remove('pop');
     void mood.offsetWidth; // reflow でアニメーションを再トリガー
     mood.classList.add('pop');
