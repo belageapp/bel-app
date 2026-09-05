@@ -69,6 +69,7 @@ textarea:focus{border-color:#1D9E75}
 .success-msg{display:none;background:#d4f4e8;color:#0F6E56;padding:10px 14px;border-radius:8px;margin-top:10px;font-size:14px;font-weight:600;text-align:center}
 .input-progress-card{background:#f0faf6;border:1px solid #d4f4e8;border-radius:10px;padding:12px;margin-top:10px}
 .input-progress-title{font-size:12px;color:#0F6E56;margin-bottom:8px;font-weight:500}
+.ip-mood-icon{width:24px;height:24px;vertical-align:middle;margin-left:6px}
 .input-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .input-progress-num{font-size:18px;font-weight:700;color:#0F6E56}
 .input-progress-goal{font-size:12px;color:#888}
@@ -103,6 +104,12 @@ textarea:focus{border-color:#1D9E75}
 .csv-btn:hover{background:#F4F6F8}
 .toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
+.celebrate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.celebrate-overlay.show{display:flex}
+.celebrate-box{background:#fff;border-radius:20px;padding:28px 32px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.25);animation:celebrate-pop 0.4s cubic-bezier(.34,1.56,.64,1)}
+.celebrate-icon{width:130px;height:130px}
+.celebrate-msg{font-size:17px;font-weight:700;color:#0F6E56;margin-top:10px;white-space:pre-line}
+@keyframes celebrate-pop{0%{transform:scale(0.5);opacity:0}100%{transform:scale(1);opacity:1}}
 .date-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;background:#fff;border-radius:10px;padding:10px 12px;border:1px solid #E8EAED}
 .date-nav-btn{width:32px;height:32px;border:1px solid #E8EAED;background:#F4F6F8;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .date-nav-btn:active{background:#e0e0e0}
@@ -364,7 +371,7 @@ textarea:focus{border-color:#1D9E75}
       <!-- 通常事業所 -->
       <div id="input-progress-area" style="display:none">
         <div class="input-progress-card">
-          <div class="input-progress-title">今月の貢献人数</div>
+          <div class="input-progress-title">今月の貢献人数<img id="ip-mood-icon" class="ip-mood-icon" style="display:none"></div>
           <div class="input-progress-row">
             <span class="input-progress-num" id="ip-current">0</span>
             <span class="input-progress-goal" id="ip-goal"></span>
@@ -404,7 +411,7 @@ textarea:focus{border-color:#1D9E75}
       <!-- ラフォーレ -->
       <div id="lafore-progress-area" style="display:none">
         <div class="input-progress-card">
-          <div class="input-progress-title">生活介護　今月の貢献人数</div>
+          <div class="input-progress-title">生活介護　今月の貢献人数<img id="lp-care-mood-icon" class="ip-mood-icon" style="display:none"></div>
           <div class="input-progress-row">
             <span class="input-progress-num" id="lp-care-current">0</span>
             <span class="input-progress-goal" id="lp-care-goal"></span>
@@ -421,7 +428,7 @@ textarea:focus{border-color:#1D9E75}
           </div>
         </div>
         <div class="input-progress-card" style="margin-top:8px">
-          <div class="input-progress-title">就労B型　今月の貢献人数</div>
+          <div class="input-progress-title">就労B型　今月の貢献人数<img id="lp-work-mood-icon" class="ip-mood-icon" style="display:none"></div>
           <div class="input-progress-row">
             <span class="input-progress-num" id="lp-work-current">0</span>
             <span class="input-progress-goal" id="lp-work-goal"></span>
@@ -488,6 +495,12 @@ textarea:focus{border-color:#1D9E75}
 </div>
 </div><!-- /.main -->
 <div class="toast" id="toast"></div>
+<div class="celebrate-overlay" id="celebrate-overlay" onclick="closeCelebrate()">
+  <div class="celebrate-box">
+    <img src="assets/beruru_kanryo.png" class="celebrate-icon" alt="">
+    <div class="celebrate-msg" id="celebrate-msg"></div>
+  </div>
+</div>
 <div id="numpad-overlay" class="numpad-overlay" style="display:none" onclick="numpadClose()">
   <div class="numpad-sheet" onclick="event.stopPropagation()">
     <div class="numpad-hdr">
@@ -573,7 +586,9 @@ async function loadMasterData() {
     const data = d.data();
     if (!data.name) return;
     const price = prices[data.priceId] || {};
-    CAPACITY[data.name] = price.capacity || data.capacity || 10;
+    const cap = price.capacity || data.capacity || 10;
+    // 実質目標人数（settings.htmlで事業所ごとに任意設定）を優先し、未設定なら定員を使う
+    CAPACITY[data.name] = (data.targetCapacity > 0) ? data.targetCapacity : cap;
     OFFICE_ID_TO_NAME[d.id] = data.name;
     if (data.managerUid) MANAGER_UID_TO_OFFICE_ID[data.managerUid] = d.id;
   });
@@ -1152,6 +1167,11 @@ function applyPaceDisplay(prefix, office, mt){
     else if(diff===0){txt.textContent=`順調に貢献`;txt.style.color='#0F6E56';}
     else{txt.textContent=`${Math.abs(diff)}名の貢献に遅れ`;txt.style.color='#E65100';}
   }
+  const mood=document.getElementById(prefix+'mood-icon');
+  if(mood){
+    mood.src = diff>0 ? 'assets/beruru_kanryo.png' : diff===0 ? 'assets/beruru_nikoniko.png' : 'assets/beruru_komarigao.png';
+    mood.style.display='inline-block';
+  }
 }
 
 function updateFormBadge(r, isLaf){
@@ -1416,6 +1436,7 @@ window.submitReport=async function(){
     updateFormBadge(saved, false);
     renderBtns();
     showSuccessMsg('success-msg');
+    if(selectedDate===todayStr)maybeCelebrate(state.cur,selectedDate,state.kids);
     loadMonthlyTotals();
     await window.loadHistory();
     await window.onReportDateChange();
@@ -1720,6 +1741,21 @@ window.saveWeeklyPlanned=async function(){
 // ===== ここまで来週の予定入力 =====
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// 本日分の実績が目標（実質目標人数）以上になったら、事業所×日付ごとに1回だけお祝いポップアップを表示
+const celebratedKeys=new Set();
+function maybeCelebrate(office,date,kids){
+  const cap=CAPACITY[office];
+  if(!cap||kids<cap)return;
+  const key=office+'_'+date;
+  if(celebratedKeys.has(key))return;
+  celebratedKeys.add(key);
+  const msg=kids>cap?`目標${cap}名を超えました！\nお疲れ様でした`:`目標${cap}名を達成！\nお疲れ様でした`;
+  document.getElementById('celebrate-msg').textContent=msg;
+  document.getElementById('celebrate-overlay').classList.add('show');
+  setTimeout(window.closeCelebrate,2800);
+}
+window.closeCelebrate=function(){document.getElementById('celebrate-overlay').classList.remove('show');};
 window.showCmt=function(text){const m=document.getElementById('cmt-modal');document.getElementById('cmt-modal-text').textContent=text;m.style.display='flex';};
 
 document.getElementById('today-lbl').textContent=getToday();
