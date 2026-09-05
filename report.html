@@ -219,6 +219,20 @@ onAuthStateChanged(auth, async user => {
     }
     currentUserData = snap.data();
     renderUserBadge(document.getElementById('top-bar-user-info'), currentUserData, user.email);
+
+    // 所属事業所が設定されているユーザーには、その事業所×現在年度をデフォルト表示する
+    if (currentUserData.officeId) {
+      await initPromise;
+      const off = offices.find(o => o.id === currentUserData.officeId);
+      if (off) {
+        const now = new Date();
+        const fy = String(now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1);
+        const yearSel = document.getElementById('sel-year');
+        if ([...yearSel.options].some(o => o.value === fy)) yearSel.value = fy;
+        document.getElementById('sel-office').value = off.id;
+        loadReport();
+      }
+    }
   } catch(e) { console.error(e); }
 });
 
