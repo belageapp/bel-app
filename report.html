@@ -12,15 +12,29 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333}
-.top-bar{background:#fff;border-bottom:1px solid #E8EAED;padding:0;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;min-height:52px}
-.top-bar-logo{background:#fff;padding:8px 16px;display:flex;align-items:center;border-right:1px solid #E8EAED;flex-shrink:0}
-.top-bar-logo img{height:34px;object-fit:contain}
-.top-bar-main{padding:0 16px;display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap}
-.top-bar-title{font-size:14px;font-weight:600;color:#333;white-space:nowrap}
-.top-bar-divider{width:1px;height:22px;background:#E8EAED;flex-shrink:0}
-.nav-link{padding:5px 12px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;transition:background .15s,border-color .15s,color .15s;white-space:nowrap;text-decoration:none;display:inline-block}
-.nav-link:hover{background:#F4F6F8;border-color:#d0d3d8;color:#333}
-.nav-link.active{background:#F0FAF6;border-color:#1D9E75;color:#1D9E75;font-weight:600}
+/* サイドバー（PC）＋上部バー＋ツールバー構成 */
+.sidebar{width:220px;flex-shrink:0;background:#fff;border-right:1px solid #E8EAED;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .2s}
+.sb-logo{padding:14px 16px;border-bottom:1px solid #E8EAED;flex-shrink:0}
+.sb-logo img{height:32px;max-width:170px;object-fit:contain;display:block}
+.sb-scroll{flex:1;overflow-y:auto;padding:8px 0}
+.sb-item{display:block;padding:10px 18px;font-size:13px;color:#555;text-decoration:none;border-left:3px solid transparent;font-weight:500;white-space:nowrap}
+.sb-item:hover{background:#F4F6F8;color:#333}
+.sb-item.active{background:#F0FAF6;color:#1D9E75;border-left-color:#1D9E75;font-weight:600}
+.sb-foot{border-top:1px solid #E8EAED;padding:10px 16px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.sb-foot .logout-btn{padding:6px 10px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit;width:100%}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:190}
+.sidebar-overlay.open{display:block}
+.main{margin-left:220px;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid #E8EAED;padding:0 20px;display:flex;align-items:center;gap:12px;height:52px;flex-shrink:0;position:sticky;top:0;z-index:100}
+.topbar-title{font-size:14px;font-weight:600;color:#333;white-space:nowrap}
+.hamburger{display:none;background:none;border:none;font-size:20px;cursor:pointer;color:#555;padding:4px 6px;line-height:1}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 20px;background:#fff;border-bottom:1px solid #E8EAED}
+@media (max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .hamburger{display:block}
+}
 .content{padding:16px 20px}
 .office-info{background:#fff;border-radius:8px;padding:10px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);display:flex;gap:20px;align-items:center;flex-wrap:wrap}
 .office-name{font-size:16px;font-weight:700;color:#185FA5}
@@ -109,7 +123,8 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 /* 印刷（PDF保存）：1事業所／1エリア／全社ごとに改ページする */
 @media print {
   @page { size: landscape; margin: 12mm; }
-  .top-bar, #btn-export-excel, #btn-export-pdf, .loading { display: none !important; }
+  .sidebar, .topbar, .toolbar, .sidebar-overlay, #btn-export-excel, #btn-export-pdf, .loading { display: none !important; }
+  .main { margin-left: 0; }
   body, .content { background: #fff; padding: 0; }
   .print-page-group { break-after: page; page-break-after: always; }
   .print-page-group:last-child { break-after: auto; page-break-after: auto; }
@@ -122,13 +137,32 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 </style>
 </head>
 <body>
-<div class="top-bar">
-  <div class="top-bar-logo">
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sb-logo">
     <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
   </div>
-  <div class="top-bar-main">
-    <span class="top-bar-title">貢献実績表</span>
-    <div class="top-bar-divider"></div>
+  <div class="sb-scroll">
+    <a href="daily.html" class="sb-item">速報入力</a>
+    <a href="monthly.html" class="sb-item">貢献速報（月次）</a>
+    <a href="report.html" class="sb-item active">貢献実績表</a>
+    <a href="import.html" class="sb-item">CSV取込</a>
+    <a href="salary.html" class="sb-item">給与取込</a>
+    <a href="invoice.html" class="sb-item">報酬内容明細</a>
+    <a href="settings.html" class="sb-item">設定</a>
+    <a href="index.html" class="sb-item">ポータル</a>
+  </div>
+  <div class="sb-foot">
+    <div style="display:flex;flex-direction:column;gap:1px" id="top-bar-user-info"></div>
+    <button onclick="_logout()" class="logout-btn">ログアウト</button>
+  </div>
+</div>
+<div class="main">
+  <div class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="メニュー">☰</button>
+    <span class="topbar-title">貢献実績表</span>
+  </div>
+  <div class="toolbar">
     <select id="sel-year" style="padding:5px 8px;border-radius:6px;border:1px solid #E8EAED;font-size:12px;font-family:inherit;color:#333;background:#fff;cursor:pointer">
       <option value="2025">2025年度</option>
       <option value="2026" selected>2026年度</option>
@@ -153,22 +187,21 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
     </div>
     <button onclick="exportExcel()" id="btn-export-excel" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">📊 全情報Excel保存</button>
     <button onclick="printFullReport()" id="btn-export-pdf" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">🖨️ 全情報PDF保存</button>
-    <div class="top-bar-divider"></div>
-    <a href="daily.html" class="nav-link">速報入力</a>
-    <a href="monthly.html" class="nav-link">貢献速報（月次）</a>
-    <a href="report.html" class="nav-link active">貢献実績表</a>
-    <a href="import.html" class="nav-link">CSV取込</a>
-    <a href="salary.html" class="nav-link">給与取込</a>
-      <a href="invoice.html" class="nav-link">報酬内容明細</a>
-    <a href="settings.html" class="nav-link">設定</a>
-    <a href="index.html" class="nav-link">ポータル</a>
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;flex-shrink:0;margin-left:4px" id="top-bar-user-info"></div>
-    <button onclick="_logout()" style="padding:4px 10px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;margin-left:4px">ログアウト</button>
+  </div>
+  <div class="content">
+    <div id="report-area"><div class="loading">年度と事業所を選択して「表示」を押してください</div></div>
   </div>
 </div>
-<div class="content">
-  <div id="report-area"><div class="loading">年度と事業所を選択して「表示」を押してください</div></div>
-</div>
+<script>
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+</script>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
