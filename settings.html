@@ -11,21 +11,39 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333}
-/* トップバー */
-.top-bar{background:#fff;border-bottom:1px solid #E8EAED;display:flex;align-items:stretch;position:sticky;top:0;z-index:100}
-.top-bar-logo{padding:8px 16px;display:flex;align-items:center;border-right:1px solid #E8EAED;flex-shrink:0}
-.top-bar-logo img{height:34px;object-fit:contain}
-.top-bar-nav{display:flex;align-items:center;gap:4px;padding:0 12px;flex:1;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.top-bar-user{padding:0 16px;display:flex;align-items:center;gap:10px;border-left:1px solid #E8EAED;flex-shrink:0}
-.user-name{font-size:12px;font-weight:600;color:#333;white-space:nowrap}
-.user-role{font-size:10px;color:#999;white-space:nowrap}
+/* サイドバー（PC）＋上部バー＋ツールバー構成 */
+.sidebar{width:224px;flex-shrink:0;background:linear-gradient(180deg,#2FAF87,#239269);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .25s ease}
+.sidebar::after{content:'';position:absolute;top:57px;right:-10px;bottom:0;width:10px;background:linear-gradient(to right,rgba(0,0,0,0.14),transparent);pointer-events:none}
+.sb-logo{height:54px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#F4F6F8;border-bottom:1px solid rgba(0,0,0,0.06)}
+.sb-logo img{height:28px;max-width:160px;object-fit:contain;display:block}
+.sb-scroll{flex:1;overflow-y:auto;padding:10px 0}
+.sb-item{display:flex;align-items:center;gap:10px;padding:11px 18px;font-size:13px;color:rgba(255,255,255,0.85);text-decoration:none;border-left:4px solid transparent;font-weight:500;white-space:nowrap;transition:background .15s,color .15s}
+.sb-item .sb-ic{font-size:14px;width:18px;text-align:center;flex-shrink:0;opacity:.95}
+.sb-item:hover{background:rgba(255,255,255,0.12);color:#fff}
+.sb-item.active{background:rgba(255,255,255,0.2);color:#fff;border-left-color:#FFD54A;font-weight:600}
+.sb-foot{border-top:1px solid rgba(255,255,255,0.18);padding:12px 16px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.sb-foot .logout-btn{padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:11px;cursor:pointer;font-family:inherit;width:100%;transition:background .15s}
+.sb-foot .logout-btn:hover{background:rgba(255,255,255,0.2)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:190;backdrop-filter:blur(1px)}
+.sidebar-overlay.open{display:block}
+.page-shell{margin-left:224px;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:#F4F6F8;border-bottom:3px solid #2FAF87;padding:0 22px;display:flex;align-items:center;gap:12px;height:57px;flex-shrink:0;position:sticky;top:0;z-index:100}
+.topbar-title{font-size:15px;font-weight:700;color:#1D6E56;white-space:nowrap;letter-spacing:.3px}
+.hamburger{display:none;background:none;border:none;font-size:20px;cursor:pointer;color:#1D9E75;padding:4px 6px;line-height:1}
+.toolbar{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:10px 22px;background:#fff;border-bottom:1px solid #E8EAED}
+@media (max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .page-shell{margin-left:0}
+  .hamburger{display:block}
+}
 .btn-logout{padding:5px 12px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap}
 .nav-item{padding:5px 12px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap;transition:all .15s;flex-shrink:0}
 .nav-item:hover{background:#F4F6F8;color:#333}
 .nav-item.active{background:#F0FAF6;border-color:#1D9E75;color:#1D9E75;font-weight:600}
 /* メインコンテンツ */
-.main{padding:20px 16px;max-width:860px;margin:0 auto;width:100%}
-@media(min-width:600px){.main{padding:28px 32px}}
+.content{padding:20px 16px;max-width:860px;margin:0 auto;width:100%}
+@media(min-width:600px){.content{padding:28px 32px}}
 /* メインコンテンツ */
 .page{display:none}.page.active{display:block}
 .page-header{margin-bottom:24px}
@@ -95,13 +113,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 </style>
 </head>
 <body>
-<div class="top-bar">
-  <div class="top-bar-logo">
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sb-logo">
     <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
   </div>
-  <div class="top-bar-nav">
-    <button class="nav-item" onclick="location.href='index.html'">← ポータル</button>
-    <button class="nav-item" onclick="location.href='invoice.html'">報酬内容明細</button>
+  <div class="sb-scroll">
+    <a href="daily.html" class="sb-item"><span class="sb-ic">📋</span>速報入力</a>
+    <a href="monthly.html" class="sb-item"><span class="sb-ic">📈</span>貢献速報（月次）</a>
+    <a href="morning-report.html" class="sb-item"><span class="sb-ic">📢</span>朝礼報告（週次）</a>
+    <a href="report.html" class="sb-item"><span class="sb-ic">📊</span>貢献実績表</a>
+    <a href="import.html" class="sb-item"><span class="sb-ic">📥</span>CSV取込</a>
+    <a href="salary.html" class="sb-item"><span class="sb-ic">💰</span>給与取込</a>
+    <a href="invoice.html" class="sb-item"><span class="sb-ic">🧾</span>報酬内容明細</a>
+    <a href="settings.html" class="sb-item active"><span class="sb-ic">⚙️</span>設定</a>
+    <a href="mirai-todo.html" class="sb-item"><span class="sb-ic">✅</span>未来創造企業ToDo</a>
+    <a href="index.html" class="sb-item"><span class="sb-ic">🏠</span>ポータル</a>
+  </div>
+  <div class="sb-foot">
+    <button onclick="_logout()" class="logout-btn">ログアウト</button>
+  </div>
+</div>
+<div class="page-shell">
+  <div class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="メニュー">☰</button>
+    <span class="topbar-title">⚙️ マスタ設定</span>
+    <div id="top-bar-user" style="display:none;align-items:center;gap:8px;margin-left:auto">
+      <span id="user-role-top" style="font-size:10px;color:#fff;background:linear-gradient(135deg,#2FAF87,#0E9F6E);font-weight:600;padding:2px 9px;border-radius:10px;white-space:nowrap"></span>
+      <span id="user-email-top" style="font-size:11px;color:#888;white-space:nowrap"></span>
+      <span id="user-name-top" style="font-size:12px;color:#333;font-weight:500;white-space:nowrap"></span>
+    </div>
+  </div>
+  <div class="toolbar">
     <button class="nav-item active" onclick="showPage('service-types',this)">施設種別</button>
     <button class="nav-item" onclick="showPage('prices',this)">単価設定</button>
     <button class="nav-item" onclick="showPage('departments',this)">部署</button>
@@ -110,16 +153,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
     <button class="nav-item" onclick="showPage('workdays',this)">稼働日設定</button>
     <button class="nav-item" id="nav-users" style="display:none" onclick="showPage('users',this)">ユーザー管理</button>
   </div>
-  <div class="top-bar-user" id="top-bar-user" style="display:none">
-    <div>
-      <div class="user-name" id="user-name-top"></div>
-      <div class="user-role" id="user-role-top"></div>
-    </div>
-    <button class="btn-logout" onclick="_logout()">ログアウト</button>
-  </div>
-</div>
 
-<div class="main">
+<div class="content">
     <!-- ステータス -->
     <div class="status-bar" id="status-bar"></div>
     <div class="error-bar" id="error-bar"></div>
@@ -447,7 +482,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
       </div>
     </div>
 
-  </div><!-- /main -->
+  </div><!-- /content -->
+</div><!-- /page-shell -->
+<script>
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+</script>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -489,7 +535,8 @@ onAuthStateChanged(auth, async user => {
     const el = document.getElementById('top-bar-user');
     if (el) {
       el.style.display = 'flex';
-      document.getElementById('user-name-top').textContent = currentUserData.displayName || user.email;
+      document.getElementById('user-name-top').textContent = currentUserData.displayName || '';
+      document.getElementById('user-email-top').textContent = user.email;
       document.getElementById('user-role-top').textContent = ROLE_LABELS[currentUserData.role] || currentUserData.role;
     }
     // ユーザー管理メニュー：supporter以上のみ表示
