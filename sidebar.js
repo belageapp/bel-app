@@ -5,20 +5,20 @@
       { href: 'index.html', icon: '🏠', label: 'ポータル' }
     ] },
     { label: '速報入力', items: [
-      { href: 'daily.html', icon: '📋', label: '貢献速報（日次）' },
-      { href: 'morning-report.html', icon: '📢', label: '朝礼報告（週次）' }
+      { href: 'daily.html', icon: '📋', label: '日次報告（事業所）' },
+      { href: 'morning-report.html', icon: '📢', label: '週次報告（マネジャー）' }
     ] },
     { label: 'レポート', items: [
       { href: 'monthly.html', icon: '📈', label: '貢献速報（月次）' },
-      { href: 'report.html', icon: '📊', label: '貢献実績表' },
-      { href: 'invoice.html', icon: '🧾', label: '報酬内容明細' }
+      { href: 'report.html', icon: '📊', label: '貢献実績表（年次）' },
+      { href: 'invoice.html', icon: '🧾', label: '報酬明細（月次）' }
     ] },
     { label: 'プロジェクト', items: [
       { href: 'mirai-todo.html', icon: '✅', label: '未来創造企業ToDo' }
     ] },
-    { label: '管理メニュー', items: [
-      { href: 'import.html', icon: '📥', label: 'CSV取込' },
-      { href: 'salary.html', icon: '💰', label: '給与取込' },
+    { label: '管理', items: [
+      { href: 'import.html', icon: '📥', label: '請求データ取込' },
+      { href: 'salary.html', icon: '💰', label: '給与データ取込' },
       { href: 'settings.html', icon: '⚙️', label: '設定' }
     ] }
   ];
