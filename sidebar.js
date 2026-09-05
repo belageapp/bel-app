@@ -1,16 +1,16 @@
 /* 共通サイドバー・ユーザーバッジ — 全ページ共通。メニュー項目やロール表記の変更はこのファイルのみでOK */
 (function () {
   var NAV_ITEMS = [
+    { href: 'index.html', icon: '🏠', label: 'ポータル' },
     { href: 'daily.html', icon: '📋', label: '貢献速報（日次）' },
-    { href: 'monthly.html', icon: '📈', label: '貢献速報（月次）' },
     { href: 'morning-report.html', icon: '📢', label: '朝礼報告（週次）' },
+    { href: 'monthly.html', icon: '📈', label: '貢献速報（月次）' },
     { href: 'report.html', icon: '📊', label: '貢献実績表' },
+    { href: 'invoice.html', icon: '🧾', label: '報酬内容明細' },
+    { href: 'mirai-todo.html', icon: '✅', label: '未来創造企業ToDo' },
     { href: 'import.html', icon: '📥', label: 'CSV取込' },
     { href: 'salary.html', icon: '💰', label: '給与取込' },
-    { href: 'invoice.html', icon: '🧾', label: '報酬内容明細' },
-    { href: 'settings.html', icon: '⚙️', label: '設定' },
-    { href: 'mirai-todo.html', icon: '✅', label: '未来創造企業ToDo' },
-    { href: 'index.html', icon: '🏠', label: 'ポータル' }
+    { href: 'settings.html', icon: '⚙️', label: '設定' }
   ];
 
   var ROLE_LABELS = {
