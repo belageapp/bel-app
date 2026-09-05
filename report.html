@@ -37,6 +37,7 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 .row-cat-break{background:#FFF3E0;color:#CC6600;font-weight:600;text-align:center;font-size:10px;width:52px}
 .row-cat-actual{background:#E8F5EE;color:#1D6E3E;font-weight:600;text-align:center;vertical-align:middle;font-size:10px;width:52px}
 .row-cat-achieve{background:#F3E8FF;color:#6B3FA0;font-weight:600;text-align:center;vertical-align:middle;font-size:10px;width:52px}
+.row-cat-cancel{background:#FFF0F0;color:#E24B4A;font-weight:600;text-align:center;vertical-align:middle;font-size:10px;width:52px}
 .row-label{background:#fafafa;color:#555;text-align:right;padding-right:6px;width:105px;font-size:11px}
 .row-label-sub{background:#fafafa;color:#888;text-align:right;padding-right:6px;padding-left:12px;width:105px;font-size:10px}
 .row-label-svc{background:#f0f8ff;color:#185FA5;text-align:right;padding-right:6px;padding-left:8px;font-size:10px;font-weight:600;border-left:2px solid #B5D4F4}
@@ -1554,6 +1555,12 @@ window.loadReport = async function(){
   const totalCancelPpl  = MONTHS_ARR.reduce((s,_,i)=>s+(cancelPpl[i]||0),0);
   const totalCancelLoss = MONTHS_ARR.reduce((s,_,i)=>s+(cancelLoss[i]||0),0);
   const totalCancelRate = reportedPlannedPpl ? totalCancelPpl/reportedPlannedPpl : null;
+
+  // 目標・損益分岐に対する実績の超過（＋）／不足（－）人数・概算額
+  const tgtDiffPpl  = MONTHS_ARR.map((_,i)=>aPpl[i]>0 ? aPpl[i]-tpm[i] : null);
+  const tgtDiffLoss = MONTHS_ARR.map((_,i)=>tgtDiffPpl[i]!=null ? Math.round(tgtDiffPpl[i]*avgUnit[i]) : null);
+  const brkDiffPpl  = MONTHS_ARR.map((_,i)=>aPpl[i]>0 ? aPpl[i]-bpm[i] : null);
+  const brkDiffLoss = MONTHS_ARR.map((_,i)=>brkDiffPpl[i]!=null ? Math.round(brkDiffPpl[i]*avgUnit[i]) : null);
   const aSalaryS= MONTHS_ARR.map((_,i)=>{
     const m = MONTHS_ARR[i];
     return (salaryData[m] && salaryData[m].salaryStaff) ? salaryData[m].salaryStaff : 0;
@@ -1637,6 +1644,33 @@ window.loadReport = async function(){
     return `${h1}<td class="val-subtotal">${fmt(h1s)}</td>${h2}<td class="val-subtotal">${fmt(h2s)}</td><td class="val-total">${fmt(tot)}</td>`;
   }
 
+  // 超過（＋）／不足（－）を色分けする値セル（未報告月はnullで－表示）
+  function sumOrNull(arr){ const v=arr.filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0) : null; }
+  function diffCells(arr, fmt=(v)=>v.toLocaleString()) {
+    const cls = v => v==null ? 'val-dash' : (v>=0?'achieve-good':'achieve-bad');
+    const txt = v => v==null ? '－' : (v>0?'+':'')+fmt(v);
+    const h1 = arr.slice(0,6).map(v=>`<td class="${cls(v)}">${txt(v)}</td>`).join('');
+    const h1s= sumOrNull(arr.slice(0,6));
+    const h2 = arr.slice(6).map(v=>`<td class="${cls(v)}">${txt(v)}</td>`).join('');
+    const h2s= sumOrNull(arr.slice(6));
+    const tot= sumOrNull(arr);
+    return `${h1}<td class="val-subtotal ${cls(h1s)}">${txt(h1s)}</td>${h2}<td class="val-subtotal ${cls(h2s)}">${txt(h2s)}</td><td class="val-total ${cls(tot)}">${txt(tot)}</td>`;
+  }
+
+  // 率の小計・合計は月別の単純合算ではなく、分子・分母を集計してから割り直す
+  function rateCells(numArr, denomArr) {
+    const perMonth = numArr.map((n,i)=>n!=null && denomArr[i]>0 ? n/denomArr[i] : null);
+    const txt = v => v!=null ? (v*100).toFixed(1)+'%' : '－';
+    const agg = (nSlice,dSlice) => {
+      let nSum=0,dSum=0,any=false;
+      nSlice.forEach((n,i)=>{ if(n!=null){ nSum+=n; dSum+=dSlice[i]; any=true; } });
+      return any && dSum ? nSum/dSum : null;
+    };
+    const h1 = perMonth.slice(0,6).map(v=>`<td class="val-actual">${txt(v)}</td>`).join('');
+    const h2 = perMonth.slice(6).map(v=>`<td class="val-actual">${txt(v)}</td>`).join('');
+    return `${h1}<td class="val-subtotal">${txt(agg(numArr.slice(0,6),denomArr.slice(0,6)))}</td>${h2}<td class="val-subtotal">${txt(agg(numArr.slice(6),denomArr.slice(6)))}</td><td class="val-total">${txt(agg(numArr,denomArr))}</td>`;
+  }
+
   // サービス種別ごとの内訳（エリア集計モードと同じrenderServiceTableで下に別表として表示する）
   const byServiceLR = {};
   MONTHS_ARR.forEach((m,i)=>{
@@ -1677,21 +1711,24 @@ window.loadReport = async function(){
       <div style="flex:1;min-width:320px;position:relative;height:280px">
         <canvas id="trend-chart-left"></canvas>
       </div>
-      <div style="flex:1;min-width:320px">
-        <div style="position:relative;height:280px">
-          <canvas id="trend-chart-right"></canvas>
-        </div>
-        <div style="overflow-x:auto;margin-top:10px">
-          <table style="min-width:0">
-            <colgroup><col style="width:52px"><col style="width:105px"></colgroup>
-            <thead>${headerRow()}</thead>
-            <tbody>
-              <tr><td class="row-cat-actual" rowspan="2">キャンセル</td><td class="row-label">人数</td>${valCells(cancelPpl,'val-actual',(v)=>v!=null?v.toLocaleString()+'人':'－')}</tr>
-              <tr><td class="row-label">概算損失額</td>${valCells(cancelLoss,'val-actual',(v)=>v!=null?v.toLocaleString()+'円':'－')}</tr>
-            </tbody>
-          </table>
-        </div>
+      <div style="flex:1;min-width:320px;position:relative;height:280px">
+        <canvas id="trend-chart-right"></canvas>
       </div>
+    </div>
+    <div class="table-wrap" style="margin-top:16px;overflow-x:auto">
+      <table>
+        <colgroup><col style="width:52px"><col style="width:105px"></colgroup>
+        <thead>${headerRow()}</thead>
+        <tbody>
+          <tr><td class="row-cat-target" rowspan="2">目標</td><td class="row-label">超過不足人数</td>${diffCells(tgtDiffPpl,(v)=>v.toLocaleString()+'人')}</tr>
+          <tr><td class="row-label">超過不足概算額</td>${diffCells(tgtDiffLoss,(v)=>v.toLocaleString()+'円')}</tr>
+          <tr><td class="row-cat-break" rowspan="2">損益</td><td class="row-label">超過不足人数</td>${diffCells(brkDiffPpl,(v)=>v.toLocaleString()+'人')}</tr>
+          <tr><td class="row-label">超過不足概算額</td>${diffCells(brkDiffLoss,(v)=>v.toLocaleString()+'円')}</tr>
+          <tr><td class="row-cat-cancel" rowspan="3">キャンセル</td><td class="row-label">人数</td>${valCells(cancelPpl,'val-actual',(v)=>v!=null?v.toLocaleString()+'人':'－')}</tr>
+          <tr><td class="row-label">概算損失額</td>${valCells(cancelLoss,'val-actual',(v)=>v!=null?v.toLocaleString()+'円':'－')}</tr>
+          <tr><td class="row-label">率</td>${rateCells(cancelPpl, plannedPpl)}</tr>
+        </tbody>
+      </table>
     </div>
   </div>
   `;
