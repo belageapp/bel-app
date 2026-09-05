@@ -329,7 +329,10 @@ async function init() {
   offSnap.forEach(d => {
     const o = d.data();
     const p = prices[o.priceId];
-    if (p && p.capacity) capacities[o.name] = p.capacity;
+    // 予定人数のデフォルト/目標には、事業所ごとの実質目標（settings.htmlで任意設定）を
+    // 優先し、未設定なら定員をそのまま使う
+    const cap = p?.capacity || 0;
+    if (cap || o.targetCapacity) capacities[o.name] = (o.targetCapacity > 0) ? o.targetCapacity : cap;
     officePrices[o.name] = o.price ?? p?.price ?? 0;
   });
   await loadMonth();
