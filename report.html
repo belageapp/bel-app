@@ -39,6 +39,10 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 .row-cat-achieve{background:#F3E8FF;color:#6B3FA0;font-weight:600;text-align:center;vertical-align:middle;font-size:10px;width:52px}
 .row-cat-cancel{background:#FFF0F0;color:#E24B4A;font-weight:600;text-align:center;vertical-align:middle;font-size:10px;width:52px}
 .row-label{background:#fafafa;color:#555;text-align:right;padding-right:6px;width:105px;font-size:11px}
+.trend-toggle-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:12px}
+.trend-toggle-lbl{font-size:11px;color:#185FA5;white-space:nowrap}
+.trend-detail-body{display:none}
+.trend-detail-body.open{display:block}
 .row-label-sub{background:#fafafa;color:#888;text-align:right;padding-right:6px;padding-left:12px;width:105px;font-size:10px}
 .row-label-svc{background:#f0f8ff;color:#185FA5;text-align:right;padding-right:6px;padding-left:8px;font-size:10px;font-weight:600;border-left:2px solid #B5D4F4}
 /* 値スタイル */
@@ -1703,8 +1707,11 @@ window.loadReport = async function(){
 
   const trendSectionHtml = `
   <div class="table-wrap" style="padding:16px">
-    <div style="font-size:14px;font-weight:700;color:#333;margin-bottom:12px">📊 月別推移とキャンセル分析</div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+    <div class="trend-toggle-header" onclick="toggleTrendDetail()">
+      <div style="font-size:14px;font-weight:700;color:#333">📊 月別推移とキャンセル分析</div>
+      <span class="trend-toggle-lbl" id="trend-toggle-lbl">▼ 詳細を表示</span>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:0">
       <div style="flex:1;min-width:180px;background:#EBF3FB;border-radius:8px;padding:12px 16px">
         <div style="font-size:11px;color:#888">目標 超過不足（年間）</div>
         <div style="font-size:20px;font-weight:700" class="${sgnCls(totalTgtDiffPpl)}">${sgnTxt(totalTgtDiffPpl,'人')}</div>
@@ -1728,32 +1735,34 @@ window.loadReport = async function(){
         <div style="font-size:22px;font-weight:700;color:#E24B4A">${totalCancelRate!=null?(totalCancelRate*100).toFixed(1)+'%':'－'}</div>
       </div>
     </div>
-    <div style="display:flex;gap:20px;flex-wrap:wrap">
-      <div style="flex:1;min-width:320px;background:#fff;border:1px solid #E3E7EB;border-radius:8px;padding:12px">
-        <div style="position:relative;height:280px">
-          <canvas id="trend-chart-left"></canvas>
+    <div class="trend-detail-body" id="trend-detail-body">
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:16px">
+        <div style="flex:1;min-width:320px;background:#fff;border:1px solid #E3E7EB;border-radius:8px;padding:12px">
+          <div style="position:relative;height:280px">
+            <canvas id="trend-chart-left"></canvas>
+          </div>
+        </div>
+        <div style="flex:1;min-width:320px;background:#fff;border:1px solid #E3E7EB;border-radius:8px;padding:12px">
+          <div style="position:relative;height:280px">
+            <canvas id="trend-chart-right"></canvas>
+          </div>
         </div>
       </div>
-      <div style="flex:1;min-width:320px;background:#fff;border:1px solid #E3E7EB;border-radius:8px;padding:12px">
-        <div style="position:relative;height:280px">
-          <canvas id="trend-chart-right"></canvas>
-        </div>
+      <div class="table-wrap" style="margin-top:16px;overflow-x:auto">
+        <table>
+          <colgroup><col style="width:52px"><col style="width:105px"></colgroup>
+          <thead>${headerRow()}</thead>
+          <tbody>
+            <tr><td class="row-cat-target" rowspan="2">目標</td><td class="row-label">超過不足人数</td>${diffCells(tgtDiffPpl,(v)=>v.toLocaleString()+'人',false,false)}</tr>
+            <tr><td class="row-label">超過不足概算額</td>${diffCells(tgtDiffLoss,(v)=>v.toLocaleString()+'円',false,false)}</tr>
+            <tr><td class="row-cat-break" rowspan="2">損益</td><td class="row-label">超過不足人数</td>${diffCells(brkDiffPpl,(v)=>v.toLocaleString()+'人',false,false)}</tr>
+            <tr><td class="row-label">超過不足概算額</td>${diffCells(brkDiffLoss,(v)=>v.toLocaleString()+'円',false,false)}</tr>
+            <tr><td class="row-cat-cancel" rowspan="3">キャン<br>セル</td><td class="row-label">人数</td>${diffCells(cancelPpl,(v)=>v.toLocaleString()+'人',true,false)}</tr>
+            <tr><td class="row-label">概算損失額</td>${diffCells(cancelLoss,(v)=>v.toLocaleString()+'円',true,false)}</tr>
+            <tr><td class="row-label">率</td>${rateCells(cancelPpl, plannedPpl, true)}</tr>
+          </tbody>
+        </table>
       </div>
-    </div>
-    <div class="table-wrap" style="margin-top:16px;overflow-x:auto">
-      <table>
-        <colgroup><col style="width:52px"><col style="width:105px"></colgroup>
-        <thead>${headerRow()}</thead>
-        <tbody>
-          <tr><td class="row-cat-target" rowspan="2">目標</td><td class="row-label">超過不足人数</td>${diffCells(tgtDiffPpl,(v)=>v.toLocaleString()+'人',false,false)}</tr>
-          <tr><td class="row-label">超過不足概算額</td>${diffCells(tgtDiffLoss,(v)=>v.toLocaleString()+'円',false,false)}</tr>
-          <tr><td class="row-cat-break" rowspan="2">損益</td><td class="row-label">超過不足人数</td>${diffCells(brkDiffPpl,(v)=>v.toLocaleString()+'人',false,false)}</tr>
-          <tr><td class="row-label">超過不足概算額</td>${diffCells(brkDiffLoss,(v)=>v.toLocaleString()+'円',false,false)}</tr>
-          <tr><td class="row-cat-cancel" rowspan="3">キャン<br>セル</td><td class="row-label">人数</td>${diffCells(cancelPpl,(v)=>v.toLocaleString()+'人',true,false)}</tr>
-          <tr><td class="row-label">概算損失額</td>${diffCells(cancelLoss,(v)=>v.toLocaleString()+'円',true,false)}</tr>
-          <tr><td class="row-label">率</td>${rateCells(cancelPpl, plannedPpl, true)}</tr>
-        </tbody>
-      </table>
     </div>
   </div>
   `;
@@ -2041,6 +2050,19 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalar
     });
   }
 }
+
+window.toggleTrendDetail = function() {
+  const body = document.getElementById('trend-detail-body');
+  const lbl  = document.getElementById('trend-toggle-lbl');
+  const open = body.classList.toggle('open');
+  lbl.textContent = open ? '▲ 詳細を隠す' : '▼ 詳細を表示';
+  if (open) {
+    requestAnimationFrame(()=>{
+      window._trendChartLeft && window._trendChartLeft.resize();
+      window._trendChartRight && window._trendChartRight.resize();
+    });
+  }
+};
 
 // -------- リアルタイム再計算 --------
 window.recalc = function(mi) {
