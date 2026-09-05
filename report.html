@@ -9,6 +9,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>貢献実績表 | ベルアージュ</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="sidebar.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1467,9 +1468,10 @@ window.loadReport = async function(){
   // salariesコレクションから給与データを取得（deptCodeフィールドを使用）
   salaryData = await loadSalaryData(currentOffice.deptCode, currentYear);
 
-  // reportsコレクションから実績稼働日数を集計してキャッシュ
+  // reportsコレクションから実績稼働日数を集計してキャッシュ、あわせて速報入力の予定人数上書きも収集
   if (!window._reportDaysCache) window._reportDaysCache = {};
   window._reportDaysCache[currentOffice.name] = {};
+  const plannedOverride = {};
   try {
     const rSnap = await getDocs(query(
       collection(db,'reports'),
@@ -1477,6 +1479,7 @@ window.loadReport = async function(){
     ));
     rSnap.forEach(d => {
       const r = d.data();
+      if (r.date && r.planned > 0) plannedOverride[r.date] = r.planned;
       if (!r.date || !r.month || (r.kids||0) <= 0) return;
       if (!window._reportDaysCache[currentOffice.name][r.month])
         window._reportDaysCache[currentOffice.name][r.month] = new Set();
@@ -1484,10 +1487,32 @@ window.loadReport = async function(){
     });
   } catch(e) { console.error(e); }
 
+  // dailyPlannedコレクション（12か月分）から予定人数の明示入力値を取得
+  const dailyPlannedAll = {};
+  try {
+    const fyForPlanned = getFY(currentYear);
+    await Promise.all(fyForPlanned.map(async ([y,m]) => {
+      const snap = await getDoc(doc(db,'dailyPlanned',`${y}_${m}_${currentOffice.name}`));
+      if (snap.exists()) Object.assign(dailyPlannedAll, snap.data().daily||{});
+    }));
+  } catch(e) { console.error(e); }
+
   const fy = getFY(currentYear);
   const wdPerMonth = fy.map(([y,m])=>{
     const mk=`${y}-${String(m).padStart(2,'0')}`;
     return Object.entries(wdData).filter(([k,v])=>k.startsWith(mk)&&v===1).length;
+  });
+
+  // 予定人数：開所日ごとに「速報入力の上書き値 → dailyPlannedの明示値 → 定員」の優先順で合算
+  const plannedPpl = fy.map(([y,m])=>{
+    const mk=`${y}-${String(m).padStart(2,'0')}`;
+    let total = 0;
+    Object.entries(wdData).forEach(([dateStr,v])=>{
+      if (v===1 && dateStr.startsWith(mk)) {
+        total += plannedOverride[dateStr] ?? dailyPlannedAll[dateStr] ?? capacity;
+      }
+    });
+    return total;
   });
 
   const tpm  = wdPerMonth.map(w=>w*capacity);
@@ -1518,6 +1543,17 @@ window.loadReport = async function(){
   const aAct    = aTotals.map(t=>t.actualRev);
   const aTreat  = aTotals.map(t=>t.treatRev);
   const aRev    = aTotals.map(t=>t.totalRev);
+
+  // キャンセル分析：実績人数が報告されている月のみ計算（未報告月は対象外）
+  // 予定人数と実績人数（貢献人数）の差＝キャンセル人数、その月の平均単価をかけて損失額を推計
+  const cancelPpl  = MONTHS_ARR.map((_,i)=>aPpl[i]>0 ? Math.max(0, plannedPpl[i]-aPpl[i]) : null);
+  const avgUnit    = MONTHS_ARR.map((_,i)=>aPpl[i]>0 ? aBasic[i]/aPpl[i] : null);
+  const cancelLoss = MONTHS_ARR.map((_,i)=>cancelPpl[i]!=null ? Math.round(cancelPpl[i]*avgUnit[i]) : null);
+  const cancelRate = MONTHS_ARR.map((_,i)=>cancelPpl[i]!=null && plannedPpl[i]>0 ? cancelPpl[i]/plannedPpl[i] : null);
+  const reportedPlannedPpl = MONTHS_ARR.reduce((s,_,i)=>s+(cancelPpl[i]!=null?plannedPpl[i]:0),0);
+  const totalCancelPpl  = MONTHS_ARR.reduce((s,_,i)=>s+(cancelPpl[i]||0),0);
+  const totalCancelLoss = MONTHS_ARR.reduce((s,_,i)=>s+(cancelLoss[i]||0),0);
+  const totalCancelRate = reportedPlannedPpl ? totalCancelPpl/reportedPlannedPpl : null;
   const aSalaryS= MONTHS_ARR.map((_,i)=>{
     const m = MONTHS_ARR[i];
     return (salaryData[m] && salaryData[m].salaryStaff) ? salaryData[m].salaryStaff : 0;
@@ -1619,6 +1655,29 @@ window.loadReport = async function(){
   });
 
   const yearLabel=`${currentYear}年度（${currentYear}/4/1〜${currentYear+1}/3/31）`;
+
+  const trendSectionHtml = `
+  <div class="table-wrap" style="padding:16px">
+    <div style="font-size:14px;font-weight:700;color:#333;margin-bottom:12px">📊 月別推移とキャンセル分析</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+      <div style="flex:1;min-width:160px;background:#FFF3E0;border-radius:8px;padding:12px 16px">
+        <div style="font-size:11px;color:#888">キャンセル人数（年間合計）</div>
+        <div style="font-size:22px;font-weight:700;color:#CC6600">${totalCancelPpl.toLocaleString()}人</div>
+      </div>
+      <div style="flex:1;min-width:160px;background:#FFF0F0;border-radius:8px;padding:12px 16px">
+        <div style="font-size:11px;color:#888">キャンセルによる損失額（推計）</div>
+        <div style="font-size:22px;font-weight:700;color:#E24B4A">${totalCancelLoss.toLocaleString()}円</div>
+      </div>
+      <div style="flex:1;min-width:160px;background:#F3E8FF;border-radius:8px;padding:12px 16px">
+        <div style="font-size:11px;color:#888">キャンセル率</div>
+        <div style="font-size:22px;font-weight:700;color:#6B3FA0">${totalCancelRate!=null?(totalCancelRate*100).toFixed(1)+'%':'－'}</div>
+      </div>
+    </div>
+    <div style="position:relative;height:280px">
+      <canvas id="trend-chart"></canvas>
+    </div>
+  </div>
+  `;
 
   const html=`
   <div class="office-info">
@@ -1798,12 +1857,48 @@ window.loadReport = async function(){
       </tr>
     </tbody>
   </table></div>
+  ${trendSectionHtml}
   ${multiSvc ? allSvcs.map(svc => renderServiceTable(byServiceLR[svc], `${currentOffice.name}（${svc}）`, aWd)).join('') : ''}`;
 
   document.getElementById('report-area').innerHTML = html;
   window._tpm=tpm; window._tRev=tRev; window._capacity=capacity;
   window._wdPerMonth=wdPerMonth; window._unitPrice=unitPrice;
+
+  renderTrendChart(ML_ARR, plannedPpl, tpm, bpm, aPpl, cancelRate);
 };
+
+// 月別推移グラフ：実績人数の棒（達成度で色分け）＋予定・目標・損益分岐の基準線＋キャンセル率の折れ線
+function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, cancelRate) {
+  const canvas = document.getElementById('trend-chart');
+  if (!canvas || typeof Chart === 'undefined') return;
+  if (window._trendChart) { window._trendChart.destroy(); }
+  const barColors = aPpl.map((v,i) => {
+    if (!tpm[i] && !bpm[i]) return '#ccc';
+    if (v >= tpm[i]) return '#1D9E75';
+    if (v >= bpm[i]) return '#CC6600';
+    return '#E24B4A';
+  });
+  window._trendChart = new Chart(canvas, {
+    data: {
+      labels,
+      datasets: [
+        { type:'bar', label:'実績人数', data:aPpl, backgroundColor:barColors, order:3 },
+        { type:'line', label:'予定人数', data:plannedPpl, borderColor:'#5B9BD5', borderDash:[4,3], pointRadius:2, borderWidth:1.5, tension:0.2, order:2 },
+        { type:'line', label:'目標人数', data:tpm, borderColor:'#185FA5', borderDash:[2,2], pointRadius:0, borderWidth:1, tension:0, order:1 },
+        { type:'line', label:'損益分岐人数', data:bpm, borderColor:'#CC6600', borderDash:[2,2], pointRadius:0, borderWidth:1, tension:0, order:1 },
+        { type:'line', label:'キャンセル率(%)', data:cancelRate.map(v=>v!=null?+(v*100).toFixed(1):null), yAxisID:'y1', borderColor:'#6B3FA0', backgroundColor:'#6B3FA0', pointRadius:3, borderWidth:2, tension:0.3, order:0 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      scales: {
+        y:  { beginAtZero:true, title:{display:true,text:'人数'} },
+        y1: { beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'キャンセル率(%)'} }
+      }
+    }
+  });
+}
 
 // -------- リアルタイム再計算 --------
 window.recalc = function(mi) {
