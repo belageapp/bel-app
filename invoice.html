@@ -171,8 +171,9 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 
 const ROLE_LABELS = {
-  admin:'Administrator', support:'事業支援課',
-  area_manager:'エリアマネジャー', unit_manager:'ユニットマネジャー', manager:'事業所管理者'
+  admin:'admin｜システム管理者', supporter:'supporter｜全編集', support:'supporter｜全編集（旧）',
+  editor:'editor｜編集者', area_manager:'editor｜編集者（旧AM）', unit_manager:'editor｜編集者（旧UM）',
+  user:'user｜一般', manager:'user｜一般（旧）'
 };
 
 let offices = [];
