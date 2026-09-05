@@ -1648,9 +1648,9 @@ window.loadReport = async function(){
 
   // 超過（＋）／不足（－）を色分けする値セル（未報告月はnullで－表示）
   function sumOrNull(arr){ const v=arr.filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0) : null; }
-  function diffCells(arr, fmt=(v)=>v.toLocaleString(), invert=false) {
+  function diffCells(arr, fmt=(v)=>v.toLocaleString(), invert=false, showSign=true) {
     const cls = v => { if (v==null) return 'val-dash'; const good = invert ? v<=0 : v>=0; return good?'achieve-good':'achieve-bad'; };
-    const txt = v => v==null ? '－' : (v>0?'+':'')+fmt(v);
+    const txt = v => v==null ? '－' : showSign ? (v>0?'+':'')+fmt(v) : fmt(Math.abs(v));
     const h1 = arr.slice(0,6).map(v=>`<td class="${cls(v)}">${txt(v)}</td>`).join('');
     const h1s= sumOrNull(arr.slice(0,6));
     const h2 = arr.slice(6).map(v=>`<td class="${cls(v)}">${txt(v)}</td>`).join('');
@@ -1663,7 +1663,7 @@ window.loadReport = async function(){
   function rateCells(numArr, denomArr, invert=false) {
     const perMonth = numArr.map((n,i)=>n!=null && denomArr[i]>0 ? n/denomArr[i] : null);
     const cls = v => { if (v==null) return 'val-dash'; const good = invert ? v<=0 : v>=0; return good?'achieve-good':'achieve-bad'; };
-    const txt = v => v!=null ? (v*100).toFixed(1)+'%' : '－';
+    const txt = v => v!=null ? (Math.abs(v)*100).toFixed(1)+'%' : '－';
     const agg = (nSlice,dSlice) => {
       let nSum=0,dSum=0,any=false;
       nSlice.forEach((n,i)=>{ if(n!=null){ nSum+=n; dSum+=dSlice[i]; any=true; } });
@@ -1728,8 +1728,8 @@ window.loadReport = async function(){
           <tr><td class="row-label">超過不足概算額</td>${diffCells(tgtDiffLoss,(v)=>v.toLocaleString()+'円')}</tr>
           <tr><td class="row-cat-break" rowspan="2">損益</td><td class="row-label">超過不足人数</td>${diffCells(brkDiffPpl,(v)=>v.toLocaleString()+'人')}</tr>
           <tr><td class="row-label">超過不足概算額</td>${diffCells(brkDiffLoss,(v)=>v.toLocaleString()+'円')}</tr>
-          <tr><td class="row-cat-cancel" rowspan="3">キャン<br>セル</td><td class="row-label">人数</td>${diffCells(cancelPpl,(v)=>v.toLocaleString()+'人',true)}</tr>
-          <tr><td class="row-label">概算損失額</td>${diffCells(cancelLoss,(v)=>v.toLocaleString()+'円',true)}</tr>
+          <tr><td class="row-cat-cancel" rowspan="3">キャン<br>セル</td><td class="row-label">人数</td>${diffCells(cancelPpl,(v)=>v.toLocaleString()+'人',true,false)}</tr>
+          <tr><td class="row-label">概算損失額</td>${diffCells(cancelLoss,(v)=>v.toLocaleString()+'円',true,false)}</tr>
           <tr><td class="row-label">率</td>${rateCells(cancelPpl, plannedPpl, true)}</tr>
         </tbody>
       </table>
