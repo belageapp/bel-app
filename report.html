@@ -1547,13 +1547,15 @@ window.loadReport = async function(){
 
   // キャンセル分析：実績人数が報告されている月のみ計算（未報告月は対象外）
   // 予定人数と実績人数（貢献人数）の差＝キャンセル人数、その月の平均単価をかけて損失額を推計
-  const cancelPpl  = MONTHS_ARR.map((_,i)=>aPpl[i]>0 ? Math.max(0, plannedPpl[i]-aPpl[i]) : null);
+  // 正＝予定に対して不足（キャンセル）、負＝予定を超過
+  const cancelPpl  = MONTHS_ARR.map((_,i)=>aPpl[i]>0 ? plannedPpl[i]-aPpl[i] : null);
   const avgUnit    = MONTHS_ARR.map((_,i)=>aPpl[i]>0 ? aBasic[i]/aPpl[i] : null);
   const cancelLoss = MONTHS_ARR.map((_,i)=>cancelPpl[i]!=null ? Math.round(cancelPpl[i]*avgUnit[i]) : null);
   const cancelRate = MONTHS_ARR.map((_,i)=>cancelPpl[i]!=null && plannedPpl[i]>0 ? cancelPpl[i]/plannedPpl[i] : null);
   const reportedPlannedPpl = MONTHS_ARR.reduce((s,_,i)=>s+(cancelPpl[i]!=null?plannedPpl[i]:0),0);
-  const totalCancelPpl  = MONTHS_ARR.reduce((s,_,i)=>s+(cancelPpl[i]||0),0);
-  const totalCancelLoss = MONTHS_ARR.reduce((s,_,i)=>s+(cancelLoss[i]||0),0);
+  // KPIの合計は実際にキャンセルが発生した月（正の値）のみを積み上げる
+  const totalCancelPpl  = MONTHS_ARR.reduce((s,_,i)=>s+(cancelPpl[i]>0?cancelPpl[i]:0),0);
+  const totalCancelLoss = MONTHS_ARR.reduce((s,_,i)=>s+(cancelLoss[i]>0?cancelLoss[i]:0),0);
   const totalCancelRate = reportedPlannedPpl ? totalCancelPpl/reportedPlannedPpl : null;
 
   // 目標・損益分岐に対する実績の超過（＋）／不足（－）人数・概算額
@@ -1646,8 +1648,8 @@ window.loadReport = async function(){
 
   // 超過（＋）／不足（－）を色分けする値セル（未報告月はnullで－表示）
   function sumOrNull(arr){ const v=arr.filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0) : null; }
-  function diffCells(arr, fmt=(v)=>v.toLocaleString()) {
-    const cls = v => v==null ? 'val-dash' : (v>=0?'achieve-good':'achieve-bad');
+  function diffCells(arr, fmt=(v)=>v.toLocaleString(), invert=false) {
+    const cls = v => { if (v==null) return 'val-dash'; const good = invert ? v<=0 : v>=0; return good?'achieve-good':'achieve-bad'; };
     const txt = v => v==null ? '－' : (v>0?'+':'')+fmt(v);
     const h1 = arr.slice(0,6).map(v=>`<td class="${cls(v)}">${txt(v)}</td>`).join('');
     const h1s= sumOrNull(arr.slice(0,6));
@@ -1657,18 +1659,20 @@ window.loadReport = async function(){
     return `${h1}<td class="val-subtotal ${cls(h1s)}">${txt(h1s)}</td>${h2}<td class="val-subtotal ${cls(h2s)}">${txt(h2s)}</td><td class="val-total ${cls(tot)}">${txt(tot)}</td>`;
   }
 
-  // 率の小計・合計は月別の単純合算ではなく、分子・分母を集計してから割り直す
-  function rateCells(numArr, denomArr) {
+  // 率の小計・合計は月別の単純合算ではなく、分子・分母を集計してから割り直す（invert時は正=悪い/赤、負=良い/緑）
+  function rateCells(numArr, denomArr, invert=false) {
     const perMonth = numArr.map((n,i)=>n!=null && denomArr[i]>0 ? n/denomArr[i] : null);
+    const cls = v => { if (v==null) return 'val-dash'; const good = invert ? v<=0 : v>=0; return good?'achieve-good':'achieve-bad'; };
     const txt = v => v!=null ? (v*100).toFixed(1)+'%' : '－';
     const agg = (nSlice,dSlice) => {
       let nSum=0,dSum=0,any=false;
       nSlice.forEach((n,i)=>{ if(n!=null){ nSum+=n; dSum+=dSlice[i]; any=true; } });
       return any && dSum ? nSum/dSum : null;
     };
-    const h1 = perMonth.slice(0,6).map(v=>`<td class="val-actual">${txt(v)}</td>`).join('');
-    const h2 = perMonth.slice(6).map(v=>`<td class="val-actual">${txt(v)}</td>`).join('');
-    return `${h1}<td class="val-subtotal">${txt(agg(numArr.slice(0,6),denomArr.slice(0,6)))}</td>${h2}<td class="val-subtotal">${txt(agg(numArr.slice(6),denomArr.slice(6)))}</td><td class="val-total">${txt(agg(numArr,denomArr))}</td>`;
+    const h1r=agg(numArr.slice(0,6),denomArr.slice(0,6)), h2r=agg(numArr.slice(6),denomArr.slice(6)), totR=agg(numArr,denomArr);
+    const h1 = perMonth.slice(0,6).map(v=>`<td class="${cls(v)}">${txt(v)}</td>`).join('');
+    const h2 = perMonth.slice(6).map(v=>`<td class="${cls(v)}">${txt(v)}</td>`).join('');
+    return `${h1}<td class="val-subtotal ${cls(h1r)}">${txt(h1r)}</td>${h2}<td class="val-subtotal ${cls(h2r)}">${txt(h2r)}</td><td class="val-total ${cls(totR)}">${txt(totR)}</td>`;
   }
 
   // サービス種別ごとの内訳（エリア集計モードと同じrenderServiceTableで下に別表として表示する）
@@ -1724,9 +1728,9 @@ window.loadReport = async function(){
           <tr><td class="row-label">超過不足概算額</td>${diffCells(tgtDiffLoss,(v)=>v.toLocaleString()+'円')}</tr>
           <tr><td class="row-cat-break" rowspan="2">損益</td><td class="row-label">超過不足人数</td>${diffCells(brkDiffPpl,(v)=>v.toLocaleString()+'人')}</tr>
           <tr><td class="row-label">超過不足概算額</td>${diffCells(brkDiffLoss,(v)=>v.toLocaleString()+'円')}</tr>
-          <tr><td class="row-cat-cancel" rowspan="3">キャンセル</td><td class="row-label">人数</td>${valCells(cancelPpl,'val-actual',(v)=>v!=null?v.toLocaleString()+'人':'－')}</tr>
-          <tr><td class="row-label">概算損失額</td>${valCells(cancelLoss,'val-actual',(v)=>v!=null?v.toLocaleString()+'円':'－')}</tr>
-          <tr><td class="row-label">率</td>${rateCells(cancelPpl, plannedPpl)}</tr>
+          <tr><td class="row-cat-cancel" rowspan="3">キャン<br>セル</td><td class="row-label">人数</td>${diffCells(cancelPpl,(v)=>v.toLocaleString()+'人',true)}</tr>
+          <tr><td class="row-label">概算損失額</td>${diffCells(cancelLoss,(v)=>v.toLocaleString()+'円',true)}</tr>
+          <tr><td class="row-label">率</td>${rateCells(cancelPpl, plannedPpl, true)}</tr>
         </tbody>
       </table>
     </div>
