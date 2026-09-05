@@ -1938,7 +1938,7 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalar
     const shortSeg = aPpl.map((v,i)=> (tpm[i] && v>0 && v < tpm[i]) ? tpm[i]-v : null);
     const overSeg  = aPpl.map((v,i)=> (tpm[i] && v>0 && v >= tpm[i]) ? v-tpm[i] : null);
     const salaryLine = aSalary.map(v=>v>0?v:null);
-    const targetSalary = avg(tRev.filter(v=>v>0)) * SALARY; // 目標貢献報酬の平均 × 44%
+    const avgTargetRev = avg(tRev.filter(v=>v>0)); // 目標貢献報酬の12ヶ月平均
     window._trendChartLeft = new Chart(leftCanvas, {
       data: {
         labels,
@@ -1970,7 +1970,7 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalar
         scales: {
           x:{stacked:true},
           y:{stacked:true, beginAtZero:true, title:{display:true,text:'貢献人数／月'}},
-          y1:{beginAtZero:true, max:targetSalary||undefined, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'給与額（円）'}}
+          y1:{beginAtZero:true, max:avgTargetRev||undefined, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'給与額（円）'}}
         }
       }
     });
