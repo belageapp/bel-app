@@ -39,6 +39,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .top-bar-back{border:none;background:none;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;padding:0;white-space:nowrap;display:none}
 .top-bar-date{font-size:11px;color:#999;white-space:nowrap}
 .hamburger{display:none;background:none;border:none;font-size:20px;cursor:pointer;color:#1D9E75;padding:4px 6px;line-height:1}
+.toolbar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:#fff;border-bottom:1px solid #E8EAED}
 @media (max-width:900px){
   .sidebar{transform:translateX(-100%)}
   .sidebar.open{transform:translateX(0)}
@@ -236,10 +237,12 @@ textarea:focus{border-color:#1D9E75}
   <!-- トップバー -->
   <div class="topbar">
     <button class="hamburger" onclick="toggleSidebar()" aria-label="メニュー">☰</button>
-    <span class="topbar-title" id="header-title">貢献速報（日次）</span>
+    <span class="topbar-title" id="header-title">📋 貢献速報（日次）</span>
+    <div id="top-bar-user-info" style="display:flex;align-items:center;gap:8px;margin-left:auto"></div>
+  </div>
+  <div class="toolbar">
     <button class="top-bar-back" id="header-back" onclick="backToSelector()">← 事業所一覧</button>
     <span class="top-bar-date" id="today-lbl"></span>
-    <div id="top-bar-user-info" style="display:flex;align-items:center;gap:8px;margin-left:auto"></div>
   </div>
 
   <!-- タブバー -->
@@ -1426,7 +1429,7 @@ window.backToSelector=function(){
   document.getElementById('input-form').style.display='none';
   document.getElementById('input-card2').style.display='none';
   document.getElementById('header-back').style.display='none';
-  document.getElementById('header-title').textContent='貢献速報（日次）';
+  document.getElementById('header-title').textContent='📋 貢献速報（日次）';
 };
 
 window.adj=function(type,d){
