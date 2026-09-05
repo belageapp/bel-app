@@ -1677,8 +1677,20 @@ window.loadReport = async function(){
       <div style="flex:1;min-width:320px;position:relative;height:280px">
         <canvas id="trend-chart-left"></canvas>
       </div>
-      <div style="flex:1;min-width:320px;position:relative;height:280px">
-        <canvas id="trend-chart-right"></canvas>
+      <div style="flex:1;min-width:320px">
+        <div style="position:relative;height:280px">
+          <canvas id="trend-chart-right"></canvas>
+        </div>
+        <div style="overflow-x:auto;margin-top:10px">
+          <table style="min-width:0">
+            <colgroup><col style="width:52px"><col style="width:105px"></colgroup>
+            <thead>${headerRow()}</thead>
+            <tbody>
+              <tr><td class="row-cat-actual" rowspan="2">キャンセル</td><td class="row-label">人数</td>${valCells(cancelPpl,'val-actual',(v)=>v!=null?v.toLocaleString()+'人':'－')}</tr>
+              <tr><td class="row-label">概算損失額</td>${valCells(cancelLoss,'val-actual',(v)=>v!=null?v.toLocaleString()+'円':'－')}</tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
