@@ -1876,31 +1876,29 @@ window.loadReport = async function(){
 function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
   if (typeof Chart === 'undefined') return;
 
-  // 左：目標（定員）・損益分岐の背景レンジ＋実績人数のマーカー
+  // 左：実績人数を基軸の棒とし、目標線・損益線に対する達成度で棒の色を変える
   const leftCanvas = document.getElementById('trend-chart-left');
   if (leftCanvas) {
     if (window._trendChartLeft) window._trendChartLeft.destroy();
-    const leftPointColor = aPpl.map((v,i) => {
-      if (!tpm[i]) return null;
-      if (v > tpm[i]) return '#185FA5';   // 目標超え：濃いブルー
-      if (v > bpm[i]) return '#5B9BD5';   // 損益分岐超え：薄いブルー
-      return '#999';                       // 損益分岐未満：グレー
+    const leftBarColor = aPpl.map((v,i) => {
+      if (!tpm[i] && !bpm[i]) return '#ccc';
+      if (v >= tpm[i]) return '#185FA5';   // 目標達成：濃いブルー
+      if (v >= bpm[i]) return '#5B9BD5';   // 損益分岐達成：薄いブルー
+      return '#E24B4A';                     // 損益分岐未満：赤
     });
     window._trendChartLeft = new Chart(leftCanvas, {
       data: {
         labels,
         datasets: [
-          { type:'bar', label:'損益分岐まで', data:bpm.map(v=>v||null), backgroundColor:'rgba(255,183,77,0.55)', stack:'bg', order:2 },
-          { type:'bar', label:'損益〜目標', data:tpm.map((v,i)=>v?v-bpm[i]:null), backgroundColor:'rgba(226,75,74,0.6)', stack:'bg', order:2 },
-          { type:'line', label:'実績人数', data:aPpl.map((v,i)=>tpm[i]?v:null), showLine:false,
-            pointStyle:'rect', pointRadius:9, pointHoverRadius:9,
-            pointBackgroundColor:leftPointColor, order:1 },
+          { type:'bar', label:'実績人数', data:aPpl.map((v,i)=>tpm[i]?v:null), backgroundColor:leftBarColor, order:2 },
+          { type:'line', label:'目標人数', data:tpm.map(v=>v||null), borderColor:'#185FA5', borderDash:[4,3], pointRadius:0, borderWidth:1.5, tension:0, order:1 },
+          { type:'line', label:'損益分岐人数', data:bpm.map(v=>v||null), borderColor:'#CC6600', borderDash:[4,3], pointRadius:0, borderWidth:1.5, tension:0, order:1 },
         ]
       },
       options: {
         responsive:true, maintainAspectRatio:false,
-        plugins:{title:{display:true,text:'目標・損益分岐に対する実績人数',font:{size:12}}},
-        scales: { x:{stacked:true}, y:{stacked:true, beginAtZero:true, title:{display:true,text:'人数'}} }
+        plugins:{title:{display:true,text:'目標・損益分岐ラインに対する実績人数',font:{size:12}}},
+        scales: { y:{beginAtZero:true, title:{display:true,text:'人数'}} }
       }
     });
   }
