@@ -1724,10 +1724,10 @@ window.loadReport = async function(){
         <colgroup><col style="width:52px"><col style="width:105px"></colgroup>
         <thead>${headerRow()}</thead>
         <tbody>
-          <tr><td class="row-cat-target" rowspan="2">目標</td><td class="row-label">超過不足人数</td>${diffCells(tgtDiffPpl,(v)=>v.toLocaleString()+'人')}</tr>
-          <tr><td class="row-label">超過不足概算額</td>${diffCells(tgtDiffLoss,(v)=>v.toLocaleString()+'円')}</tr>
-          <tr><td class="row-cat-break" rowspan="2">損益</td><td class="row-label">超過不足人数</td>${diffCells(brkDiffPpl,(v)=>v.toLocaleString()+'人')}</tr>
-          <tr><td class="row-label">超過不足概算額</td>${diffCells(brkDiffLoss,(v)=>v.toLocaleString()+'円')}</tr>
+          <tr><td class="row-cat-target" rowspan="2">目標</td><td class="row-label">超過不足人数</td>${diffCells(tgtDiffPpl,(v)=>v.toLocaleString()+'人',false,false)}</tr>
+          <tr><td class="row-label">超過不足概算額</td>${diffCells(tgtDiffLoss,(v)=>v.toLocaleString()+'円',false,false)}</tr>
+          <tr><td class="row-cat-break" rowspan="2">損益</td><td class="row-label">超過不足人数</td>${diffCells(brkDiffPpl,(v)=>v.toLocaleString()+'人',false,false)}</tr>
+          <tr><td class="row-label">超過不足概算額</td>${diffCells(brkDiffLoss,(v)=>v.toLocaleString()+'円',false,false)}</tr>
           <tr><td class="row-cat-cancel" rowspan="3">キャン<br>セル</td><td class="row-label">人数</td>${diffCells(cancelPpl,(v)=>v.toLocaleString()+'人',true,false)}</tr>
           <tr><td class="row-label">概算損失額</td>${diffCells(cancelLoss,(v)=>v.toLocaleString()+'円',true,false)}</tr>
           <tr><td class="row-label">率</td>${rateCells(cancelPpl, plannedPpl, true)}</tr>
@@ -1951,17 +1951,17 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalar
           { type:'line', label:'損益分岐人数', data:bpm.map(v=>v||null), showLine:false,
             pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#CC6600', stack:'breakeven-line', order:1 },
           { type:'line', label:'給与額（合計）', data:salaryLine, yAxisID:'y1', showLine:false,
-            pointStyle:'rect', pointRadius:6, pointHoverRadius:6, backgroundColor:'#6B3FA0', order:0 },
+            pointStyle:'rectRot', pointRadius:6, pointHoverRadius:6, backgroundColor:'#6B3FA0', order:0 },
         ]
       },
       options: {
         responsive:true, maintainAspectRatio:false,
         plugins:{
           title:{display:true,text:'目標・損益分岐ラインに対する実績人数',font:{size:12}},
-          legend:{labels:{usePointStyle:true, generateLabels:()=>[
+          legend:{position:'right', labels:{usePointStyle:true, generateLabels:()=>[
             { text:'目標人数',   strokeStyle:'#185FA5', fillStyle:'#185FA5', pointStyle:'line', lineWidth:2 },
             { text:'損益分岐人数', strokeStyle:'#CC6600', fillStyle:'#CC6600', pointStyle:'line', lineWidth:2 },
-            { text:'給与額（合計）', strokeStyle:'#6B3FA0', fillStyle:'#6B3FA0', pointStyle:'rect' },
+            { text:'給与額（合計）', strokeStyle:'#6B3FA0', fillStyle:'#6B3FA0', pointStyle:'rectRot' },
             { text:'実績人数',       fillStyle:'rgba(29,158,117,0.6)', strokeStyle:'rgba(29,158,117,0.6)', pointStyle:'rect' },
             { text:'目標未達分（実績→目標）', fillStyle:'rgba(226,75,74,0.55)', strokeStyle:'rgba(226,75,74,0.55)', pointStyle:'rect' },
             { text:'目標超過分（目標→実績）', fillStyle:'rgba(24,95,165,0.5)',  strokeStyle:'rgba(24,95,165,0.5)',  pointStyle:'rect' },
@@ -1995,17 +1995,17 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalar
           { type:'line', label:'目標人数', data:tpm.map(v=>v||null), showLine:false,
             pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#185FA5', stack:'target-line', order:1 },
           { type:'line', label:'キャンセル率', data:cancelRate.map(v=>v!=null?+(v*100).toFixed(1):null), yAxisID:'y1', showLine:false,
-            pointStyle:'rect', pointRadius:6, pointHoverRadius:6, backgroundColor:'#C0392B', order:0 },
+            pointStyle:'rectRot', pointRadius:6, pointHoverRadius:6, backgroundColor:'#C0392B', order:0 },
         ]
       },
       options: {
         responsive:true, maintainAspectRatio:false,
         plugins:{
           title:{display:true,text:'予定人数に対する実績人数',font:{size:12}},
-          legend:{labels:{usePointStyle:true, generateLabels:()=>[
+          legend:{position:'right', labels:{usePointStyle:true, generateLabels:()=>[
             { text:'予定人数', strokeStyle:'#CC6600', fillStyle:'#CC6600', pointStyle:'line', lineWidth:2 },
             { text:'目標人数', strokeStyle:'#185FA5', fillStyle:'#185FA5', pointStyle:'line', lineWidth:2 },
-            { text:'キャンセル率', strokeStyle:'#C0392B', fillStyle:'#C0392B', pointStyle:'rect' },
+            { text:'キャンセル率', strokeStyle:'#C0392B', fillStyle:'#C0392B', pointStyle:'rectRot' },
             { text:'実績人数',       fillStyle:'rgba(29,158,117,0.6)', strokeStyle:'rgba(29,158,117,0.6)', pointStyle:'rect' },
             { text:'キャンセル分（実績→予定）', fillStyle:'rgba(226,75,74,0.55)', strokeStyle:'rgba(226,75,74,0.55)', pointStyle:'rect' },
             { text:'予定超過分（予定→実績）', fillStyle:'rgba(24,95,165,0.5)',  strokeStyle:'rgba(24,95,165,0.5)',  pointStyle:'rect' },
