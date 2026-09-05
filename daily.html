@@ -69,7 +69,11 @@ textarea:focus{border-color:#1D9E75}
 .success-msg{display:none;background:#d4f4e8;color:#0F6E56;padding:10px 14px;border-radius:8px;margin-top:10px;font-size:14px;font-weight:600;text-align:center}
 .input-progress-card{background:#f0faf6;border:1px solid #d4f4e8;border-radius:10px;padding:12px;margin-top:10px}
 .input-progress-title{font-size:12px;color:#0F6E56;margin-bottom:8px;font-weight:500}
-.ip-mood-icon{width:24px;height:24px;vertical-align:middle;margin-left:6px}
+.ip-flex{display:flex;align-items:center;gap:12px}
+.ip-flex-main{flex:1;min-width:0}
+.ip-mood-icon{width:68px;height:68px;flex-shrink:0}
+.ip-mood-icon.pop{animation:ip-mood-pop 0.4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes ip-mood-pop{0%{transform:scale(0.6);opacity:0}100%{transform:scale(1);opacity:1}}
 .input-progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .input-progress-num{font-size:18px;font-weight:700;color:#0F6E56}
 .input-progress-goal{font-size:12px;color:#888}
@@ -371,20 +375,25 @@ textarea:focus{border-color:#1D9E75}
       <!-- 通常事業所 -->
       <div id="input-progress-area" style="display:none">
         <div class="input-progress-card">
-          <div class="input-progress-title">今月の貢献人数<img id="ip-mood-icon" class="ip-mood-icon" style="display:none"></div>
-          <div class="input-progress-row">
-            <span class="input-progress-num" id="ip-current">0</span>
-            <span class="input-progress-goal" id="ip-goal"></span>
-          </div>
-          <div style="position:relative">
-            <div class="input-progress-wrap">
-              <div class="input-progress-bar" id="ip-bar" style="width:0%"></div>
+          <div class="input-progress-title">今月の貢献人数</div>
+          <div class="ip-flex">
+            <div class="ip-flex-main">
+              <div class="input-progress-row">
+                <span class="input-progress-num" id="ip-current">0</span>
+                <span class="input-progress-goal" id="ip-goal"></span>
+              </div>
+              <div style="position:relative">
+                <div class="input-progress-wrap">
+                  <div class="input-progress-bar" id="ip-bar" style="width:0%"></div>
+                </div>
+                <div class="pace-line" id="ip-pace-line" style="display:none"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+                <div class="input-progress-pct" id="ip-pct" style="margin-top:0"></div>
+                <div id="ip-pace-text" style="font-size:11px"></div>
+              </div>
             </div>
-            <div class="pace-line" id="ip-pace-line" style="display:none"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-            <div class="input-progress-pct" id="ip-pct" style="margin-top:0"></div>
-            <div id="ip-pace-text" style="font-size:11px"></div>
+            <img id="ip-mood-icon" class="ip-mood-icon" style="display:none">
           </div>
         </div>
       </div>
@@ -411,37 +420,47 @@ textarea:focus{border-color:#1D9E75}
       <!-- ラフォーレ -->
       <div id="lafore-progress-area" style="display:none">
         <div class="input-progress-card">
-          <div class="input-progress-title">生活介護　今月の貢献人数<img id="lp-care-mood-icon" class="ip-mood-icon" style="display:none"></div>
-          <div class="input-progress-row">
-            <span class="input-progress-num" id="lp-care-current">0</span>
-            <span class="input-progress-goal" id="lp-care-goal"></span>
-          </div>
-          <div style="position:relative">
-            <div class="input-progress-wrap">
-              <div class="input-progress-bar" id="lp-care-bar" style="width:0%"></div>
+          <div class="input-progress-title">生活介護　今月の貢献人数</div>
+          <div class="ip-flex">
+            <div class="ip-flex-main">
+              <div class="input-progress-row">
+                <span class="input-progress-num" id="lp-care-current">0</span>
+                <span class="input-progress-goal" id="lp-care-goal"></span>
+              </div>
+              <div style="position:relative">
+                <div class="input-progress-wrap">
+                  <div class="input-progress-bar" id="lp-care-bar" style="width:0%"></div>
+                </div>
+                <div class="pace-line" id="lp-care-pace-line" style="display:none"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+                <div class="input-progress-pct" id="lp-care-pct" style="margin-top:0"></div>
+                <div id="lp-care-pace-text" style="font-size:11px"></div>
+              </div>
             </div>
-            <div class="pace-line" id="lp-care-pace-line" style="display:none"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-            <div class="input-progress-pct" id="lp-care-pct" style="margin-top:0"></div>
-            <div id="lp-care-pace-text" style="font-size:11px"></div>
+            <img id="lp-care-mood-icon" class="ip-mood-icon" style="display:none">
           </div>
         </div>
         <div class="input-progress-card" style="margin-top:8px">
-          <div class="input-progress-title">就労B型　今月の貢献人数<img id="lp-work-mood-icon" class="ip-mood-icon" style="display:none"></div>
-          <div class="input-progress-row">
-            <span class="input-progress-num" id="lp-work-current">0</span>
-            <span class="input-progress-goal" id="lp-work-goal"></span>
-          </div>
-          <div style="position:relative">
-            <div class="input-progress-wrap">
-              <div class="input-progress-bar" id="lp-work-bar" style="width:0%"></div>
+          <div class="input-progress-title">就労B型　今月の貢献人数</div>
+          <div class="ip-flex">
+            <div class="ip-flex-main">
+              <div class="input-progress-row">
+                <span class="input-progress-num" id="lp-work-current">0</span>
+                <span class="input-progress-goal" id="lp-work-goal"></span>
+              </div>
+              <div style="position:relative">
+                <div class="input-progress-wrap">
+                  <div class="input-progress-bar" id="lp-work-bar" style="width:0%"></div>
+                </div>
+                <div class="pace-line" id="lp-work-pace-line" style="display:none"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+                <div class="input-progress-pct" id="lp-work-pct" style="margin-top:0"></div>
+                <div id="lp-work-pace-text" style="font-size:11px"></div>
+              </div>
             </div>
-            <div class="pace-line" id="lp-work-pace-line" style="display:none"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-            <div class="input-progress-pct" id="lp-work-pct" style="margin-top:0"></div>
-            <div id="lp-work-pace-text" style="font-size:11px"></div>
+            <img id="lp-work-mood-icon" class="ip-mood-icon" style="display:none">
           </div>
         </div>
       </div>
@@ -1170,7 +1189,10 @@ function applyPaceDisplay(prefix, office, mt){
   const mood=document.getElementById(prefix+'mood-icon');
   if(mood){
     mood.src = diff>0 ? 'assets/beruru_kanryo.png' : diff===0 ? 'assets/beruru_nikoniko.png' : 'assets/beruru_komarigao.png';
-    mood.style.display='inline-block';
+    mood.style.display='block';
+    mood.classList.remove('pop');
+    void mood.offsetWidth; // reflow でアニメーションを再トリガー
+    mood.classList.add('pop');
   }
 }
 
