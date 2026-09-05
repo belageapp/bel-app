@@ -1891,8 +1891,10 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
         labels,
         datasets: [
           { type:'bar', label:'実績人数', data:aPpl.map((v,i)=>tpm[i]?v:null), backgroundColor:leftBarColor, order:2 },
-          { type:'line', label:'目標人数', data:tpm.map(v=>v||null), borderColor:'#185FA5', borderDash:[4,3], pointRadius:0, borderWidth:1.5, tension:0, order:1 },
-          { type:'line', label:'損益分岐人数', data:bpm.map(v=>v||null), borderColor:'#CC6600', borderDash:[4,3], pointRadius:0, borderWidth:1.5, tension:0, order:1 },
+          { type:'line', label:'目標人数', data:tpm.map(v=>v||null), showLine:false,
+            pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#185FA5', order:1 },
+          { type:'line', label:'損益分岐人数', data:bpm.map(v=>v||null), showLine:false,
+            pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#CC6600', order:1 },
         ]
       },
       options: {
