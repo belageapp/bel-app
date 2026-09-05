@@ -1914,24 +1914,36 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
     });
   }
 
-  // 右：予定人数の背景レンジ＋実績人数のマーカー（常にグリーン）
+  // 右：実績（緑）を基本とし、予定未達分は赤、予定超過分は青を積み上げ、目標人数線は紫で表示
   const rightCanvas = document.getElementById('trend-chart-right');
   if (rightCanvas) {
     if (window._trendChartRight) window._trendChartRight.destroy();
+    const rGreenSeg = aPpl.map((v,i)=> (plannedPpl[i] && v>0) ? Math.min(v,plannedPpl[i]) : null);
+    const rShortSeg = aPpl.map((v,i)=> (plannedPpl[i] && v>0 && v < plannedPpl[i]) ? plannedPpl[i]-v : null);
+    const rOverSeg  = aPpl.map((v,i)=> (plannedPpl[i] && v>0 && v >= plannedPpl[i]) ? v-plannedPpl[i] : null);
     window._trendChartRight = new Chart(rightCanvas, {
       data: {
         labels,
         datasets: [
-          { type:'bar', label:'予定人数', data:plannedPpl.map(v=>v||null), backgroundColor:'rgba(150,150,150,0.3)', order:2 },
-          { type:'line', label:'実績人数', data:aPpl.map((v,i)=>plannedPpl[i]?v:null), showLine:false,
-            pointStyle:'rect', pointRadius:9, pointHoverRadius:9,
-            pointBackgroundColor:'#1D9E75', order:1 },
+          { type:'bar', label:'実績人数', data:rGreenSeg, backgroundColor:'rgba(29,158,117,0.6)', stack:'a', barPercentage:0.35, categoryPercentage:0.8, order:2 },
+          { type:'bar', label:'予定未達分', data:rShortSeg, backgroundColor:'rgba(226,75,74,0.55)', stack:'a', barPercentage:0.35, categoryPercentage:0.8, order:2 },
+          { type:'bar', label:'予定超過分', data:rOverSeg,  backgroundColor:'rgba(24,95,165,0.5)',  stack:'a', barPercentage:0.35, categoryPercentage:0.8, order:2 },
+          { type:'line', label:'目標人数', data:tpm.map(v=>v||null), showLine:false,
+            pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#6B3FA0', stack:'target-line', order:1 },
         ]
       },
       options: {
         responsive:true, maintainAspectRatio:false,
-        plugins:{title:{display:true,text:'予定人数に対する実績人数',font:{size:12}}},
-        scales: { y:{beginAtZero:true, title:{display:true,text:'人数'}} }
+        plugins:{
+          title:{display:true,text:'予定人数に対する実績人数',font:{size:12}},
+          legend:{labels:{usePointStyle:true, generateLabels:()=>[
+            { text:'目標人数', strokeStyle:'#6B3FA0', fillStyle:'#6B3FA0', pointStyle:'line', lineWidth:2 },
+            { text:'実績人数',       fillStyle:'rgba(29,158,117,0.6)', strokeStyle:'rgba(29,158,117,0.6)', pointStyle:'rect' },
+            { text:'予定未達分（実績→予定）', fillStyle:'rgba(226,75,74,0.55)', strokeStyle:'rgba(226,75,74,0.55)', pointStyle:'rect' },
+            { text:'予定超過分（予定→実績）', fillStyle:'rgba(24,95,165,0.5)',  strokeStyle:'rgba(24,95,165,0.5)',  pointStyle:'rect' },
+          ]}}
+        },
+        scales: { x:{stacked:true}, y:{stacked:true, beginAtZero:true, title:{display:true,text:'人数'}} }
       }
     });
   }
