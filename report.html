@@ -1926,7 +1926,7 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
         labels,
         datasets: [
           { type:'bar', label:'実績人数', data:rGreenSeg, backgroundColor:'rgba(29,158,117,0.6)', stack:'a', barPercentage:0.35, categoryPercentage:0.8, order:2 },
-          { type:'bar', label:'予定未達分', data:rShortSeg, backgroundColor:'rgba(226,75,74,0.55)', stack:'a', barPercentage:0.35, categoryPercentage:0.8, order:2 },
+          { type:'bar', label:'キャンセル分', data:rShortSeg, backgroundColor:'rgba(226,75,74,0.55)', stack:'a', barPercentage:0.35, categoryPercentage:0.8, order:2 },
           { type:'bar', label:'予定超過分', data:rOverSeg,  backgroundColor:'rgba(24,95,165,0.5)',  stack:'a', barPercentage:0.35, categoryPercentage:0.8, order:2 },
           { type:'line', label:'予定人数', data:plannedPpl.map(v=>v||null), showLine:false,
             pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#CC6600', stack:'planned-line', order:1 },
@@ -1942,7 +1942,7 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
             { text:'予定人数', strokeStyle:'#CC6600', fillStyle:'#CC6600', pointStyle:'line', lineWidth:2 },
             { text:'目標人数', strokeStyle:'#185FA5', fillStyle:'#185FA5', pointStyle:'line', lineWidth:2 },
             { text:'実績人数',       fillStyle:'rgba(29,158,117,0.6)', strokeStyle:'rgba(29,158,117,0.6)', pointStyle:'rect' },
-            { text:'予定未達分（実績→予定）', fillStyle:'rgba(226,75,74,0.55)', strokeStyle:'rgba(226,75,74,0.55)', pointStyle:'rect' },
+            { text:'キャンセル分（実績→予定）', fillStyle:'rgba(226,75,74,0.55)', strokeStyle:'rgba(226,75,74,0.55)', pointStyle:'rect' },
             { text:'予定超過分（予定→実績）', fillStyle:'rgba(24,95,165,0.5)',  strokeStyle:'rgba(24,95,165,0.5)',  pointStyle:'rect' },
           ]}}
         },
