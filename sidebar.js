@@ -1,16 +1,26 @@
 /* 共通サイドバー・ユーザーバッジ — 全ページ共通。メニュー項目やロール表記の変更はこのファイルのみでOK */
 (function () {
-  var NAV_ITEMS = [
-    { href: 'index.html', icon: '🏠', label: 'ポータル' },
-    { href: 'daily.html', icon: '📋', label: '貢献速報（日次）' },
-    { href: 'morning-report.html', icon: '📢', label: '朝礼報告（週次）' },
-    { href: 'monthly.html', icon: '📈', label: '貢献速報（月次）' },
-    { href: 'report.html', icon: '📊', label: '貢献実績表' },
-    { href: 'invoice.html', icon: '🧾', label: '報酬内容明細' },
-    { href: 'mirai-todo.html', icon: '✅', label: '未来創造企業ToDo' },
-    { href: 'import.html', icon: '📥', label: 'CSV取込' },
-    { href: 'salary.html', icon: '💰', label: '給与取込' },
-    { href: 'settings.html', icon: '⚙️', label: '設定' }
+  var NAV_SECTIONS = [
+    { label: null, items: [
+      { href: 'index.html', icon: '🏠', label: 'ポータル' }
+    ] },
+    { label: '速報入力', items: [
+      { href: 'daily.html', icon: '📋', label: '貢献速報（日次）' },
+      { href: 'morning-report.html', icon: '📢', label: '朝礼報告（週次）' }
+    ] },
+    { label: 'レポート', items: [
+      { href: 'monthly.html', icon: '📈', label: '貢献速報（月次）' },
+      { href: 'report.html', icon: '📊', label: '貢献実績表' },
+      { href: 'invoice.html', icon: '🧾', label: '報酬内容明細' }
+    ] },
+    { label: 'プロジェクト', items: [
+      { href: 'mirai-todo.html', icon: '✅', label: '未来創造企業ToDo' }
+    ] },
+    { label: '管理メニュー', items: [
+      { href: 'import.html', icon: '📥', label: 'CSV取込' },
+      { href: 'salary.html', icon: '💰', label: '給与取込' },
+      { href: 'settings.html', icon: '⚙️', label: '設定' }
+    ] }
   ];
 
   var ROLE_LABELS = {
@@ -26,9 +36,13 @@
 
   function renderSidebar() {
     var cur = currentPage();
-    var itemsHtml = NAV_ITEMS.map(function (it) {
-      return '<a href="' + it.href + '" class="sb-item' + (it.href === cur ? ' active' : '') + '">' +
-        '<span class="sb-ic">' + it.icon + '</span>' + it.label + '</a>';
+    var itemsHtml = NAV_SECTIONS.map(function (section) {
+      var itemsInSection = section.items.map(function (it) {
+        return '<a href="' + it.href + '" class="sb-item' + (it.href === cur ? ' active' : '') + '">' +
+          '<span class="sb-ic">' + it.icon + '</span>' + it.label + '</a>';
+      }).join('');
+      var labelHtml = section.label ? '<div class="sb-section-label">' + section.label + '</div>' : '';
+      return labelHtml + itemsInSection;
     }).join('');
     var html =
       '<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>' +
