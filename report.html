@@ -1937,9 +1937,7 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
     const greenSeg = aPpl.map((v,i)=> (tpm[i] && v>0) ? Math.min(v,tpm[i]) : null);
     const shortSeg = aPpl.map((v,i)=> (tpm[i] && v>0 && v < tpm[i]) ? tpm[i]-v : null);
     const overSeg  = aPpl.map((v,i)=> (tpm[i] && v>0 && v >= tpm[i]) ? v-tpm[i] : null);
-    const reportedAppl = aPpl.filter(v=>v>0);
-    const avgAppl = reportedAppl.length ? reportedAppl.reduce((a,b)=>a+b,0)/reportedAppl.length : null;
-    const avgApplLine = MONTHS_ARR.map(()=>avgAppl);
+    const avgApplLine = aPpd.map(v=>v>0?v:null); // 平均人数＝貢献人数／日
     window._trendChartLeft = new Chart(leftCanvas, {
       data: {
         labels,
@@ -1952,7 +1950,7 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
           { type:'line', label:'損益分岐人数', data:bpm.map(v=>v||null), showLine:false,
             pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#CC6600', stack:'breakeven-line', order:1 },
           { type:'line', label:'平均人数', data:avgApplLine, yAxisID:'y1',
-            borderColor:'#6B3FA0', backgroundColor:'#6B3FA0', borderWidth:2, borderDash:[6,3], pointRadius:0, tension:0, order:0 },
+            borderColor:'#6B3FA0', backgroundColor:'#6B3FA0', borderWidth:2, pointRadius:3, tension:0.3, order:0 },
         ]
       },
       options: {
@@ -1971,7 +1969,7 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
         scales: {
           x:{stacked:true},
           y:{stacked:true, beginAtZero:true, title:{display:true,text:'人数'}},
-          y1:{beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'人数（平均）'}}
+          y1:{beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'平均人数（人／日）'}}
         }
       }
     });
