@@ -1884,17 +1884,17 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
       if (!tpm[i] && !bpm[i]) return 'rgba(200,200,200,0.45)';
       if (v >= tpm[i]) return 'rgba(29,158,117,0.5)';    // 目標達成：薄いグリーン
       if (v >= bpm[i]) return 'rgba(91,155,213,0.4)';   // 損益分岐達成：薄いブルー
-      return 'rgba(226,75,74,0.4)';                      // 損益分岐未満：薄い赤
+      return 'rgba(204,102,0,0.35)';                      // 損益分岐未満：薄いオレンジ
     });
     window._trendChartLeft = new Chart(leftCanvas, {
       data: {
         labels,
         datasets: [
-          { type:'bar', label:'実績人数', data:aPpl.map((v,i)=>tpm[i]?v:null), backgroundColor:leftBarColor, barPercentage:0.5, categoryPercentage:0.8, order:2 },
+          { type:'bar', label:'実績人数', data:aPpl.map((v,i)=>tpm[i]?v:null), backgroundColor:leftBarColor, barPercentage:0.35, categoryPercentage:0.8, order:2 },
           { type:'line', label:'目標人数', data:tpm.map(v=>v||null), showLine:false,
             pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#185FA5', order:1 },
           { type:'line', label:'損益分岐人数', data:bpm.map(v=>v||null), showLine:false,
-            pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#1D9E75', order:1 },
+            pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#CC6600', order:1 },
         ]
       },
       options: {
@@ -1903,10 +1903,10 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
           title:{display:true,text:'目標・損益分岐ラインに対する実績人数',font:{size:12}},
           legend:{labels:{usePointStyle:true, generateLabels:()=>[
             { text:'目標人数',   strokeStyle:'#185FA5', fillStyle:'#185FA5', pointStyle:'line', lineWidth:2 },
-            { text:'損益分岐人数', strokeStyle:'#1D9E75', fillStyle:'#1D9E75', pointStyle:'line', lineWidth:2 },
+            { text:'損益分岐人数', strokeStyle:'#CC6600', fillStyle:'#CC6600', pointStyle:'line', lineWidth:2 },
             { text:'実績人数（目標達成）',     fillStyle:'rgba(29,158,117,0.5)', strokeStyle:'rgba(29,158,117,0.5)', pointStyle:'rect' },
             { text:'実績人数（損益分岐達成）', fillStyle:'rgba(91,155,213,0.4)', strokeStyle:'rgba(91,155,213,0.4)', pointStyle:'rect' },
-            { text:'実績人数（損益分岐未満）', fillStyle:'rgba(226,75,74,0.4)',  strokeStyle:'rgba(226,75,74,0.4)',  pointStyle:'rect' },
+            { text:'実績人数（損益分岐未満）', fillStyle:'rgba(204,102,0,0.35)',  strokeStyle:'rgba(204,102,0,0.35)',  pointStyle:'rect' },
           ]}}
         },
         scales: { y:{beginAtZero:true, title:{display:true,text:'人数'}} }
