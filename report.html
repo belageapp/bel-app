@@ -1881,9 +1881,9 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
   if (leftCanvas) {
     if (window._trendChartLeft) window._trendChartLeft.destroy();
     // 実績（緑）を基本とし、目標未達分は赤、目標超過分は青を積み上げて表示
-    const greenSeg = aPpl.map((v,i)=> tpm[i] ? Math.min(v,tpm[i]) : null);
-    const shortSeg = aPpl.map((v,i)=> tpm[i] && v < tpm[i] ? tpm[i]-v : null);
-    const overSeg  = aPpl.map((v,i)=> tpm[i] && v >= tpm[i] ? v-tpm[i] : null);
+    const greenSeg = aPpl.map((v,i)=> (tpm[i] && v>0) ? Math.min(v,tpm[i]) : null);
+    const shortSeg = aPpl.map((v,i)=> (tpm[i] && v>0 && v < tpm[i]) ? tpm[i]-v : null);
+    const overSeg  = aPpl.map((v,i)=> (tpm[i] && v>0 && v >= tpm[i]) ? v-tpm[i] : null);
     window._trendChartLeft = new Chart(leftCanvas, {
       data: {
         labels,
