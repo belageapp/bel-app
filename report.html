@@ -1880,21 +1880,21 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
   const leftCanvas = document.getElementById('trend-chart-left');
   if (leftCanvas) {
     if (window._trendChartLeft) window._trendChartLeft.destroy();
-    const leftBarColor = aPpl.map((v,i) => {
-      if (!tpm[i] && !bpm[i]) return 'rgba(200,200,200,0.45)';
-      if (v >= tpm[i]) return 'rgba(29,158,117,0.5)';    // 目標達成：薄いグリーン
-      if (v >= bpm[i]) return 'rgba(91,155,213,0.4)';   // 損益分岐達成：薄いブルー
-      return 'rgba(204,102,0,0.35)';                      // 損益分岐未満：薄いオレンジ
-    });
+    // 実績（緑）を基本とし、目標未達分は赤、目標超過分は青を積み上げて表示
+    const greenSeg = aPpl.map((v,i)=> tpm[i] ? Math.min(v,tpm[i]) : null);
+    const shortSeg = aPpl.map((v,i)=> tpm[i] && v < tpm[i] ? tpm[i]-v : null);
+    const overSeg  = aPpl.map((v,i)=> tpm[i] && v >= tpm[i] ? v-tpm[i] : null);
     window._trendChartLeft = new Chart(leftCanvas, {
       data: {
         labels,
         datasets: [
-          { type:'bar', label:'実績人数', data:aPpl.map((v,i)=>tpm[i]?v:null), backgroundColor:leftBarColor, barPercentage:0.35, categoryPercentage:0.8, order:2 },
+          { type:'bar', label:'実績人数', data:greenSeg, backgroundColor:'rgba(29,158,117,0.6)', stack:'a', barPercentage:0.35, categoryPercentage:0.8, order:2 },
+          { type:'bar', label:'目標未達分', data:shortSeg, backgroundColor:'rgba(226,75,74,0.55)', stack:'a', barPercentage:0.35, categoryPercentage:0.8, order:2 },
+          { type:'bar', label:'目標超過分', data:overSeg,  backgroundColor:'rgba(24,95,165,0.5)',  stack:'a', barPercentage:0.35, categoryPercentage:0.8, order:2 },
           { type:'line', label:'目標人数', data:tpm.map(v=>v||null), showLine:false,
-            pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#185FA5', order:1 },
+            pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#185FA5', stack:'target-line', order:1 },
           { type:'line', label:'損益分岐人数', data:bpm.map(v=>v||null), showLine:false,
-            pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#CC6600', order:1 },
+            pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#CC6600', stack:'breakeven-line', order:1 },
         ]
       },
       options: {
@@ -1904,12 +1904,12 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
           legend:{labels:{usePointStyle:true, generateLabels:()=>[
             { text:'目標人数',   strokeStyle:'#185FA5', fillStyle:'#185FA5', pointStyle:'line', lineWidth:2 },
             { text:'損益分岐人数', strokeStyle:'#CC6600', fillStyle:'#CC6600', pointStyle:'line', lineWidth:2 },
-            { text:'実績人数（目標達成）',     fillStyle:'rgba(29,158,117,0.5)', strokeStyle:'rgba(29,158,117,0.5)', pointStyle:'rect' },
-            { text:'実績人数（損益分岐達成）', fillStyle:'rgba(91,155,213,0.4)', strokeStyle:'rgba(91,155,213,0.4)', pointStyle:'rect' },
-            { text:'実績人数（損益分岐未満）', fillStyle:'rgba(204,102,0,0.35)',  strokeStyle:'rgba(204,102,0,0.35)',  pointStyle:'rect' },
+            { text:'実績人数',       fillStyle:'rgba(29,158,117,0.6)', strokeStyle:'rgba(29,158,117,0.6)', pointStyle:'rect' },
+            { text:'目標未達分（実績→目標）', fillStyle:'rgba(226,75,74,0.55)', strokeStyle:'rgba(226,75,74,0.55)', pointStyle:'rect' },
+            { text:'目標超過分（目標→実績）', fillStyle:'rgba(24,95,165,0.5)',  strokeStyle:'rgba(24,95,165,0.5)',  pointStyle:'rect' },
           ]}}
         },
-        scales: { y:{beginAtZero:true, title:{display:true,text:'人数'}} }
+        scales: { x:{stacked:true}, y:{stacked:true, beginAtZero:true, title:{display:true,text:'人数'}} }
       }
     });
   }
