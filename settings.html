@@ -276,8 +276,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
         </div>
         <div class="card-body">
           <div class="data-table-wrap"><table class="data-table">
-            <thead><tr><th>事業所名</th><th>事業者番号</th><th>部課コード</th><th>部署</th><th>エリア</th><th>種別／定員</th><th>単価</th><th>担当マネジャー</th></tr></thead>
-            <tbody id="office-tbody"><tr><td colspan="8" class="empty">読み込み中...</td></tr></tbody>
+            <thead><tr><th>事業所名</th><th>事業者番号</th><th>部課コード</th><th>部署</th><th>エリア</th><th>種別／定員</th><th>実質目標</th><th>単価</th><th>担当マネジャー</th></tr></thead>
+            <tbody id="office-tbody"><tr><td colspan="9" class="empty">読み込み中...</td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -767,7 +767,7 @@ async function loadOffices(){
 }
 function renderOfficeTable(){
   const tb = document.getElementById('office-tbody');
-  if(!cache.offices.length){tb.innerHTML='<tr><td colspan="8" class="empty">まだ登録がありません</td></tr>';return;}
+  if(!cache.offices.length){tb.innerHTML='<tr><td colspan="9" class="empty">まだ登録がありません</td></tr>';return;}
   tb.innerHTML = cache.offices.map(o=>`
     <tr>
       <td style="font-weight:500">${o.name}</td>
@@ -802,6 +802,16 @@ function renderOfficeTable(){
           ${['<option value="">未設定</option>',...cache.prices.map(p=>`<option value="${p.id}"${o.priceId===p.id?' selected':''}>${p.type}${p.capacity>0?' 定員'+p.capacity:''}${p.price?' ('+p.price.toLocaleString()+'円)':''}</option>`)].join('')}
         </select>
       </td>
+      <td>
+        <input
+          type="number"
+          value="${o.targetCapacity||''}"
+          onchange="updateOfficeTargetCapacity('${o.id}',this.value)"
+          style="width:60px;padding:5px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;text-align:center"
+          placeholder="定員と同じ"
+          min="0"
+        >
+      </td>
       <td><span class="derived-price" id="derived-${o.id}">${o.price?o.price.toLocaleString()+'円':'—'}</span></td>
       <td>
         <select class="office-price-select" style="width:160px" id="manager-${o.id}" onchange="updateOfficeManager('${o.id}',this.value)">
@@ -829,6 +839,10 @@ window.updateOfficeArea = function(id, area){
   const o = cache.offices.find(x=>x.id===id);
   if(o) o.area = area;
 };
+window.updateOfficeTargetCapacity = function(id, val){
+  const o = cache.offices.find(x=>x.id===id);
+  if(o) o.targetCapacity = parseInt(val)||null;
+};
 window.updateOfficePrice = function(id, priceId){
   const o = cache.offices.find(x=>x.id===id);
   const p = cache.prices.find(x=>x.id===priceId);
@@ -848,6 +862,7 @@ window.saveOffices = async function(){
       area:        o.area||'',
       priceId:     o.priceId||'',
       price:       o.price||null,
+      targetCapacity: o.targetCapacity||null,
       deptCode:    o.deptCode||'',
       order:       o.order||99,
       createdAt:   o.createdAt||'',
