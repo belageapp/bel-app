@@ -216,7 +216,7 @@ textarea:focus{border-color:#1D9E75}
     <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
   </div>
   <div class="sb-scroll">
-    <a href="daily.html" class="sb-item active"><span class="sb-ic">📋</span>速報入力</a>
+    <a href="daily.html" class="sb-item active"><span class="sb-ic">📋</span>貢献速報（日次）</a>
     <a href="monthly.html" class="sb-item"><span class="sb-ic">📈</span>貢献速報（月次）</a>
     <a href="morning-report.html" class="sb-item"><span class="sb-ic">📢</span>朝礼報告（週次）</a>
     <a href="report.html" class="sb-item"><span class="sb-ic">📊</span>貢献実績表</a>
@@ -235,7 +235,7 @@ textarea:focus{border-color:#1D9E75}
   <!-- トップバー -->
   <div class="topbar">
     <button class="hamburger" onclick="toggleSidebar()" aria-label="メニュー">☰</button>
-    <span class="topbar-title" id="header-title">貢献速報（日次）</span>
+    <span class="topbar-title" id="header-title">📋 貢献速報（日次）</span>
     <button class="top-bar-back" id="header-back" onclick="backToSelector()">← 事業所一覧</button>
     <span class="top-bar-date" id="today-lbl"></span>
     <div id="top-bar-user-info" style="display:flex;align-items:center;gap:8px;margin-left:auto"></div>
@@ -1425,7 +1425,7 @@ window.backToSelector=function(){
   document.getElementById('input-form').style.display='none';
   document.getElementById('input-card2').style.display='none';
   document.getElementById('header-back').style.display='none';
-  document.getElementById('header-title').textContent='貢献速報（日次）';
+  document.getElementById('header-title').textContent='📋 貢献速報（日次）';
 };
 
 window.adj=function(type,d){
