@@ -1531,6 +1531,7 @@ window.submitLafore=async function(){
     updateFormBadge(aggregated, true);
     renderBtns();
     showSuccessMsg('lafore-success-msg');
+    if(selectedDate===todayStr)maybeCelebrate(state.cur,selectedDate,data.kids);
     loadMonthlyTotals();
     await window.loadHistory();
   }catch(e){showToast('エラー: '+e.message);}
