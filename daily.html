@@ -1188,7 +1188,7 @@ function applyPaceDisplay(prefix, office, mt){
   }
   const mood=document.getElementById(prefix+'mood-icon');
   if(mood){
-    mood.src = diff>0 ? 'assets/beruru_kanryo.png' : diff===0 ? 'assets/beruru_nikoniko.png' : 'assets/beruru_komarigao.png';
+    mood.src = diff>0 ? 'assets/beruru_kanryo.png' : diff===0 ? 'assets/beruru_nikoniko.png' : 'assets/beruru_komarigao.png?v=2';
     mood.style.display='block';
     mood.classList.remove('pop');
     void mood.offsetWidth; // reflow でアニメーションを再トリガー
