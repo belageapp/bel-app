@@ -13,22 +13,24 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333}
 /* サイドバー（PC）＋上部バー＋ツールバー構成 */
-.sidebar{width:220px;flex-shrink:0;background:#fff;border-right:1px solid #E8EAED;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .2s}
-.sb-logo{padding:14px 16px;border-bottom:1px solid #E8EAED;flex-shrink:0}
-.sb-logo img{height:32px;max-width:170px;object-fit:contain;display:block}
-.sb-scroll{flex:1;overflow-y:auto;padding:8px 0}
-.sb-item{display:block;padding:10px 18px;font-size:13px;color:#555;text-decoration:none;border-left:3px solid transparent;font-weight:500;white-space:nowrap}
-.sb-item:hover{background:#F4F6F8;color:#333}
-.sb-item.active{background:#F0FAF6;color:#1D9E75;border-left-color:#1D9E75;font-weight:600}
-.sb-foot{border-top:1px solid #E8EAED;padding:10px 16px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
-.sb-foot .logout-btn{padding:6px 10px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit;width:100%}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:190}
+.sidebar{width:224px;flex-shrink:0;background:linear-gradient(180deg,#2FAF87,#239269);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .25s ease;box-shadow:2px 0 12px rgba(0,0,0,0.12)}
+.sb-logo{height:54px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#F4F6F8;border-bottom:1px solid rgba(0,0,0,0.06)}
+.sb-logo img{height:28px;max-width:160px;object-fit:contain;display:block}
+.sb-scroll{flex:1;overflow-y:auto;padding:14px 10px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:2px;border-radius:8px;font-size:13px;color:rgba(255,255,255,0.88);text-decoration:none;border-left:3px solid transparent;font-weight:500;white-space:nowrap;transition:background .15s,color .15s,padding-left .15s}
+.sb-item .sb-ic{font-size:14px;width:18px;text-align:center;flex-shrink:0;opacity:.95}
+.sb-item:hover{background:rgba(255,255,255,0.15);color:#fff;padding-left:15px}
+.sb-item.active{background:rgba(0,0,0,0.16);color:#fff;border-left-color:#FFD54A;font-weight:500}
+.sb-foot{border-top:1px solid rgba(255,255,255,0.18);padding:12px 16px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.sb-foot .logout-btn{padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:11px;cursor:pointer;font-family:inherit;width:100%;transition:background .15s}
+.sb-foot .logout-btn:hover{background:rgba(255,255,255,0.2)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:190;backdrop-filter:blur(1px)}
 .sidebar-overlay.open{display:block}
-.main{margin-left:220px;min-height:100vh;display:flex;flex-direction:column}
-.topbar{background:#fff;border-bottom:1px solid #E8EAED;padding:0 20px;display:flex;align-items:center;gap:12px;height:52px;flex-shrink:0;position:sticky;top:0;z-index:100}
-.topbar-title{font-size:14px;font-weight:600;color:#333;white-space:nowrap}
-.hamburger{display:none;background:none;border:none;font-size:20px;cursor:pointer;color:#555;padding:4px 6px;line-height:1}
-.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 20px;background:#fff;border-bottom:1px solid #E8EAED}
+.main{margin-left:224px;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:3px solid #239269;padding:0 22px;display:flex;align-items:center;gap:12px;height:57px;flex-shrink:0;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,0.05)}
+.topbar-title{font-size:15px;font-weight:700;color:#1D6E56;white-space:nowrap;letter-spacing:.3px}
+.hamburger{display:none;background:none;border:none;font-size:20px;cursor:pointer;color:#1D9E75;padding:4px 6px;line-height:1}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 22px;background:#fff;border-bottom:1px solid #E8EAED}
 @media (max-width:900px){
   .sidebar{transform:translateX(-100%)}
   .sidebar.open{transform:translateX(0)}
@@ -143,14 +145,14 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
     <img src="assets/belage_logo.png" alt="ベルアージュ" onerror="this.style.display='none'">
   </div>
   <div class="sb-scroll">
-    <a href="daily.html" class="sb-item">速報入力</a>
-    <a href="monthly.html" class="sb-item">貢献速報（月次）</a>
-    <a href="report.html" class="sb-item active">貢献実績表</a>
-    <a href="import.html" class="sb-item">CSV取込</a>
-    <a href="salary.html" class="sb-item">給与取込</a>
-    <a href="invoice.html" class="sb-item">報酬内容明細</a>
-    <a href="settings.html" class="sb-item">設定</a>
-    <a href="index.html" class="sb-item">ポータル</a>
+    <a href="daily.html" class="sb-item"><span class="sb-ic">📋</span>速報入力</a>
+    <a href="monthly.html" class="sb-item"><span class="sb-ic">📈</span>貢献速報（月次）</a>
+    <a href="report.html" class="sb-item active"><span class="sb-ic">📊</span>貢献実績表</a>
+    <a href="import.html" class="sb-item"><span class="sb-ic">📥</span>CSV取込</a>
+    <a href="salary.html" class="sb-item"><span class="sb-ic">💰</span>給与取込</a>
+    <a href="invoice.html" class="sb-item"><span class="sb-ic">🧾</span>報酬内容明細</a>
+    <a href="settings.html" class="sb-item"><span class="sb-ic">⚙️</span>設定</a>
+    <a href="index.html" class="sb-item"><span class="sb-ic">🏠</span>ポータル</a>
   </div>
   <div class="sb-foot">
     <div style="display:flex;flex-direction:column;gap:1px" id="top-bar-user-info"></div>
@@ -160,7 +162,7 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 <div class="main">
   <div class="topbar">
     <button class="hamburger" onclick="toggleSidebar()" aria-label="メニュー">☰</button>
-    <span class="topbar-title">貢献実績表</span>
+    <span class="topbar-title">📊 貢献実績表</span>
   </div>
   <div class="toolbar">
     <select id="sel-year" style="padding:5px 8px;border-radius:6px;border:1px solid #E8EAED;font-size:12px;font-family:inherit;color:#333;background:#fff;cursor:pointer">
@@ -277,8 +279,8 @@ onAuthStateChanged(auth, async user => {
     // ユーザー表示
     const el = document.getElementById('top-bar-user-info');
     if (el) {
-      el.innerHTML = `<span style="font-size:11px;color:#555;white-space:nowrap">${currentUserData.displayName||user.email}</span>
-        <span style="font-size:10px;color:#999;white-space:nowrap">${ROLE_LABELS[currentUserData.role]||currentUserData.role}</span>`;
+      el.innerHTML = `<span style="font-size:11px;color:rgba(255,255,255,0.95);white-space:nowrap">${currentUserData.displayName||user.email}</span>
+        <span style="font-size:10px;color:rgba(255,255,255,0.7);white-space:nowrap">${ROLE_LABELS[currentUserData.role]||currentUserData.role}</span>`;
     }
   } catch(e) { console.error(e); }
 });
