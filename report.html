@@ -1673,8 +1673,13 @@ window.loadReport = async function(){
         <div style="font-size:22px;font-weight:700;color:#6B3FA0">${totalCancelRate!=null?(totalCancelRate*100).toFixed(1)+'%':'－'}</div>
       </div>
     </div>
-    <div style="position:relative;height:280px">
-      <canvas id="trend-chart"></canvas>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:320px;position:relative;height:280px">
+        <canvas id="trend-chart-left"></canvas>
+      </div>
+      <div style="flex:1;min-width:320px;position:relative;height:280px">
+        <canvas id="trend-chart-right"></canvas>
+      </div>
     </div>
   </div>
   `;
@@ -1864,40 +1869,63 @@ window.loadReport = async function(){
   window._tpm=tpm; window._tRev=tRev; window._capacity=capacity;
   window._wdPerMonth=wdPerMonth; window._unitPrice=unitPrice;
 
-  renderTrendChart(ML_ARR, plannedPpl, tpm, bpm, aPpl, cancelRate);
+  renderTrendChart(ML_ARR, plannedPpl, tpm, bpm, aPpl);
 };
 
 // 月別推移グラフ：実績人数の棒（達成度で色分け）＋予定・目標・損益分岐の基準線＋キャンセル率の折れ線
-function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, cancelRate) {
-  const canvas = document.getElementById('trend-chart');
-  if (!canvas || typeof Chart === 'undefined') return;
-  if (window._trendChart) { window._trendChart.destroy(); }
-  const barColors = aPpl.map((v,i) => {
-    if (!tpm[i] && !bpm[i]) return '#ccc';
-    if (v >= tpm[i]) return '#1D9E75';
-    if (v >= bpm[i]) return '#CC6600';
-    return '#E24B4A';
-  });
-  window._trendChart = new Chart(canvas, {
-    data: {
-      labels,
-      datasets: [
-        { type:'bar', label:'実績人数', data:aPpl, backgroundColor:barColors, order:3 },
-        { type:'line', label:'予定人数', data:plannedPpl, borderColor:'#5B9BD5', borderDash:[4,3], pointRadius:2, borderWidth:1.5, tension:0.2, order:2 },
-        { type:'line', label:'目標人数', data:tpm, borderColor:'#185FA5', borderDash:[2,2], pointRadius:0, borderWidth:1, tension:0, order:1 },
-        { type:'line', label:'損益分岐人数', data:bpm, borderColor:'#CC6600', borderDash:[2,2], pointRadius:0, borderWidth:1, tension:0, order:1 },
-        { type:'line', label:'キャンセル率(%)', data:cancelRate.map(v=>v!=null?+(v*100).toFixed(1):null), yAxisID:'y1', borderColor:'#6B3FA0', backgroundColor:'#6B3FA0', pointRadius:3, borderWidth:2, tension:0.3, order:0 },
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      scales: {
-        y:  { beginAtZero:true, title:{display:true,text:'人数'} },
-        y1: { beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'キャンセル率(%)'} }
+function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
+  if (typeof Chart === 'undefined') return;
+
+  // 左：目標（定員）・損益分岐の背景レンジ＋実績人数のマーカー
+  const leftCanvas = document.getElementById('trend-chart-left');
+  if (leftCanvas) {
+    if (window._trendChartLeft) window._trendChartLeft.destroy();
+    const leftPointColor = aPpl.map((v,i) => {
+      if (!tpm[i]) return null;
+      if (v > tpm[i]) return '#185FA5';   // 目標超え：濃いブルー
+      if (v > bpm[i]) return '#5B9BD5';   // 損益分岐超え：薄いブルー
+      return '#999';                       // 損益分岐未満：グレー
+    });
+    window._trendChartLeft = new Chart(leftCanvas, {
+      data: {
+        labels,
+        datasets: [
+          { type:'bar', label:'損益分岐まで', data:bpm.map(v=>v||null), backgroundColor:'rgba(255,183,77,0.55)', stack:'bg', order:2 },
+          { type:'bar', label:'損益〜目標', data:tpm.map((v,i)=>v?v-bpm[i]:null), backgroundColor:'rgba(226,75,74,0.6)', stack:'bg', order:2 },
+          { type:'line', label:'実績人数', data:aPpl.map((v,i)=>tpm[i]?v:null), showLine:false,
+            pointStyle:'rect', pointRadius:9, pointHoverRadius:9,
+            pointBackgroundColor:leftPointColor, order:1 },
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{title:{display:true,text:'目標・損益分岐に対する実績人数',font:{size:12}}},
+        scales: { x:{stacked:true}, y:{stacked:true, beginAtZero:true, title:{display:true,text:'人数'}} }
       }
-    }
-  });
+    });
+  }
+
+  // 右：予定人数の背景レンジ＋実績人数のマーカー（常にグリーン）
+  const rightCanvas = document.getElementById('trend-chart-right');
+  if (rightCanvas) {
+    if (window._trendChartRight) window._trendChartRight.destroy();
+    window._trendChartRight = new Chart(rightCanvas, {
+      data: {
+        labels,
+        datasets: [
+          { type:'bar', label:'予定人数', data:plannedPpl.map(v=>v||null), backgroundColor:'rgba(150,150,150,0.3)', order:2 },
+          { type:'line', label:'実績人数', data:aPpl.map((v,i)=>plannedPpl[i]?v:null), showLine:false,
+            pointStyle:'rect', pointRadius:9, pointHoverRadius:9,
+            pointBackgroundColor:'#1D9E75', order:1 },
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{title:{display:true,text:'予定人数に対する実績人数',font:{size:12}}},
+        scales: { y:{beginAtZero:true, title:{display:true,text:'人数'}} }
+      }
+    });
+  }
 }
 
 // -------- リアルタイム再計算 --------
