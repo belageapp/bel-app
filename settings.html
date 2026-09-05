@@ -24,6 +24,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 /* メインコンテンツ */
 .content{padding:20px 16px;max-width:860px;margin:0 auto;width:100%}
 @media(min-width:600px){.content{padding:28px 32px}}
+@media(min-width:1100px){.content{max-width:1200px}}
 /* メインコンテンツ */
 .page{display:none}.page.active{display:block}
 .page-header{margin-bottom:24px}
@@ -41,6 +42,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 .data-table td{padding:10px 14px;border-bottom:1px solid #f5f5f5;vertical-align:middle;white-space:nowrap}
 .data-table tr:last-child td{border-bottom:none}
 .data-table tr:hover td{background:#fafafa}
+.data-table th:first-child,.data-table td:first-child{position:sticky;left:0;z-index:2;background:#fff;box-shadow:1px 0 0 #e8e8e8}
+.data-table th:first-child{background:#f8f8f8;z-index:3}
+.data-table tr:hover td:first-child{background:#fafafa}
 /* フォーム */
 .form-row{display:flex;gap:12px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap}
 .form-group{display:flex;flex-direction:column;gap:4px}
