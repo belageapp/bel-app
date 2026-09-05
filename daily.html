@@ -71,7 +71,8 @@ textarea:focus{border-color:#1D9E75}
 .input-progress-title{font-size:12px;color:#0F6E56;margin-bottom:8px;font-weight:500}
 .ip-flex{display:flex;align-items:center;gap:12px}
 .ip-flex-main{flex:1;min-width:0}
-.ip-mood-icon{width:68px;height:68px;flex-shrink:0}
+.ip-mood-slot{width:80px;height:80px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.ip-mood-icon{width:68px;height:68px}
 .ip-mood-icon.behind{width:80px;height:80px}
 .ip-mood-icon.pop{animation:ip-mood-pop 0.4s cubic-bezier(.34,1.56,.64,1)}
 @keyframes ip-mood-pop{0%{transform:scale(0.6);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -394,7 +395,7 @@ textarea:focus{border-color:#1D9E75}
                 <div id="ip-pace-text" style="font-size:11px"></div>
               </div>
             </div>
-            <img id="ip-mood-icon" class="ip-mood-icon" style="display:none">
+            <div class="ip-mood-slot"><img id="ip-mood-icon" class="ip-mood-icon" style="display:none"></div>
           </div>
         </div>
       </div>
@@ -439,7 +440,7 @@ textarea:focus{border-color:#1D9E75}
                 <div id="lp-care-pace-text" style="font-size:11px"></div>
               </div>
             </div>
-            <img id="lp-care-mood-icon" class="ip-mood-icon" style="display:none">
+            <div class="ip-mood-slot"><img id="lp-care-mood-icon" class="ip-mood-icon" style="display:none"></div>
           </div>
         </div>
         <div class="input-progress-card" style="margin-top:8px">
@@ -461,7 +462,7 @@ textarea:focus{border-color:#1D9E75}
                 <div id="lp-work-pace-text" style="font-size:11px"></div>
               </div>
             </div>
-            <img id="lp-work-mood-icon" class="ip-mood-icon" style="display:none">
+            <div class="ip-mood-slot"><img id="lp-work-mood-icon" class="ip-mood-icon" style="display:none"></div>
           </div>
         </div>
       </div>
