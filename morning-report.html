@@ -122,9 +122,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 
 /* ===== 共通 ===== */
 .no-data{text-align:center;padding:24px;color:#aaa;font-size:13px}
-.no-data::before{content:'';display:block;width:44px;height:44px;margin:0 auto 8px;background:url('assets/beruru_komarigao.png?v=2') center/contain no-repeat}
+.no-data::before{content:'';display:block;width:44px;height:44px;margin:0 auto 8px;background:url('assets/beruru_komarigao.png?v=3') center/contain no-repeat}
 .loading{text-align:center;padding:24px;color:#888;font-size:13px}
-.loading::before{content:'';display:block;width:44px;height:44px;margin:0 auto 8px;background:url('assets/beruru_nikoniko.png') center/contain no-repeat;animation:beruru-bounce 1.2s ease-in-out infinite}
+.loading::before{content:'';display:block;width:44px;height:44px;margin:0 auto 8px;background:url('assets/beruru_nikoniko.png?v=2') center/contain no-repeat;animation:beruru-bounce 1.2s ease-in-out infinite}
 @keyframes beruru-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:20px;font-size:14px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
