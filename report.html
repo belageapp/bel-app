@@ -1970,7 +1970,7 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalar
         scales: {
           x:{stacked:true},
           y:{stacked:true, beginAtZero:true, title:{display:true,text:'貢献人数／月'}},
-          y1:{beginAtZero:true, max:targetSalary?targetSalary*2:undefined, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'給与額（円）'}}
+          y1:{beginAtZero:true, max:targetSalary||undefined, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'給与額（円）'}}
         }
       }
     });
