@@ -1779,13 +1779,13 @@ function maybeCelebrate(office,date,kids){
   const icon=hitTarget?'assets/beruru_kanryo.png?v=2':'assets/beruru_nikoniko.png?v=2';
   let msg;
   if(!cap){
-    msg=`本日もお疲れ様でした！\nご利用者様への貢献に感謝します`;
+    msg=`ありがとうございます！\nお一人おひとりへの貢献に感謝です✨`;
   }else if(kids>cap){
-    msg=`目標${cap}名を超えました！\n素晴らしい貢献でした`;
+    msg=`目標${cap}名を超えて貢献しました！\nお一人おひとりへの貢献に感謝します✨`;
   }else if(kids===cap){
-    msg=`目標${cap}名を達成！\nお疲れ様でした`;
+    msg=`目標${cap}名の貢献を達成！\nお一人おひとりへの貢献に感謝です✨`;
   }else{
-    msg=`本日もお疲れ様でした！\nご利用者様への貢献に感謝します`;
+    msg=`ありがとうございます！\nお一人おひとりへの貢献に感謝です✨`;
   }
   document.getElementById('celebrate-icon').src=icon;
   document.getElementById('celebrate-msg').textContent=msg;
