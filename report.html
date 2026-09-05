@@ -1922,11 +1922,11 @@ window.loadReport = async function(){
   window._tpm=tpm; window._tRev=tRev; window._capacity=capacity;
   window._wdPerMonth=wdPerMonth; window._unitPrice=unitPrice;
 
-  renderTrendChart(ML_ARR, plannedPpl, tpm, bpm, aPpl);
+  renderTrendChart(ML_ARR, plannedPpl, tpm, bpm, aPpl, aPpd, cancelRate);
 };
 
 // 月別推移グラフ：実績人数の棒（達成度で色分け）＋予定・目標・損益分岐の基準線＋キャンセル率の折れ線
-function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl) {
+function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, aPpd, cancelRate) {
   if (typeof Chart === 'undefined') return;
 
   // 左：実績人数を基軸の棒とし、目標線・損益線に対する達成度で棒の色を変える
