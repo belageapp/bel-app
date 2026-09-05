@@ -73,6 +73,8 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 .svc-other{background:#f5f5f5;color:#555}
 .tr-svc-total td{background:#f8fbff !important}
 .loading{text-align:center;padding:60px;color:#aaa;font-size:14px}
+.loading::before{content:'';display:block;width:56px;height:56px;margin:0 auto 10px;background:url('assets/beruru_nikoniko.png') center/contain no-repeat;animation:beruru-bounce 1.2s ease-in-out infinite}
+@keyframes beruru-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 /* ===== エリア集計表 ===== */
 .area-section{margin-bottom:28px}
 .area-section-title{font-size:14px;font-weight:700;color:#333;padding:10px 14px;background:#fff;border-radius:8px 8px 0 0;border:1px solid #E8EAED;border-bottom:2px solid #1D9E75;display:flex;align-items:center;gap:10px}

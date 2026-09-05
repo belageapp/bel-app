@@ -154,6 +154,8 @@ th:last-child,td:last-child{border-right:none}
 
 /* ===== ローディング ===== */
 .loading{text-align:center;padding:60px;color:#aaa;font-size:14px}
+.loading::before{content:'';display:block;width:56px;height:56px;margin:0 auto 10px;background:url('assets/beruru_nikoniko.png') center/contain no-repeat;animation:beruru-bounce 1.2s ease-in-out infinite}
+@keyframes beruru-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .tr-detail td{height:16px!important;padding:0 1px!important}
 .tr-detail .cell-inner{min-height:14px}
 </style>

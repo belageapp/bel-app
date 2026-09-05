@@ -44,6 +44,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .task-info{flex:1;color:#333}
 .task-date{font-size:10px;color:#aaa;white-space:nowrap}
 .task-empty{text-align:center;padding:12px;color:#aaa;font-size:12px}
+.task-empty::before{content:'';display:block;width:32px;height:32px;margin:0 auto 6px;background:url('assets/beruru_komarigao.png') center/contain no-repeat}
 /* お知らせ */
 .notice-card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);padding:14px 18px;margin-bottom:16px;border:1px solid #E8EAED}
 .notice-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
@@ -55,6 +56,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .notice-date{color:#aaa;white-space:nowrap;min-width:40px}
 .notice-text{color:#333;flex:1}
 .notice-empty{text-align:center;padding:16px;color:#aaa;font-size:12px}
+.notice-empty::before{content:'';display:block;width:32px;height:32px;margin:0 auto 6px;background:url('assets/beruru_komarigao.png') center/contain no-repeat}
 /* メニューグリッド */
 .section-label{font-size:11px;color:#999;font-weight:600;margin-bottom:8px;padding-left:2px;letter-spacing:0.5px;text-transform:uppercase}
 .menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
@@ -82,6 +84,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .dash-nav-btn:active{background:#e0e0e0}
 .dash-month-label{font-size:14px;font-weight:600;color:#333}
 .dash-loading{text-align:center;padding:16px;color:#aaa;font-size:12px}
+.dash-loading::before{content:'';display:block;width:32px;height:32px;margin:0 auto 6px;background:url('assets/beruru_nikoniko.png') center/contain no-repeat;animation:beruru-bounce 1.2s ease-in-out infinite}
+@keyframes beruru-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .dash-dept-header{display:flex;align-items:center;gap:6px;padding:10px 14px;cursor:pointer;background:#F0FAF6;border-bottom:1px solid #E0F5ED;-webkit-tap-highlight-color:transparent;user-select:none}
 .dash-dept-header:active{background:#e4f7ef}
 .dash-dept-name{font-size:12px;font-weight:600;color:#0F6E56;flex:1;min-width:0}

@@ -158,6 +158,8 @@ textarea:focus{border-color:#1D9E75}
 .monthly-cat-summary-lbl{font-size:12px;color:#185FA5;font-weight:600}
 .monthly-cat-summary-num{font-size:15px;font-weight:700;color:#185FA5}
 .loading{text-align:center;padding:20px;color:#888;font-size:13px}
+.loading::before{content:'';display:block;width:40px;height:40px;margin:0 auto 6px;background:url('assets/beruru_nikoniko.png') center/contain no-repeat;animation:beruru-bounce 1.2s ease-in-out infinite}
+@keyframes beruru-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .conn-status{font-size:11px;text-align:center;padding:4px;margin-bottom:8px;border-radius:6px}
 .conn-ok{background:#d4f4e8;color:#0F6E56}
 .conn-ng{background:#fdecea;color:#A32D2D}
