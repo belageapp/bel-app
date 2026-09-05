@@ -1922,11 +1922,11 @@ window.loadReport = async function(){
   window._tpm=tpm; window._tRev=tRev; window._capacity=capacity;
   window._wdPerMonth=wdPerMonth; window._unitPrice=unitPrice;
 
-  renderTrendChart(ML_ARR, plannedPpl, tpm, bpm, aPpl, aPpd, cancelRate);
+  renderTrendChart(ML_ARR, plannedPpl, tpm, bpm, aPpl, aPpd, cancelRate, capacity);
 };
 
 // 月別推移グラフ：実績人数の棒（達成度で色分け）＋予定・目標・損益分岐の基準線＋キャンセル率の折れ線
-function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, aPpd, cancelRate) {
+function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, aPpd, cancelRate, capacity) {
   if (typeof Chart === 'undefined') return;
 
   // 左：実績人数を基軸の棒とし、目標線・損益線に対する達成度で棒の色を変える
@@ -1949,8 +1949,8 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, aPpd, cancelRate) 
             pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#185FA5', stack:'target-line', order:1 },
           { type:'line', label:'損益分岐人数', data:bpm.map(v=>v||null), showLine:false,
             pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#CC6600', stack:'breakeven-line', order:1 },
-          { type:'line', label:'平均人数', data:avgApplLine, yAxisID:'y1',
-            borderColor:'#6B3FA0', backgroundColor:'#6B3FA0', borderWidth:2, pointRadius:3, tension:0.3, order:0 },
+          { type:'line', label:'貢献人数／日', data:avgApplLine, yAxisID:'y1', showLine:false,
+            pointStyle:'rect', pointRadius:6, pointHoverRadius:6, backgroundColor:'#1D6E3E', order:0 },
         ]
       },
       options: {
@@ -1960,7 +1960,7 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, aPpd, cancelRate) 
           legend:{labels:{usePointStyle:true, generateLabels:()=>[
             { text:'目標人数',   strokeStyle:'#185FA5', fillStyle:'#185FA5', pointStyle:'line', lineWidth:2 },
             { text:'損益分岐人数', strokeStyle:'#CC6600', fillStyle:'#CC6600', pointStyle:'line', lineWidth:2 },
-            { text:'平均人数',   strokeStyle:'#6B3FA0', fillStyle:'#6B3FA0', pointStyle:'line', lineWidth:2 },
+            { text:'貢献人数／日', strokeStyle:'#1D6E3E', fillStyle:'#1D6E3E', pointStyle:'rect' },
             { text:'実績人数',       fillStyle:'rgba(29,158,117,0.6)', strokeStyle:'rgba(29,158,117,0.6)', pointStyle:'rect' },
             { text:'目標未達分（実績→目標）', fillStyle:'rgba(226,75,74,0.55)', strokeStyle:'rgba(226,75,74,0.55)', pointStyle:'rect' },
             { text:'目標超過分（目標→実績）', fillStyle:'rgba(24,95,165,0.5)',  strokeStyle:'rgba(24,95,165,0.5)',  pointStyle:'rect' },
@@ -1968,8 +1968,8 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, aPpd, cancelRate) 
         },
         scales: {
           x:{stacked:true},
-          y:{stacked:true, beginAtZero:true, title:{display:true,text:'人数'}},
-          y1:{beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'平均人数（人／日）'}}
+          y:{stacked:true, beginAtZero:true, title:{display:true,text:'貢献人数／月'}},
+          y1:{beginAtZero:true, max:capacity?capacity*1.5:undefined, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'貢献人数／日'}}
         }
       }
     });
@@ -1993,8 +1993,8 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, aPpd, cancelRate) 
             pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#CC6600', stack:'planned-line', order:1 },
           { type:'line', label:'目標人数', data:tpm.map(v=>v||null), showLine:false,
             pointStyle:'line', pointRadius:18, borderWidth:2.5, borderColor:'#185FA5', stack:'target-line', order:1 },
-          { type:'line', label:'キャンセル率', data:cancelRate.map(v=>v!=null?+(v*100).toFixed(1):null), yAxisID:'y1',
-            borderColor:'#6B3FA0', backgroundColor:'#6B3FA0', borderWidth:2, pointRadius:3, tension:0.3, order:0 },
+          { type:'line', label:'キャンセル率', data:cancelRate.map(v=>v!=null?+(v*100).toFixed(1):null), yAxisID:'y1', showLine:false,
+            pointStyle:'rect', pointRadius:6, pointHoverRadius:6, backgroundColor:'#C0392B', order:0 },
         ]
       },
       options: {
@@ -2004,7 +2004,7 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, aPpd, cancelRate) 
           legend:{labels:{usePointStyle:true, generateLabels:()=>[
             { text:'予定人数', strokeStyle:'#CC6600', fillStyle:'#CC6600', pointStyle:'line', lineWidth:2 },
             { text:'目標人数', strokeStyle:'#185FA5', fillStyle:'#185FA5', pointStyle:'line', lineWidth:2 },
-            { text:'キャンセル率', strokeStyle:'#6B3FA0', fillStyle:'#6B3FA0', pointStyle:'line', lineWidth:2 },
+            { text:'キャンセル率', strokeStyle:'#C0392B', fillStyle:'#C0392B', pointStyle:'rect' },
             { text:'実績人数',       fillStyle:'rgba(29,158,117,0.6)', strokeStyle:'rgba(29,158,117,0.6)', pointStyle:'rect' },
             { text:'キャンセル分（実績→予定）', fillStyle:'rgba(226,75,74,0.55)', strokeStyle:'rgba(226,75,74,0.55)', pointStyle:'rect' },
             { text:'予定超過分（予定→実績）', fillStyle:'rgba(24,95,165,0.5)',  strokeStyle:'rgba(24,95,165,0.5)',  pointStyle:'rect' },
@@ -2012,7 +2012,7 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, aPpd, cancelRate) 
         },
         scales: {
           x:{stacked:true},
-          y:{stacked:true, beginAtZero:true, title:{display:true,text:'人数'}},
+          y:{stacked:true, beginAtZero:true, title:{display:true,text:'貢献人数／月'}},
           y1:{beginAtZero:true, position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'キャンセル率(%)'}}
         }
       }
