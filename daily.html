@@ -518,7 +518,7 @@ textarea:focus{border-color:#1D9E75}
 <div class="toast" id="toast"></div>
 <div class="celebrate-overlay" id="celebrate-overlay" onclick="closeCelebrate()">
   <div class="celebrate-box">
-    <img src="assets/beruru_kanryo.png?v=2" class="celebrate-icon" alt="">
+    <img id="celebrate-icon" class="celebrate-icon" alt="">
     <div class="celebrate-msg" id="celebrate-msg"></div>
   </div>
 </div>
@@ -1767,15 +1767,27 @@ window.saveWeeklyPlanned=async function(){
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-// 本日分の実績が目標（実質目標人数）以上になったら、事業所×日付ごとに1回だけお祝いポップアップを表示
+// 本日分の実績を報告したら、目標達成の有無にかかわらず事業所×日付ごとに1回、
+// 利用者様への貢献をねぎらうポップアップを表示する（目標以上の時はより称える表現に）
 const celebratedKeys=new Set();
 function maybeCelebrate(office,date,kids){
-  const cap=CAPACITY[office];
-  if(!cap||kids<cap)return;
   const key=office+'_'+date;
   if(celebratedKeys.has(key))return;
   celebratedKeys.add(key);
-  const msg=kids>cap?`目標${cap}名を超えました！\nお疲れ様でした`:`目標${cap}名を達成！\nお疲れ様でした`;
+  const cap=CAPACITY[office];
+  const hitTarget=cap>0&&kids>=cap;
+  const icon=hitTarget?'assets/beruru_kanryo.png?v=2':'assets/beruru_nikoniko.png?v=2';
+  let msg;
+  if(!cap){
+    msg=`本日もお疲れ様でした！\nご利用者様への貢献に感謝します`;
+  }else if(kids>cap){
+    msg=`目標${cap}名を超えました！\n素晴らしい貢献でした`;
+  }else if(kids===cap){
+    msg=`目標${cap}名を達成！\nお疲れ様でした`;
+  }else{
+    msg=`本日もお疲れ様でした！\nご利用者様への貢献に感謝します`;
+  }
+  document.getElementById('celebrate-icon').src=icon;
   document.getElementById('celebrate-msg').textContent=msg;
   document.getElementById('celebrate-overlay').classList.add('show');
   setTimeout(window.closeCelebrate,2800);
