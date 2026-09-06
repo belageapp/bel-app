@@ -1436,9 +1436,11 @@ window.submitReport=async function(){
   const selectedMonth=dateToMonth(selectedDate);
   const comment=document.getElementById('comment-in').value.trim();
   const time=getTime();
-  const data={office:state.cur,kids:state.kids,comment,time,date:selectedDate,month:selectedMonth,
+  const data={office:state.cur,comment,time,date:selectedDate,month:selectedMonth,
     planned:extraState.planned||0,inquiry:extraState.inquiry||0,
     visit:extraState.visit||0,contract:extraState.contract||0,reported:state.kidsEdited};
+  // 実績人数を実際に触っていない場合はkidsを書き込まない（予定だけの保存を「実績0」にしないため）
+  if(state.kidsEdited) data.kids=state.kids;
   try{
     // 固定ID（事業所名_日付）で保存 → 同一日の重複ドキュメントを物理的に防止
     const fixedId=`${state.cur}_${selectedDate}`;
