@@ -63,6 +63,13 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 .achieve-good{color:#1D9E75;font-weight:600}
 .achieve-warn{color:#CC6600;font-weight:600}
 .achieve-bad{color:#E24B4A;font-weight:600}
+/* ランキング表 */
+.rank-table{width:100%;border-collapse:collapse;font-size:12px;min-width:0;table-layout:auto}
+.rank-table th{background:#F0FAF6;color:#0F6E56;font-weight:700;padding:8px 10px;text-align:center;border-bottom:2px solid #d4f4e8;white-space:nowrap}
+.rank-table td{padding:7px 10px;text-align:center;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+.rank-table td.rank-name{text-align:left;font-weight:600;color:#333}
+.rank-table tr:hover td{background:#FAFFFE}
+.rank-num{display:inline-block;width:20px;height:20px;line-height:20px;border-radius:50%;background:#E8EAED;color:#555;font-size:10px;font-weight:700;margin-right:6px}
 /* 事業種別バッジ */
 .svc-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600}
 .svc-houdei{background:#EBF3FB;color:#185FA5}
@@ -141,6 +148,7 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
     <div style="display:flex;border:1px solid #E8EAED;border-radius:6px;overflow:hidden">
       <button id="mode-office" onclick="switchMode('office')" style="padding:5px 12px;border:none;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">事業所</button>
       <button id="mode-area"   onclick="switchMode('area')"   style="padding:5px 12px;border:none;background:#fff;color:#888;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;border-left:1px solid #E8EAED">エリア集計</button>
+      <button id="mode-ranking" onclick="switchMode('ranking')" style="padding:5px 12px;border:none;background:#fff;color:#888;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;border-left:1px solid #E8EAED">ランキング</button>
     </div>
     <!-- 事業所セレクター -->
     <div id="ctrl-office" style="display:flex;gap:6px;align-items:center">
@@ -151,6 +159,10 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
     <div id="ctrl-area" style="display:none;gap:6px;align-items:center">
       <select id="sel-area" style="padding:5px 8px;border-radius:6px;border:1px solid #E8EAED;font-size:12px;font-family:inherit;color:#333;background:#fff;cursor:pointer;min-width:160px"></select>
       <button onclick="loadAreaReport()" style="padding:5px 14px;border-radius:6px;border:1px solid #1D9E75;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">表示</button>
+    </div>
+    <!-- ランキング表示ボタン（全社対象・事業所/エリア選択不要） -->
+    <div id="ctrl-ranking" style="display:none;gap:6px;align-items:center">
+      <button onclick="loadRankingReport()" style="padding:5px 14px;border-radius:6px;border:1px solid #1D9E75;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">表示</button>
     </div>
     <button onclick="exportExcel()" id="btn-export-excel" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">📊 全情報Excel保存</button>
     <button onclick="printFullReport()" id="btn-export-pdf" style="padding:5px 14px;border-radius:6px;border:1px solid #E8EAED;background:#fff;color:#555;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap">🖨️ 全情報PDF保存</button>
@@ -333,16 +345,18 @@ let salaryData = {}; // { month: { salaryStaff, salaryPart, fromSalaries } }
 // -------- モード切り替え --------
 window.switchMode = function(mode) {
   viewMode = mode;
-  document.getElementById('mode-office').style.cssText = mode==='office'
-    ? 'padding:5px 12px;border:none;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600'
-    : 'padding:5px 12px;border:none;background:#fff;color:#888;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500';
-  document.getElementById('mode-area').style.cssText = mode==='area'
-    ? 'padding:5px 12px;border:none;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;border-left:1px solid #E8EAED'
-    : 'padding:5px 12px;border:none;background:#fff;color:#888;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;border-left:1px solid #E8EAED';
-  document.getElementById('ctrl-office').style.display = mode==='office' ? 'flex' : 'none';
-  document.getElementById('ctrl-area').style.display   = mode==='area'   ? 'flex' : 'none';
-  document.getElementById('report-area').innerHTML =
-    '<div class="loading">' + (mode==='office' ? '年度と事業所を選択して「表示」を押してください' : '年度とエリアを選択して「表示」を押してください') + '</div>';
+  const activeStyle   = (border) => `padding:5px 12px;border:none;background:#F0FAF6;color:#1D9E75;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600${border?';border-left:1px solid #E8EAED':''}`;
+  const inactiveStyle = (border) => `padding:5px 12px;border:none;background:#fff;color:#888;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500${border?';border-left:1px solid #E8EAED':''}`;
+  document.getElementById('mode-office').style.cssText   = mode==='office'   ? activeStyle(false) : inactiveStyle(false);
+  document.getElementById('mode-area').style.cssText     = mode==='area'     ? activeStyle(true)  : inactiveStyle(true);
+  document.getElementById('mode-ranking').style.cssText  = mode==='ranking'  ? activeStyle(true)  : inactiveStyle(true);
+  document.getElementById('ctrl-office').style.display  = mode==='office'  ? 'flex' : 'none';
+  document.getElementById('ctrl-area').style.display    = mode==='area'    ? 'flex' : 'none';
+  document.getElementById('ctrl-ranking').style.display = mode==='ranking' ? 'flex' : 'none';
+  const promptMsg = mode==='office' ? '年度と事業所を選択して「表示」を押してください'
+    : mode==='area' ? '年度とエリアを選択して「表示」を押してください'
+    : '年度を選択して「表示」を押してください';
+  document.getElementById('report-area').innerHTML = '<div class="loading">' + promptMsg + '</div>';
 };
 
 let initPromise = null;
@@ -1403,6 +1417,117 @@ window.loadAreaReport = async function() {
       html += renderOfficeOrGroupTables(total, '全社　合計', true, allOfficeNames.length);
     }
   }
+
+  document.getElementById('report-area').innerHTML = html;
+};
+
+// ======================================================
+// ===== 全社ランキング（損益分岐点・稼働率／営業ファネル） =====
+// ======================================================
+
+// 1事業所分の年間の問合せ・見学・契約件数をreportsコレクションから集計
+async function loadFunnelData(officeName, year) {
+  const fy = getFY(year);
+  const startDate = `${fy[0][0]}-${String(fy[0][1]).padStart(2,'0')}-01`;
+  const endDate   = `${fy[11][0]}-${String(fy[11][1]).padStart(2,'0')}-31`;
+  let inquiry = 0, visit = 0, contract = 0;
+  try {
+    const snap = await getDocs(query(collection(db,'reports'), where('office','==',officeName)));
+    snap.forEach(d => {
+      const r = d.data();
+      if (!r.date || r.date < startDate || r.date > endDate) return;
+      inquiry  += r.inquiry  || 0;
+      visit    += r.visit    || 0;
+      contract += r.contract || 0;
+    });
+  } catch(e) { console.error('loadFunnelData:', e); }
+  return { officeName, inquiry, visit, contract };
+}
+
+function rateClass2(v) { if (v===null) return 'val-dash'; return v>=1 ? 'achieve-good' : 'achieve-bad'; }
+
+window.loadRankingReport = async function() {
+  const year = parseInt(document.getElementById('sel-year').value);
+  document.getElementById('report-area').innerHTML = '<div class="loading">読み込み中...</div>';
+
+  const allOfficeNames = offices.map(o=>o.name);
+  const [officeDataArr, funnelDataArr] = await Promise.all([
+    Promise.all(allOfficeNames.map(name => loadOfficeData(name, year))),
+    Promise.all(allOfficeNames.map(name => loadFunnelData(name, year))),
+  ]);
+
+  // ---- 損益分岐点・稼働率ランキング ----
+  const utilRows = allOfficeNames.map((name, i) => {
+    const d = officeDataArr[i];
+    const totalTpm  = sum(d.tpm);
+    const totalPpl  = sum(d.aPpl);
+    const totalRev  = sum(d.aRev);
+    const bpmArr    = d.tpm.map(t=>Math.ceil(t*BREAK));
+    const totalBpm  = sum(bpmArr);
+    const util      = totalTpm>0 ? totalPpl/totalTpm : null;
+    const breakRate = totalBpm>0 ? totalPpl/totalBpm : null;
+    return { name, totalTpm, totalBpm, totalPpl, totalRev, util, breakRate };
+  }).sort((a,b) => (a.util===null?999:a.util) - (b.util===null?999:b.util));
+
+  let html = `<div style="padding:14px 0 6px;font-size:13px;font-weight:600;color:#555">${year}年度　全社ランキング</div>`;
+
+  html += `<div class="table-wrap" style="padding:16px">
+    <div style="font-size:13px;font-weight:700;color:#333;margin-bottom:4px">📉 損益分岐点・稼働率ランキング（稼働率の低い順）</div>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">稼働率＝実績人数÷目標人数（年間）。損益分岐達成率＝実績人数÷損益分岐人数（年間）。</div>
+    <table class="rank-table">
+      <thead><tr>
+        <th>順位</th><th style="text-align:left">事業所</th>
+        <th>目標人数（年間）</th><th>損益分岐人数（年間）</th><th>実績人数（年間）</th>
+        <th>稼働率</th><th>損益分岐達成率</th><th>貢献報酬（年間）</th>
+      </tr></thead>
+      <tbody>
+        ${utilRows.map((r,i)=>`<tr>
+          <td><span class="rank-num">${i+1}</span></td>
+          <td class="rank-name">${r.name}</td>
+          <td>${r.totalTpm?r.totalTpm.toLocaleString():'－'}</td>
+          <td>${r.totalBpm?r.totalBpm.toLocaleString():'－'}</td>
+          <td>${r.totalPpl?r.totalPpl.toLocaleString():'－'}</td>
+          <td class="${achClass(r.util)}">${fmtPct(r.util)}</td>
+          <td class="${rateClass2(r.breakRate)}">${fmtPct(r.breakRate)}</td>
+          <td>${r.totalRev?r.totalRev.toLocaleString()+'円':'－'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+
+  // ---- 営業ファネルランキング ----
+  const funnelRows = allOfficeNames.map((name,i) => {
+    const f = funnelDataArr[i];
+    const visitRate    = f.inquiry>0 ? f.visit/f.inquiry : null;
+    const contractRate = f.visit>0 ? f.contract/f.visit : null;
+    const totalRate    = f.inquiry>0 ? f.contract/f.inquiry : null;
+    return { ...f, visitRate, contractRate, totalRate };
+  }).filter(r => r.inquiry>0 || r.visit>0 || r.contract>0)
+    .sort((a,b) => (a.totalRate===null?999:a.totalRate) - (b.totalRate===null?999:b.totalRate));
+
+  html += `<div class="table-wrap" style="padding:16px">
+    <div style="font-size:13px;font-weight:700;color:#333;margin-bottom:4px">📞 営業ファネル分析（問合せ→見学→契約、転換率の低い順）</div>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">日次報告の問合せ・見学・契約件数を年間集計。件数が0の事業所は対象外。</div>
+    <table class="rank-table">
+      <thead><tr>
+        <th>順位</th><th style="text-align:left">事業所</th>
+        <th>問合せ（年間）</th><th>見学（年間）</th><th>契約（年間）</th>
+        <th>問合せ→見学</th><th>見学→契約</th><th>問合せ→契約</th>
+      </tr></thead>
+      <tbody>
+        ${funnelRows.length ? funnelRows.map((r,i)=>`<tr>
+          <td><span class="rank-num">${i+1}</span></td>
+          <td class="rank-name">${r.officeName}</td>
+          <td>${r.inquiry.toLocaleString()}</td>
+          <td>${r.visit.toLocaleString()}</td>
+          <td>${r.contract.toLocaleString()}</td>
+          <td class="${r.visitRate===null?'val-dash':''}">${fmtPct(r.visitRate)}</td>
+          <td class="${r.contractRate===null?'val-dash':''}">${fmtPct(r.contractRate)}</td>
+          <td class="${r.totalRate===null?'val-dash':''}" style="font-weight:600">${fmtPct(r.totalRate)}</td>
+        </tr>`).join('') : `<tr><td colspan="8" class="val-dash" style="padding:20px">この年度は問合せ・見学・契約の記録がありません</td></tr>`}
+      </tbody>
+    </table>
+  </div>`;
 
   document.getElementById('report-area').innerHTML = html;
 };
