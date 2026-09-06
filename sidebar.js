@@ -10,8 +10,9 @@
     ] },
     { label: 'レポート', items: [
       { href: 'monthly.html', icon: '📈', label: '貢献速報（月次）' },
+      { href: 'report.html', icon: '📊', label: '貢献実績表（年次）' },
       { href: 'invoice.html', icon: '🧾', label: '報酬明細（月次）' },
-      { href: 'report.html', icon: '📊', label: '貢献実績表（年次）' }
+      { href: 'report.html?mode=ranking', icon: '🏆', label: 'ランキング' }
     ] },
     { label: 'プロジェクト', items: [
       { href: 'mirai-todo.html', icon: '✅', label: '未来創造企業ToDo' }
@@ -31,7 +32,7 @@
   window.ROLE_LABELS = ROLE_LABELS;
 
   function currentPage() {
-    return location.pathname.split('/').pop() || 'index.html';
+    return (location.pathname.split('/').pop() || 'index.html') + location.search;
   }
 
   function renderSidebar() {

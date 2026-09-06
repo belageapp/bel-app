@@ -240,6 +240,15 @@ onAuthStateChanged(auth, async user => {
     currentUserData = snap.data();
     renderUserBadge(document.getElementById('top-bar-user-info'), currentUserData, user.email);
 
+    // サイドバーの「ランキング」リンク（?mode=ranking）からの遷移はランキングを自動表示
+    const urlMode = new URLSearchParams(location.search).get('mode');
+    if (urlMode === 'ranking') {
+      await initPromise;
+      switchMode('ranking');
+      loadRankingReport();
+      return;
+    }
+
     // 所属事業所が設定されているユーザーには、その事業所×現在年度をデフォルト表示する
     if (currentUserData.officeId) {
       await initPromise;
