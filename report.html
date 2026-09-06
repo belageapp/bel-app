@@ -1478,16 +1478,16 @@ window.loadRankingReport = async function() {
     return { name, totalTpm, totalBpm, totalPpl, totalRev, util, breakRate, months: elapsedIdx.length };
   }).sort((a,b) => (a.util===null?999:a.util) - (b.util===null?999:b.util));
 
-  let html = `<div style="padding:14px 0 6px;font-size:13px;font-weight:600;color:#555">${year}年度　全社ランキング</div>`;
+  let html = `<div style="padding:14px 0 6px;font-size:13px;font-weight:600;color:#555">${year}年度　全社分析</div>`;
 
   html += `<div class="table-wrap" style="padding:16px">
-    <div style="font-size:13px;font-weight:700;color:#333;margin-bottom:4px">📉 損益分岐点・稼働率ランキング（稼働率の低い順）</div>
-    <div style="font-size:11px;color:#888;margin-bottom:10px">実績が入っている月のみで集計した「現在の稼働ペース」の指標です。稼働率＝実績人数÷目標人数（経過月）。損益分岐達成率＝実績人数÷損益分岐人数（経過月）。</div>
+    <div style="font-size:13px;font-weight:700;color:#333;margin-bottom:4px">📉 損益分岐点・稼働率分析（達成率（対目標）の低い順）</div>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">実績が入っている月のみで集計した「現在の稼働ペース」の指標です。達成率（対目標）＝実績人数÷目標人数（経過月）。達成率（対損益分岐）＝実績人数÷損益分岐人数（経過月）。</div>
     <table class="rank-table">
       <thead><tr>
         <th style="text-align:left">事業所</th>
         <th>経過月数</th><th>目標人数（経過月）</th><th>損益分岐人数（経過月）</th><th>実績人数（経過月）</th>
-        <th>稼働率</th><th>損益分岐達成率</th><th>貢献報酬（経過月）</th>
+        <th>達成率（対目標）</th><th>達成率（対損益分岐）</th><th>貢献報酬（経過月）</th>
       </tr></thead>
       <tbody>
         ${utilRows.map((r,i)=>`<tr>
