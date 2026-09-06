@@ -1758,7 +1758,7 @@ window.saveWeeklyPlanned=async function(){
       const month=dateStr.substring(0,7);
       const snap=await getDocs(query(collection(db,'reports'),where('office','==',state.cur),where('date','==',dateStr)));
       if(!snap.empty){await updateDoc(doc(db,'reports',snap.docs[0].id),{planned});}
-      else{await setDoc(doc(db,'reports',`${state.cur}_${dateStr}`),{office:state.cur,date:dateStr,month,kids:0,planned,comment:'',time:getTime(),inquiry:0,visit:0,contract:0});}
+      else{await setDoc(doc(db,'reports',`${state.cur}_${dateStr}`),{office:state.cur,date:dateStr,month,planned,comment:'',time:getTime(),inquiry:0,visit:0,contract:0});}
     }
     showSuccessMsg(getWpSuccessId());
     await window.loadHistory();
