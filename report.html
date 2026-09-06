@@ -1465,33 +1465,34 @@ window.loadRankingReport = async function() {
     Promise.all(allOfficeNames.map(name => loadFunnelData(name, year))),
   ]);
 
-  // ---- 損益分岐点・稼働率ランキング ----
+  // ---- 損益分岐点・稼働率ランキング（経過月のみで集計＝現在の稼働ペース） ----
   const utilRows = allOfficeNames.map((name, i) => {
     const d = officeDataArr[i];
-    const totalTpm  = sum(d.tpm);
-    const totalPpl  = sum(d.aPpl);
-    const totalRev  = sum(d.aRev);
-    const bpmArr    = d.tpm.map(t=>Math.ceil(t*BREAK));
-    const totalBpm  = sum(bpmArr);
+    const elapsedIdx = d.aPpl.map((v,idx)=>v>0?idx:-1).filter(idx=>idx>=0);
+    const totalTpm  = sum(elapsedIdx.map(idx=>d.tpm[idx]));
+    const totalPpl  = sum(elapsedIdx.map(idx=>d.aPpl[idx]));
+    const totalRev  = sum(elapsedIdx.map(idx=>d.aRev[idx]));
+    const totalBpm  = sum(elapsedIdx.map(idx=>Math.ceil(d.tpm[idx]*BREAK)));
     const util      = totalTpm>0 ? totalPpl/totalTpm : null;
     const breakRate = totalBpm>0 ? totalPpl/totalBpm : null;
-    return { name, totalTpm, totalBpm, totalPpl, totalRev, util, breakRate };
+    return { name, totalTpm, totalBpm, totalPpl, totalRev, util, breakRate, months: elapsedIdx.length };
   }).sort((a,b) => (a.util===null?999:a.util) - (b.util===null?999:b.util));
 
   let html = `<div style="padding:14px 0 6px;font-size:13px;font-weight:600;color:#555">${year}年度　全社ランキング</div>`;
 
   html += `<div class="table-wrap" style="padding:16px">
     <div style="font-size:13px;font-weight:700;color:#333;margin-bottom:4px">📉 損益分岐点・稼働率ランキング（稼働率の低い順）</div>
-    <div style="font-size:11px;color:#888;margin-bottom:10px">稼働率＝実績人数÷目標人数（年間）。損益分岐達成率＝実績人数÷損益分岐人数（年間）。</div>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">実績が入っている月のみで集計した「現在の稼働ペース」の指標です。稼働率＝実績人数÷目標人数（経過月）。損益分岐達成率＝実績人数÷損益分岐人数（経過月）。</div>
     <table class="rank-table">
       <thead><tr>
         <th style="text-align:left">事業所</th>
-        <th>目標人数（年間）</th><th>損益分岐人数（年間）</th><th>実績人数（年間）</th>
-        <th>稼働率</th><th>損益分岐達成率</th><th>貢献報酬（年間）</th>
+        <th>経過月数</th><th>目標人数（経過月）</th><th>損益分岐人数（経過月）</th><th>実績人数（経過月）</th>
+        <th>稼働率</th><th>損益分岐達成率</th><th>貢献報酬（経過月）</th>
       </tr></thead>
       <tbody>
         ${utilRows.map((r,i)=>`<tr>
           <td class="rank-name">${r.name}</td>
+          <td>${r.months?r.months+'ヶ月':'－'}</td>
           <td>${r.totalTpm?r.totalTpm.toLocaleString():'－'}</td>
           <td>${r.totalBpm?r.totalBpm.toLocaleString():'－'}</td>
           <td>${r.totalPpl?r.totalPpl.toLocaleString():'－'}</td>
