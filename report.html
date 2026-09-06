@@ -1485,13 +1485,12 @@ window.loadRankingReport = async function() {
     <div style="font-size:11px;color:#888;margin-bottom:10px">稼働率＝実績人数÷目標人数（年間）。損益分岐達成率＝実績人数÷損益分岐人数（年間）。</div>
     <table class="rank-table">
       <thead><tr>
-        <th>順位</th><th style="text-align:left">事業所</th>
+        <th style="text-align:left">事業所</th>
         <th>目標人数（年間）</th><th>損益分岐人数（年間）</th><th>実績人数（年間）</th>
         <th>稼働率</th><th>損益分岐達成率</th><th>貢献報酬（年間）</th>
       </tr></thead>
       <tbody>
         ${utilRows.map((r,i)=>`<tr>
-          <td><span class="rank-num">${i+1}</span></td>
           <td class="rank-name">${r.name}</td>
           <td>${r.totalTpm?r.totalTpm.toLocaleString():'－'}</td>
           <td>${r.totalBpm?r.totalBpm.toLocaleString():'－'}</td>
@@ -1519,13 +1518,12 @@ window.loadRankingReport = async function() {
     <div style="font-size:11px;color:#888;margin-bottom:10px">日次報告の問合せ・見学・契約件数を年間集計。件数が0の事業所は対象外。</div>
     <table class="rank-table">
       <thead><tr>
-        <th>順位</th><th style="text-align:left">事業所</th>
+        <th style="text-align:left">事業所</th>
         <th>問合せ（年間）</th><th>見学（年間）</th><th>契約（年間）</th>
         <th>問合せ→見学</th><th>見学→契約</th><th>問合せ→契約</th>
       </tr></thead>
       <tbody>
         ${funnelRows.length ? funnelRows.map((r,i)=>`<tr>
-          <td><span class="rank-num">${i+1}</span></td>
           <td class="rank-name">${r.officeName}</td>
           <td>${r.inquiry.toLocaleString()}</td>
           <td>${r.visit.toLocaleString()}</td>
@@ -1533,7 +1531,7 @@ window.loadRankingReport = async function() {
           <td class="${r.visitRate===null?'val-dash':''}">${fmtPct(r.visitRate)}</td>
           <td class="${r.contractRate===null?'val-dash':''}">${fmtPct(r.contractRate)}</td>
           <td class="${r.totalRate===null?'val-dash':''}" style="font-weight:600">${fmtPct(r.totalRate)}</td>
-        </tr>`).join('') : `<tr><td colspan="8" class="val-dash" style="padding:20px">この年度は問合せ・見学・契約の記録がありません</td></tr>`}
+        </tr>`).join('') : `<tr><td colspan="7" class="val-dash" style="padding:20px">この年度は問合せ・見学・契約の記録がありません</td></tr>`}
       </tbody>
     </table>
   </div>`;
