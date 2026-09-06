@@ -1465,40 +1465,43 @@ window.loadRankingReport = async function() {
     Promise.all(allOfficeNames.map(name => loadFunnelData(name, year))),
   ]);
 
-  // ---- 損益分岐点・稼働率ランキング（経過月のみで集計＝現在の稼働ペース） ----
+  // ---- 損益分岐点・稼働率分析（経過月のみで集計＝現在の稼働ペース） ----
   const utilRows = allOfficeNames.map((name, i) => {
     const d = officeDataArr[i];
     const elapsedIdx = d.aPpl.map((v,idx)=>v>0?idx:-1).filter(idx=>idx>=0);
     const totalTpm  = sum(elapsedIdx.map(idx=>d.tpm[idx]));
     const totalPpl  = sum(elapsedIdx.map(idx=>d.aPpl[idx]));
-    const totalRev  = sum(elapsedIdx.map(idx=>d.aRev[idx]));
     const totalBpm  = sum(elapsedIdx.map(idx=>Math.ceil(d.tpm[idx]*BREAK)));
     const util      = totalTpm>0 ? totalPpl/totalTpm : null;
     const breakRate = totalBpm>0 ? totalPpl/totalBpm : null;
-    return { name, totalTpm, totalBpm, totalPpl, totalRev, util, breakRate, months: elapsedIdx.length };
+    const monthly   = MONTHS_ARR.map((m,idx)=> (d.aPpl[idx]>0 && d.tpm[idx]>0) ? d.aPpl[idx]/d.tpm[idx] : null);
+    return { name, util, breakRate, months: elapsedIdx.length, monthly };
   }).sort((a,b) => (a.util===null?999:a.util) - (b.util===null?999:b.util));
 
   let html = `<div style="padding:14px 0 6px;font-size:13px;font-weight:600;color:#555">${year}年度　全社分析</div>`;
 
   html += `<div class="table-wrap" style="padding:16px">
     <div style="font-size:13px;font-weight:700;color:#333;margin-bottom:4px">📉 損益分岐点・稼働率分析（達成率（対目標）の低い順）</div>
-    <div style="font-size:11px;color:#888;margin-bottom:10px">実績が入っている月のみで集計した「現在の稼働ペース」の指標です。達成率（対目標）＝実績人数÷目標人数（経過月）。達成率（対損益分岐）＝実績人数÷損益分岐人数（経過月）。</div>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">実績が入っている月のみで集計した「現在の稼働ペース」の指標です。達成率（対目標）＝実績人数÷目標人数。達成率（対損益分岐）＝実績人数÷損益分岐人数。並び順は経過月合計での達成率（対目標）順。</div>
     <table class="rank-table">
-      <thead><tr>
-        <th style="text-align:left">事業所</th>
-        <th>経過月数</th><th>目標人数（経過月）</th><th>損益分岐人数（経過月）</th><th>実績人数（経過月）</th>
-        <th>達成率（対目標）</th><th>達成率（対損益分岐）</th><th>貢献報酬（経過月）</th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th rowspan="2" style="text-align:left">事業所</th>
+          <th colspan="3">経過月合計</th>
+          <th colspan="${MONTHS_ARR.length}">単月の達成率（対目標）</th>
+        </tr>
+        <tr>
+          <th>経過月数</th><th>達成率（対目標）</th><th>達成率（対損益分岐）</th>
+          ${MONTHS_ARR.map(m=>`<th>${m}月</th>`).join('')}
+        </tr>
+      </thead>
       <tbody>
         ${utilRows.map((r,i)=>`<tr>
           <td class="rank-name">${r.name}</td>
           <td>${r.months?r.months+'ヶ月':'－'}</td>
-          <td>${r.totalTpm?r.totalTpm.toLocaleString():'－'}</td>
-          <td>${r.totalBpm?r.totalBpm.toLocaleString():'－'}</td>
-          <td>${r.totalPpl?r.totalPpl.toLocaleString():'－'}</td>
           <td class="${achClass(r.util)}">${fmtPct(r.util)}</td>
           <td class="${rateClass2(r.breakRate)}">${fmtPct(r.breakRate)}</td>
-          <td>${r.totalRev?r.totalRev.toLocaleString()+'円':'－'}</td>
+          ${r.monthly.map(v=>`<td class="${achClass(v)}">${fmtPct(v)}</td>`).join('')}
         </tr>`).join('')}
       </tbody>
     </table>
