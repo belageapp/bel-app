@@ -8,6 +8,9 @@
       { href: 'daily.html', icon: '📋', label: '日次報告（事業所）' },
       { href: 'morning-report.html', icon: '📢', label: '週次報告（マネジャー）' }
     ] },
+    { label: '問合せ', items: [
+      { href: 'leads.html', icon: '📞', label: '問合せ・見学管理' }
+    ] },
     { label: 'レポート', items: [
       { href: 'monthly.html', icon: '📈', label: '貢献速報（月次）' },
       { href: 'report.html', icon: '📊', label: '貢献実績表（年次）' },

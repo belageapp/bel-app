@@ -26,6 +26,7 @@ export const PERMISSION_FLAGS = {
   'import.use':       '国保連CSV取込',
   'salary.view':      '賃金台帳の閲覧',
   'notice.write':     'お知らせ配信',
+  'leads.manage':     '問合せ・見学リードの仕分け管理',
 };
 
 // ── 一般ユーザー（user）標準でできる基本入力 ─────────

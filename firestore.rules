@@ -167,5 +167,12 @@ service cloud.firestore {
       allow read: if isAuth();
       allow write: if hasPerm('todo.edit');
     }
+
+    // 問合せ・見学リード：閲覧・作成・更新は全ユーザー（reportsと同水準）、削除のみ仕分け権限者
+    match /leads/{leadId} {
+      allow read: if isAuth();
+      allow create, update: if isActiveUser();
+      allow delete: if hasPerm('leads.manage');
+    }
   }
 }

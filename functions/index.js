@@ -2,7 +2,7 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onRequest } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { initializeApp } = require("firebase-admin/app");
-const { getFirestore } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getAuth } = require("firebase-admin/auth");
 
 initializeApp();
@@ -568,5 +568,87 @@ exports.sendInvoicePdf = onRequest(
       return;
     }
     res.json({ ok: true, fileId: cwData.file_id });
+  }
+);
+
+// ── Function 6: submitLead（HTTP – Googleフォームからの問合せ自動取込）────
+// フォームの「ご希望施設（複数可）」の選択肢表記 → leadsコレクションで使う正式事業所名
+const OFFICE_LABEL_MAP = {
+  "にじのいえ（熊野：放課後デイ）": "にじのいえ",
+  "はれのいえ（熊野：放課後デイ）": "はれのいえ",
+  "HUGくみのいえ（高陽：放課後デイ）": "HUGくみのいえ",
+  "ReadyGO井口（井口：放課後デイ）": "ReadyGO井口",
+  "まなびあいのいえ（西条町寺家：放課後デイ）": "まなびあいのいえ",
+  "ここいろのいえ（矢野：放課後デイ）": "ここいろのいえ",
+  "ReadyGO八木（放課後デイ）": "ReadyGO八木",
+  "ReadyGO黒瀬（放課後デイ）": "ReadyGO黒瀬",
+  "ReadyGO高屋（放課後デイ）": "ReadyGO高屋",
+  "ReadyGO川内（放課後デイ）": "ReadyGO川内",
+  "ぐらっちぇ黒瀬（児童発達支援）": "ぐらっちぇ黒瀬",
+  "短期入所レポ白木（短期入所）": "レポ白木",
+};
+
+// 営業メールでよく使われる語（参考表示用の簡易判定。最終判断は人が行う）
+const SPAM_KEYWORDS = [
+  "株式会社", "合同会社", "ご提案", "SEO", "広告", "集客", "代理店", "求人媒体", "採用支援",
+];
+
+// フォーム/Apps Scriptからは配列 or カンマ区切り文字列のどちらでも届き得るため吸収する
+function toArray(v) {
+  if (Array.isArray(v)) return v.map((s) => String(s).trim()).filter(Boolean);
+  return String(v || "").split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+function mapOffices(rawList) {
+  return rawList.map((label) => OFFICE_LABEL_MAP[label] || label);
+}
+
+function looksLikeSpam(fields) {
+  const text = [fields.name, fields.memo, fields.schoolFacility].join(" ");
+  return SPAM_KEYWORDS.some((kw) => text.includes(kw));
+}
+
+exports.submitLead = onRequest(
+  { region: "asia-northeast1" },
+  async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    if (req.method !== "POST") { res.status(405).json({ error: "Method Not Allowed" }); return; }
+    if (req.headers["x-lead-trigger-secret"] !== process.env.LEAD_TRIGGER_SECRET) {
+      res.status(403).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const body = req.body || {};
+    const fields = {
+      name: String(body.name || ""),
+      kana: String(body.kana || ""),
+      phone: String(body.phone || ""),
+      email: String(body.email || ""),
+      childAge: String(body.childAge || ""),
+      schoolFacility: String(body.schoolFacility || ""),
+      referralSource: String(body.referralSource || ""),
+      mailingZip: String(body.mailingZip || ""),
+      mailingAddress: String(body.mailingAddress || ""),
+      memo: String(body.memo || ""),
+    };
+    const inquiryTypes = toArray(body.inquiryTypes);
+    const officeNames = mapOffices(toArray(body.desiredOffices));
+
+    const lead = {
+      ...fields,
+      inquiryTypes,
+      source: "form",
+      spamSuspected: looksLikeSpam(fields),
+      overallStatus: "unsorted",
+      officeInterests: officeNames.map((office) => ({
+        office, status: "未確認", note: "", updatedAt: new Date(), updatedBy: "form",
+      })),
+      createdAt: FieldValue.serverTimestamp(),
+      createdBy: "form",
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    const ref = await getFirestore().collection("leads").add(lead);
+    res.json({ ok: true, id: ref.id });
   }
 );

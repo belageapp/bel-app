@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon_32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon_192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="assets/favicon_512.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>問合せ・見学管理 | ベルアージュ</title>
+<link rel="stylesheet" href="sidebar.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333}
+.content{padding:20px;max-width:1000px;margin:0 auto}
+.card{background:#fff;border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.card-title{font-size:14px;font-weight:700;color:#1D9E75;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #E0F5ED}
+.hidden{display:none}
+.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.tab-btn{background:#fff;color:#555;border:1px solid #E8EAED;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.tab-btn.active{background:#F0FAF6;color:#1D9E75;border-color:#1D9E75}
+.lead-card{background:#fff;border-radius:8px;padding:16px 18px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:4px solid #E8EAED}
+.lead-card.is-spam{border-left-color:#CC6600}
+.lead-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.lead-name{font-size:15px;font-weight:700;color:#333}
+.lead-kana{font-size:11px;color:#999;margin-left:6px;font-weight:400}
+.lead-meta{font-size:12px;color:#666;margin-top:2px}
+.lead-date{font-size:11px;color:#aaa;white-space:nowrap}
+.pill-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.tag-blue{background:#EBF3FB;color:#185FA5}
+.tag-green{background:#E8F5EE;color:#1D6E3E}
+.tag-orange{background:#FFF3E0;color:#CC6600}
+.tag-purple{background:#F3E8FF;color:#6B3FA0}
+.tag-grey{background:#F1F1F1;color:#777}
+.lead-memo{font-size:12px;color:#555;background:#F8F9FA;border-radius:6px;padding:10px 12px;margin-top:8px;white-space:pre-wrap;line-height:1.6}
+.lead-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.btn-primary{background:#F0FAF6;color:#1D9E75;border:1px solid #1D9E75;padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}
+.btn-primary:hover{background:#E0F5ED}
+.btn-secondary{background:#fff;color:#555;padding:7px 16px;border-radius:6px;border:1px solid #E8EAED;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-secondary:hover{background:#F4F6F8}
+.btn-warn{background:#FFF3E0;color:#CC6600;border:1px solid #FFD54F;padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}
+.office-status-row{display:flex;align-items:center;gap:8px;font-size:12px;margin-top:4px}
+.office-status-row select{padding:4px 6px;border:1px solid #E8EAED;border-radius:6px;font-size:12px;font-family:inherit}
+.office-tag-edit{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed #E8EAED}
+.office-tag-edit label{display:flex;align-items:center;gap:4px;font-size:11px;color:#555;background:#F8F9FA;padding:4px 8px;border-radius:6px}
+.empty-msg{color:#aaa;font-size:13px;text-align:center;padding:40px 0}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:12px;color:#555;margin-bottom:4px;font-weight:600}
+.fg input,.fg textarea{width:100%;padding:8px 10px;border:1px solid #E8EAED;border-radius:6px;font-size:13px;font-family:inherit}
+</style>
+</head>
+<body>
+<script src="sidebar.js?v=2"></script>
+<div class="main">
+  <div class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="メニュー">☰</button>
+    <span class="topbar-title">📞 問合せ・見学管理</span>
+    <div id="top-bar-user-info" style="display:flex;align-items:center;gap:8px;margin-left:auto"></div>
+  </div>
+<div class="content">
+
+  <div id="no-office-view" class="card hidden">
+    <div class="empty-msg">事業所が設定されていません。管理者にお問い合わせください。</div>
+  </div>
+
+  <!-- ===== 管理者ビュー（leads.manage） ===== -->
+  <div id="admin-view" class="hidden">
+    <div class="tabs">
+      <button class="tab-btn active" data-filter="unsorted" onclick="switchFilter('unsorted')">未仕分け</button>
+      <button class="tab-btn" data-filter="confirmed" onclick="switchFilter('confirmed')">対応中</button>
+      <button class="tab-btn" data-filter="spam" onclick="switchFilter('spam')">対象外</button>
+      <button class="tab-btn" data-filter="all" onclick="switchFilter('all')">すべて</button>
+    </div>
+    <div id="admin-list"><div class="empty-msg">読み込み中...</div></div>
+  </div>
+
+  <!-- ===== 一般ユーザービュー ===== -->
+  <div id="office-view" class="hidden">
+    <div class="card">
+      <div class="card-title">＋ 新規（電話問合せ）</div>
+      <div class="fg"><label>お名前</label><input type="text" id="qa-name" placeholder="例：川西　理沙"></div>
+      <div class="fg"><label>電話番号</label><input type="text" id="qa-phone" placeholder="例：09012345678"></div>
+      <div class="fg"><label>備考（任意）</label><textarea id="qa-memo" rows="2" placeholder="ご希望日時など"></textarea></div>
+      <button class="btn-primary" onclick="submitQuickAdd()">登録する</button>
+      <span id="qa-status" style="font-size:12px;color:#1D9E75;margin-left:10px"></span>
+    </div>
+    <div class="card-title" style="margin:0 0 10px">自事業所の問合せ・見学一覧</div>
+    <div id="my-list"><div class="empty-msg">読み込み中...</div></div>
+  </div>
+
+</div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc, getDocs, addDoc, updateDoc, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { can } from './perm.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
+  authDomain:"daily-report-b90e8.firebaseapp.com",
+  projectId:"daily-report-b90e8",
+  storageBucket:"daily-report-b90e8.firebasestorage.app",
+  messagingSenderId:"16569831525",
+  appId:"1:16569831525:web:aa250f2061f762dfe1768c"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let currentUserData = null;
+let currentUid = null;
+let myOfficeName = null;
+let isManager = false;
+let adminFilter = 'unsorted';
+
+const STATUS_OPTIONS = ['未確認','対応中','見学調整中','見学済み','契約','失注','対象外'];
+const STATUS_CLASS = {
+  '未確認':'tag-orange', '対応中':'tag-blue', '見学調整中':'tag-blue',
+  '見学済み':'tag-purple', '契約':'tag-green', '失注':'tag-grey', '対象外':'tag-grey'
+};
+
+let OFFICE_ID_TO_NAME = {};
+let MANAGER_UID_TO_OFFICE_ID = {};
+let ALL_OFFICE_NAMES = [];
+
+async function loadMasterData() {
+  const offSnap = await getDocs(collection(db,'offices'));
+  offSnap.forEach(d => {
+    const data = d.data();
+    if (!data.name) return;
+    OFFICE_ID_TO_NAME[d.id] = data.name;
+    ALL_OFFICE_NAMES.push(data.name);
+    if (data.managerUid) MANAGER_UID_TO_OFFICE_ID[data.managerUid] = d.id;
+  });
+}
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { location.href = 'login.html'; return; }
+  try {
+    currentUid = user.uid;
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (!snap.exists() || snap.data().disabled) {
+      await signOut(auth); location.href = 'login.html'; return;
+    }
+    currentUserData = snap.data();
+    await loadMasterData();
+    renderUserBadge(document.getElementById('top-bar-user-info'), currentUserData, user.email);
+
+    isManager = can(currentUserData, 'leads.manage');
+    const resolvedOfficeId = currentUserData.officeId || MANAGER_UID_TO_OFFICE_ID[user.uid];
+    myOfficeName = resolvedOfficeId ? (OFFICE_ID_TO_NAME[resolvedOfficeId] || null) : null;
+
+    if (isManager) {
+      document.getElementById('admin-view').classList.remove('hidden');
+      loadAdminLeads();
+    } else if (myOfficeName) {
+      document.getElementById('office-view').classList.remove('hidden');
+      loadMyLeads();
+    } else {
+      document.getElementById('no-office-view').classList.remove('hidden');
+    }
+  } catch(e) { console.error(e); }
+});
+
+window._logout = async function() { await signOut(auth); location.href = 'login.html'; };
+
+function fmtDate(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+async function fetchAllLeads() {
+  const snap = await getDocs(collection(db,'leads'));
+  const rows = [];
+  snap.forEach(d => rows.push({ id:d.id, ...d.data() }));
+  rows.sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+  return rows;
+}
+
+// ===== 管理者ビュー =====
+window.switchFilter = function(f) {
+  adminFilter = f;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.filter===f));
+  renderAdminList();
+};
+
+let allLeadsCache = [];
+async function loadAdminLeads() {
+  allLeadsCache = await fetchAllLeads();
+  renderAdminList();
+}
+
+function renderAdminList() {
+  const list = adminFilter==='all' ? allLeadsCache : allLeadsCache.filter(l => (l.overallStatus||'unsorted')===adminFilter);
+  const el = document.getElementById('admin-list');
+  if (!list.length) { el.innerHTML = '<div class="empty-msg">対象の問合せはありません</div>'; return; }
+  el.innerHTML = list.map(l => renderLeadCard(l, true)).join('');
+}
+
+function renderLeadCard(l, adminMode) {
+  const officeInterests = l.officeInterests || [];
+  const officePills = officeInterests.map(oi =>
+    `<span class="pill ${STATUS_CLASS[oi.status]||'tag-grey'}">${oi.office}：${oi.status}</span>`).join('');
+  const typePills = (l.inquiryTypes||[]).map(t => `<span class="pill tag-grey">${t}</span>`).join('');
+  const spamBadge = l.spamSuspected ? `<span class="pill tag-orange">⚠️ 営業の可能性あり</span>` : '';
+  const sourceBadge = l.source==='phone' ? `<span class="pill tag-blue">📞 電話</span>` : `<span class="pill tag-blue">🌐 フォーム</span>`;
+
+  let actions = '';
+  if (adminMode) {
+    const status = l.overallStatus || 'unsorted';
+    if (status !== 'confirmed') actions += `<button class="btn-primary" onclick="setOverallStatus('${l.id}','confirmed')">本物として確定</button>`;
+    if (status !== 'spam') actions += `<button class="btn-warn" onclick="setOverallStatus('${l.id}','spam')">対象外にする</button>`;
+    actions += `<button class="btn-secondary" onclick="toggleTagEdit('${l.id}')">事業所タグを編集</button>`;
+  }
+
+  const officeStatusRows = officeInterests.map((oi,idx) => `
+    <div class="office-status-row">
+      <strong>${oi.office}</strong>
+      <select onchange="updateOfficeStatus('${l.id}',${idx},this.value)">
+        ${STATUS_OPTIONS.map(s=>`<option value="${s}" ${s===oi.status?'selected':''}>${s}</option>`).join('')}
+      </select>
+    </div>`).join('');
+
+  const tagEditor = adminMode ? `
+    <div class="office-tag-edit hidden" id="tag-edit-${l.id}">
+      ${ALL_OFFICE_NAMES.map(name => `
+        <label><input type="checkbox" value="${name}" ${officeInterests.some(oi=>oi.office===name)?'checked':''}> ${name}</label>
+      `).join('')}
+      <button class="btn-primary" onclick="saveOfficeTags('${l.id}')" style="margin-left:8px">保存</button>
+    </div>` : '';
+
+  return `
+  <div class="lead-card ${l.spamSuspected?'is-spam':''}">
+    <div class="lead-head">
+      <div>
+        <span class="lead-name">${l.name||'（名前未登録）'}</span><span class="lead-kana">${l.kana||''}</span>
+        <div class="lead-meta">${l.phone||''}${l.email?' ／ '+l.email:''}</div>
+      </div>
+      <div class="lead-date">${fmtDate(l.createdAt)}</div>
+    </div>
+    <div class="pill-row">${sourceBadge}${spamBadge}${typePills}${officePills}</div>
+    ${adminMode ? officeStatusRows : ''}
+    ${l.memo ? `<div class="lead-memo">${l.memo}</div>` : ''}
+    ${l.referralSource ? `<div class="lead-meta" style="margin-top:6px">きっかけ：${l.referralSource}</div>` : ''}
+    <div class="lead-actions">${actions}</div>
+    ${tagEditor}
+  </div>`;
+}
+
+window.toggleTagEdit = function(id) {
+  document.getElementById(`tag-edit-${id}`).classList.toggle('hidden');
+};
+
+window.setOverallStatus = async function(id, status) {
+  await updateDoc(doc(db,'leads',id), { overallStatus: status, updatedAt: serverTimestamp() });
+  await loadAdminLeads();
+};
+
+window.saveOfficeTags = async function(id) {
+  const wrap = document.getElementById(`tag-edit-${id}`);
+  const checked = [...wrap.querySelectorAll('input[type=checkbox]:checked')].map(c => c.value);
+  const lead = allLeadsCache.find(l => l.id === id);
+  const existing = lead.officeInterests || [];
+  const officeInterests = checked.map(name => {
+    const found = existing.find(oi => oi.office === name);
+    return found || { office:name, status:'未確認', note:'', updatedAt: new Date(), updatedBy:'admin' };
+  });
+  await updateDoc(doc(db,'leads',id), { officeInterests, updatedAt: serverTimestamp() });
+  await loadAdminLeads();
+};
+
+window.updateOfficeStatus = async function(id, idx, newStatus) {
+  const lead = allLeadsCache.find(l => l.id === id) || myLeadsCache.find(l => l.id === id);
+  const officeInterests = (lead.officeInterests||[]).map((oi,i) => i===idx ? { ...oi, status:newStatus, updatedAt: new Date(), updatedBy: currentUid } : oi);
+  await updateDoc(doc(db,'leads',id), { officeInterests, updatedAt: serverTimestamp() });
+  if (isManager) await loadAdminLeads(); else await loadMyLeads();
+};
+
+// ===== 一般ユーザービュー =====
+let myLeadsCache = [];
+async function loadMyLeads() {
+  const all = await fetchAllLeads();
+  myLeadsCache = all.filter(l => (l.overallStatus||'unsorted') !== 'spam' && (l.officeInterests||[]).some(oi => oi.office === myOfficeName));
+  const el = document.getElementById('my-list');
+  if (!myLeadsCache.length) { el.innerHTML = '<div class="empty-msg">対象の問合せはありません</div>'; return; }
+  el.innerHTML = myLeadsCache.map(l => renderMyLeadCard(l)).join('');
+}
+
+function renderMyLeadCard(l) {
+  const officeInterests = l.officeInterests || [];
+  const myIdx = officeInterests.findIndex(oi => oi.office === myOfficeName);
+  const otherPills = officeInterests.filter(oi=>oi.office!==myOfficeName)
+    .map(oi => `<span class="pill tag-grey">${oi.office}：${oi.status}</span>`).join('');
+  const typePills = (l.inquiryTypes||[]).map(t => `<span class="pill tag-grey">${t}</span>`).join('');
+  return `
+  <div class="lead-card">
+    <div class="lead-head">
+      <div>
+        <span class="lead-name">${l.name||'（名前未登録）'}</span><span class="lead-kana">${l.kana||''}</span>
+        <div class="lead-meta">${l.phone||''}${l.email?' ／ '+l.email:''}</div>
+      </div>
+      <div class="lead-date">${fmtDate(l.createdAt)}</div>
+    </div>
+    <div class="pill-row">${typePills}${otherPills}</div>
+    <div class="office-status-row">
+      <strong>自事業所のステータス</strong>
+      <select onchange="updateOfficeStatus('${l.id}',${myIdx},this.value)">
+        ${STATUS_OPTIONS.map(s=>`<option value="${s}" ${s===officeInterests[myIdx]?.status?'selected':''}>${s}</option>`).join('')}
+      </select>
+    </div>
+    ${l.memo ? `<div class="lead-memo">${l.memo}</div>` : ''}
+  </div>`;
+}
+
+window.submitQuickAdd = async function() {
+  const name = document.getElementById('qa-name').value.trim();
+  const phone = document.getElementById('qa-phone').value.trim();
+  const memo = document.getElementById('qa-memo').value.trim();
+  const statusEl = document.getElementById('qa-status');
+  if (!name || !phone) { statusEl.style.color = '#C0392B'; statusEl.textContent = '名前と電話番号は必須です'; return; }
+  await addDoc(collection(db,'leads'), {
+    name, phone, memo, kana:'', email:'', childAge:'', schoolFacility:'', referralSource:'',
+    mailingZip:'', mailingAddress:'', inquiryTypes:[], source:'phone', spamSuspected:false,
+    overallStatus:'confirmed',
+    officeInterests: [{ office: myOfficeName, status:'対応中', note:'', updatedAt: new Date(), updatedBy: currentUid }],
+    createdAt: serverTimestamp(), createdBy: currentUid, updatedAt: serverTimestamp()
+  });
+  document.getElementById('qa-name').value = '';
+  document.getElementById('qa-phone').value = '';
+  document.getElementById('qa-memo').value = '';
+  statusEl.style.color = '#1D9E75';
+  statusEl.textContent = '登録しました';
+  await loadMyLeads();
+};
+</script>
+</body>
+</html>
