@@ -43,6 +43,14 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 .trend-toggle-lbl{font-size:11px;color:#185FA5;white-space:nowrap}
 .trend-detail-body{display:none}
 .trend-detail-body.open{display:block}
+.collapse-wrap{margin-bottom:10px}
+.collapse-header{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:12px 16px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.08);font-size:13px;font-weight:700;color:#333}
+.collapse-header:hover{background:#FAFFFE}
+.collapse-arrow{font-size:10px;color:#1D9E75;width:10px;flex-shrink:0}
+.collapse-body{display:none}
+.collapse-body.open{display:block;margin-top:6px}
+.collapse-wrap.is-group-total{margin-top:2px}
+.collapse-wrap.is-group-total .collapse-header{background:#F0FAF6;color:#0F6E56}
 .row-label-sub{background:#fafafa;color:#888;text-align:right;padding-right:6px;padding-left:12px;width:105px;font-size:10px}
 .row-label-svc{background:#f0f8ff;color:#185FA5;text-align:right;padding-right:6px;padding-left:8px;font-size:10px;font-weight:600;border-left:2px solid #B5D4F4}
 /* 値スタイル */
@@ -250,17 +258,21 @@ onAuthStateChanged(auth, async user => {
     }
 
     // 所属事業所が設定されているユーザーには、その事業所×現在年度をデフォルト表示する
-    if (currentUserData.officeId) {
-      await initPromise;
-      const off = offices.find(o => o.id === currentUserData.officeId);
-      if (off) {
-        const now = new Date();
-        const fy = String(now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1);
-        const yearSel = document.getElementById('sel-year');
-        if ([...yearSel.options].some(o => o.value === fy)) yearSel.value = fy;
-        document.getElementById('sel-office').value = off.id;
-        loadReport();
-      }
+    await initPromise;
+    const now = new Date();
+    const fy = String(now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1);
+    const yearSel = document.getElementById('sel-year');
+    if ([...yearSel.options].some(o => o.value === fy)) yearSel.value = fy;
+
+    const off = currentUserData.officeId ? offices.find(o => o.id === currentUserData.officeId) : null;
+    if (off) {
+      document.getElementById('sel-office').value = off.id;
+      loadReport();
+    } else {
+      // 所属未設定のユーザーには、全事業所（エリア別・折りたたみ表示）をデフォルト表示する
+      switchMode('area');
+      document.getElementById('sel-area').value = 'group:全社';
+      loadAreaReport();
     }
   } catch(e) { console.error(e); }
 });
@@ -1401,29 +1413,32 @@ window.loadAreaReport = async function() {
     const groupData = group.officeNames.map(n=>dataMap[n]).filter(Boolean);
     if (!groupData.length) continue;
 
-    // 各事業所の抜粋表（全社選択時はスキップ）
-    if (!isZensha) {
-      for (const name of group.officeNames) {
-        if (dataMap[name]) {
-          html += renderOfficeOrGroupTables(dataMap[name], name, false);
-        }
+    if (isZensha) html += `<div style="margin:18px 0 8px;font-size:12px;font-weight:700;color:#1D9E75">${group.label}</div>`;
+
+    // 各事業所の抜粋表（全社選択時は長くなるため折りたたみ、デフォルトは閉じた状態）
+    for (const name of group.officeNames) {
+      if (dataMap[name]) {
+        const officeHtml = renderOfficeOrGroupTables(dataMap[name], name, false);
+        html += isZensha ? collapsibleSection(name, officeHtml) : officeHtml;
       }
     }
 
-    // グループ集計
+    // グループ集計（全社選択時はエリアの最後に折りたたみで表示）
     const merged = mergeOfficeData(groupData);
     if (merged) {
-      html += renderOfficeOrGroupTables(merged, `${group.label}　集計`, true, groupData.length);
+      const aggHtml = renderOfficeOrGroupTables(merged, `${group.label}　集計`, true, groupData.length);
+      html += isZensha ? collapsibleSection(`${group.label}　集計`, aggHtml, {isTotal:true}) : aggHtml;
       groupMerged.push(merged);
     }
   }
 
-  // 全社の場合は最後に全社集計を追加
+  // 全社の場合は最後に全社集計を追加（折りたたみ、デフォルトは閉じた状態）
   if (isZensha && groupMerged.length > 0) {
     const total = mergeOfficeData(groupMerged);
     if (total) {
-      html += `<div style="height:4px;background:#E8EAED;border-radius:2px;margin:8px 0"></div>`;
-      html += renderOfficeOrGroupTables(total, '全社　合計', true, allOfficeNames.length);
+      const totalHtml = renderOfficeOrGroupTables(total, '全社　合計', true, allOfficeNames.length);
+      html += `<div style="height:4px;background:#E8EAED;border-radius:2px;margin:16px 0"></div>`;
+      html += collapsibleSection('全社　合計', totalHtml, {isTotal:true});
     }
   }
 
@@ -2207,6 +2222,27 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalar
     });
   }
 }
+
+// 汎用の折りたたみセクション（全社表示など、事業所数が多く縦に長くなる画面用）
+let collapseSeq = 0;
+function collapsibleSection(title, innerHtml, opts={}) {
+  const id = 'cs' + (collapseSeq++);
+  const cls = opts.isTotal ? ' is-group-total' : '';
+  return `
+  <div class="collapse-wrap${cls}">
+    <div class="collapse-header" onclick="toggleCollapse('${id}')">
+      <span class="collapse-arrow" id="arrow-${id}">▶</span>
+      <span>${title}</span>
+    </div>
+    <div class="collapse-body" id="body-${id}">${innerHtml}</div>
+  </div>`;
+}
+window.toggleCollapse = function(id) {
+  const body  = document.getElementById('body-'+id);
+  const arrow = document.getElementById('arrow-'+id);
+  const open  = body.classList.toggle('open');
+  arrow.textContent = open ? '▼' : '▶';
+};
 
 window.toggleTrendDetail = function() {
   const body = document.getElementById('trend-detail-body');
