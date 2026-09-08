@@ -504,6 +504,63 @@ async function loadOfficeData(officeName, year) {
   return { officeName, cap, targetCapacity, up, priceLabel, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, aSalS, aSalP, byService };
 }
 
+// loadOfficeData()の結果に、事業所単独モードの「月別推移とキャンセル分析」に必要な
+// 予定人数（dailyPlanned＋reportsのplanned上書き）・キャンセル分析・目標/損益分岐との
+// 差分を追加で取得・算出して返す（全社表示で事業所を開いたときの遅延読み込み専用）
+async function loadOfficeFullAnalysis(officeName, year) {
+  const data = await loadOfficeData(officeName, year);
+  const fy = getFY(year);
+
+  const wdSnap = await getDoc(doc(db,'workdays',`${year}_${officeName}`));
+  const wd = wdSnap.exists() ? wdSnap.data().days || {} : {};
+
+  const plannedOverride = {};
+  const reportsSnap = await getDocs(query(collection(db,'reports'), where('office','==',officeName)));
+  reportsSnap.forEach(d => {
+    const r = d.data();
+    if (r.date && r.planned > 0) plannedOverride[r.date] = r.planned;
+  });
+
+  const dailyPlannedAll = {};
+  await Promise.all(fy.map(async ([y,m]) => {
+    const snap = await getDoc(doc(db,'dailyPlanned',`${y}_${m}_${officeName}`));
+    if (snap.exists()) Object.assign(dailyPlannedAll, snap.data().daily||{});
+  }));
+
+  const plannedPpl = fy.map(([y,m])=>{
+    const mk = `${y}-${String(m).padStart(2,'0')}`;
+    let total = 0;
+    Object.entries(wd).forEach(([dateStr,v])=>{
+      if (v===1 && dateStr.startsWith(mk)) total += plannedOverride[dateStr] ?? dailyPlannedAll[dateStr] ?? data.targetCapacity;
+    });
+    return total;
+  });
+
+  const bpm = data.tpm.map(t=>Math.ceil(t*BREAK));
+  const avgUnit = MONTHS_ARR.map((_,i)=> data.aPpl[i]>0 ? data.aBasic[i]/data.aPpl[i] : null);
+
+  const cancelPpl  = MONTHS_ARR.map((_,i)=> data.aPpl[i]>0 ? plannedPpl[i]-data.aPpl[i] : null);
+  const cancelLoss = MONTHS_ARR.map((_,i)=> cancelPpl[i]!=null ? Math.round(cancelPpl[i]*avgUnit[i]) : null);
+  const cancelRate = MONTHS_ARR.map((_,i)=> cancelPpl[i]!=null && plannedPpl[i]>0 ? cancelPpl[i]/plannedPpl[i] : null);
+  const reportedPlannedPpl = MONTHS_ARR.reduce((s,_,i)=>s+(cancelPpl[i]!=null?plannedPpl[i]:0),0);
+  const totalCancelPpl  = MONTHS_ARR.reduce((s,_,i)=>s+(cancelPpl[i]>0?cancelPpl[i]:0),0);
+  const totalCancelLoss = MONTHS_ARR.reduce((s,_,i)=>s+(cancelLoss[i]>0?cancelLoss[i]:0),0);
+  const totalCancelRate = reportedPlannedPpl ? totalCancelPpl/reportedPlannedPpl : null;
+
+  const tgtDiffPpl  = MONTHS_ARR.map((_,i)=> data.aPpl[i]>0 ? data.aPpl[i]-data.tpm[i] : null);
+  const tgtDiffLoss = MONTHS_ARR.map((_,i)=> tgtDiffPpl[i]!=null ? Math.round(tgtDiffPpl[i]*avgUnit[i]) : null);
+  const brkDiffPpl  = MONTHS_ARR.map((_,i)=> data.aPpl[i]>0 ? data.aPpl[i]-bpm[i] : null);
+  const brkDiffLoss = MONTHS_ARR.map((_,i)=> brkDiffPpl[i]!=null ? Math.round(brkDiffPpl[i]*avgUnit[i]) : null);
+
+  return {
+    ...data, bpm, plannedPpl, cancelPpl, cancelLoss, cancelRate,
+    tgtDiffPpl, tgtDiffLoss, brkDiffPpl, brkDiffLoss,
+    totalCancelPpl, totalCancelLoss, totalCancelRate,
+    totalTgtDiffPpl: sumOrNull(tgtDiffPpl), totalTgtDiffLoss: sumOrNull(tgtDiffLoss),
+    totalBrkDiffPpl: sumOrNull(brkDiffPpl), totalBrkDiffLoss: sumOrNull(brkDiffLoss),
+  };
+}
+
 // 抜粋表の15行を生成（1事業所または集計行）
 function renderAreaTable(data, title, isSummary=false, officeCount=0) {
   const { wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, cap } = data;
@@ -1296,6 +1353,127 @@ function officePrintPage(data, name) {
   return `<div class="print-page-group">${html}</div>`;
 }
 
+// 事業所単独モードと同じ「フル版」（詳細年間表＋サービス別＋月別推移とキャンセル分析）を
+// 全社表示の折りたたみ内に表示するための組み立て（loadOfficeFullAnalysis()の結果を渡す）
+function renderOfficeFullSection(idSuffix, officeName, data) {
+  const { plannedPpl, cancelPpl, cancelLoss, tgtDiffPpl, tgtDiffLoss, brkDiffPpl, brkDiffLoss,
+          totalTgtDiffPpl, totalTgtDiffLoss, totalBrkDiffPpl, totalBrkDiffLoss,
+          totalCancelPpl, totalCancelLoss, totalCancelRate, byService } = data;
+  const allSvcs = sortServices(Object.keys(byService||{}));
+  const multiSvc = allSvcs.length > 1;
+
+  const tableHtml = officePrintPage(data, officeName);
+
+  function sgnCls(v){ if (v==null) return 'val-dash'; return v>=0 ? 'achieve-good' : 'achieve-bad'; }
+  function sgnTxt(v,unit){ if (v==null) return '－'; return (v>0?'+':'')+v.toLocaleString()+unit; }
+  function headerRow() {
+    return `
+      <tr>
+        <th colspan="2" style="background:#f5f5f5"></th>
+        <th colspan="6" class="th-half">上半期（4〜9月）</th>
+        <th class="th-total">小計</th>
+        <th colspan="6" class="th-half">下半期（10〜3月）</th>
+        <th class="th-total">小計</th>
+        <th class="th-total">通期</th>
+      </tr>
+      <tr>
+        <th colspan="2" style="background:#f5f5f5"></th>
+        ${ML_ARR.slice(0,6).map(m=>`<th class="th-month">${m}</th>`).join('')}
+        <th class="th-total">合計</th>
+        ${ML_ARR.slice(6).map(m=>`<th class="th-month">${m}</th>`).join('')}
+        <th class="th-total">合計</th>
+        <th class="th-total">合計</th>
+      </tr>`;
+  }
+  function diffCells(arr, fmt=(v)=>v.toLocaleString(), invert=false, showSign=true) {
+    const cls = v => { if (v==null) return 'val-dash'; const good = invert ? v<=0 : v>=0; return good?'achieve-good':'achieve-bad'; };
+    const txt = v => v==null ? '－' : showSign ? (v>0?'+':'')+fmt(v) : fmt(Math.abs(v));
+    const h1 = arr.slice(0,6).map(v=>`<td class="${cls(v)}">${txt(v)}</td>`).join('');
+    const h1s= sumOrNull(arr.slice(0,6));
+    const h2 = arr.slice(6).map(v=>`<td class="${cls(v)}">${txt(v)}</td>`).join('');
+    const h2s= sumOrNull(arr.slice(6));
+    const tot= sumOrNull(arr);
+    return `${h1}<td class="val-subtotal ${cls(h1s)}">${txt(h1s)}</td>${h2}<td class="val-subtotal ${cls(h2s)}">${txt(h2s)}</td><td class="val-total ${cls(tot)}">${txt(tot)}</td>`;
+  }
+  function rateCells(numArr, denomArr, invert=false) {
+    const perMonth = numArr.map((n,i)=>n!=null && denomArr[i]>0 ? n/denomArr[i] : null);
+    const cls = v => { if (v==null) return 'val-dash'; const good = invert ? v<=0 : v>=0; return good?'achieve-good':'achieve-bad'; };
+    const txt = v => v!=null ? (Math.abs(v)*100).toFixed(1)+'%' : '－';
+    const agg = (nSlice,dSlice) => {
+      let nSum=0,dSum=0,any=false;
+      nSlice.forEach((n,i)=>{ if(n!=null){ nSum+=n; dSum+=dSlice[i]; any=true; } });
+      return any && dSum ? nSum/dSum : null;
+    };
+    const h1r=agg(numArr.slice(0,6),denomArr.slice(0,6)), h2r=agg(numArr.slice(6),denomArr.slice(6)), totR=agg(numArr,denomArr);
+    const h1 = perMonth.slice(0,6).map(v=>`<td class="${cls(v)}">${txt(v)}</td>`).join('');
+    const h2 = perMonth.slice(6).map(v=>`<td class="${cls(v)}">${txt(v)}</td>`).join('');
+    return `${h1}<td class="val-subtotal ${cls(h1r)}">${txt(h1r)}</td>${h2}<td class="val-subtotal ${cls(h2r)}">${txt(h2r)}</td><td class="val-total ${cls(totR)}">${txt(totR)}</td>`;
+  }
+
+  const trendHtml = `
+  <div class="table-wrap" style="padding:16px">
+    <div class="trend-toggle-header" ${multiSvc?`onclick="toggleTrendDetail('${idSuffix}')"`:'style="cursor:default"'}>
+      <div style="font-size:14px;font-weight:700;color:#333">📊 月別推移とキャンセル分析</div>
+      ${multiSvc?`<span class="trend-toggle-lbl" id="trend-toggle-lbl${idSuffix}">▼ 詳細を表示</span>`:''}
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:0">
+      <div style="flex:1;min-width:180px;background:#EBF3FB;border-radius:8px;padding:12px 16px">
+        <div style="font-size:11px;color:#888">目標 超過不足（年間）</div>
+        <div style="font-size:20px;font-weight:700" class="${sgnCls(totalTgtDiffPpl)}">${sgnTxt(totalTgtDiffPpl,'人')}</div>
+        <div style="font-size:12px;font-weight:600;margin-top:2px" class="${sgnCls(totalTgtDiffLoss)}">${sgnTxt(totalTgtDiffLoss,'円')}</div>
+      </div>
+      <div style="flex:1;min-width:180px;background:#FFF3E0;border-radius:8px;padding:12px 16px">
+        <div style="font-size:11px;color:#888">損益 超過不足（年間）</div>
+        <div style="font-size:20px;font-weight:700" class="${sgnCls(totalBrkDiffPpl)}">${sgnTxt(totalBrkDiffPpl,'人')}</div>
+        <div style="font-size:12px;font-weight:600;margin-top:2px" class="${sgnCls(totalBrkDiffLoss)}">${sgnTxt(totalBrkDiffLoss,'円')}</div>
+      </div>
+      <div style="flex:1;min-width:160px;background:#FFF0F0;border-radius:8px;padding:12px 16px">
+        <div style="font-size:11px;color:#888">キャンセル人数（年間合計）</div>
+        <div style="font-size:22px;font-weight:700;color:#E24B4A">${totalCancelPpl.toLocaleString()}人</div>
+      </div>
+      <div style="flex:1;min-width:160px;background:#FFF0F0;border-radius:8px;padding:12px 16px">
+        <div style="font-size:11px;color:#888">キャンセルによる損失額（推計）</div>
+        <div style="font-size:22px;font-weight:700;color:#E24B4A">${totalCancelLoss.toLocaleString()}円</div>
+      </div>
+      <div style="flex:1;min-width:160px;background:#FFF0F0;border-radius:8px;padding:12px 16px">
+        <div style="font-size:11px;color:#888">キャンセル率（年間）</div>
+        <div style="font-size:22px;font-weight:700;color:#E24B4A">${totalCancelRate!=null?(totalCancelRate*100).toFixed(1)+'%':'－'}</div>
+      </div>
+    </div>
+    <div class="trend-detail-body${multiSvc?'':' open'}" id="trend-detail-body${idSuffix}">
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:16px">
+        <div style="flex:1;min-width:320px;background:#fff;border:1px solid #E3E7EB;border-radius:8px;padding:12px">
+          <div style="position:relative;height:280px">
+            <canvas id="trend-chart-left${idSuffix}"></canvas>
+          </div>
+        </div>
+        <div style="flex:1;min-width:320px;background:#fff;border:1px solid #E3E7EB;border-radius:8px;padding:12px">
+          <div style="position:relative;height:280px">
+            <canvas id="trend-chart-right${idSuffix}"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-top:16px;overflow-x:auto">
+        <table>
+          <colgroup><col style="width:52px"><col style="width:105px"></colgroup>
+          <thead>${headerRow()}</thead>
+          <tbody>
+            <tr><td class="row-cat-target" rowspan="2">目標</td><td class="row-label">超過不足人数</td>${diffCells(tgtDiffPpl,(v)=>v.toLocaleString()+'人',false,false)}</tr>
+            <tr><td class="row-label">超過不足概算額</td>${diffCells(tgtDiffLoss,(v)=>v.toLocaleString()+'円',false,false)}</tr>
+            <tr><td class="row-cat-break" rowspan="2">損益</td><td class="row-label">超過不足人数</td>${diffCells(brkDiffPpl,(v)=>v.toLocaleString()+'人',false,false)}</tr>
+            <tr><td class="row-label">超過不足概算額</td>${diffCells(brkDiffLoss,(v)=>v.toLocaleString()+'円',false,false)}</tr>
+            <tr><td class="row-cat-cancel" rowspan="3">キャン<br>セル</td><td class="row-label">人数</td>${diffCells(cancelPpl,(v)=>v.toLocaleString()+'人',true,false)}</tr>
+            <tr><td class="row-label">概算損失額</td>${diffCells(cancelLoss,(v)=>v.toLocaleString()+'円',true,false)}</tr>
+            <tr><td class="row-label">率</td>${rateCells(cancelPpl, plannedPpl, true)}</tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+
+  return tableHtml + trendHtml;
+}
+
 window.printFullReport = async function() {
   const btn = document.getElementById('btn-export-pdf');
   const origText = btn.textContent;
@@ -1415,11 +1593,11 @@ window.loadAreaReport = async function() {
 
     if (isZensha) html += `<div style="margin:18px 0 8px;font-size:12px;font-weight:700;color:#1D9E75">${group.label}</div>`;
 
-    // 各事業所の抜粋表（全社選択時は長くなるため折りたたみ、デフォルトは閉じた状態）
+    // 各事業所の抜粋表（全社選択時は長くなるため折りたたみ、デフォルトは閉じた状態。
+    // 開いたときに初めてフル版データを取得するため、ここではdataMap[name]は使わない）
     for (const name of group.officeNames) {
       if (dataMap[name]) {
-        const officeHtml = renderOfficeOrGroupTables(dataMap[name], name, false);
-        html += isZensha ? collapsibleSection(name, officeHtml) : officeHtml;
+        html += isZensha ? collapsibleOfficeSection(name, year) : renderOfficeOrGroupTables(dataMap[name], name, false);
       }
     }
 
@@ -1563,6 +1741,7 @@ window.loadRankingReport = async function() {
 // ======================================================
 function sum(arr){ return arr.reduce((a,b)=>a+(b||0),0); }
 function avg(arr){ return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
+function sumOrNull(arr){ const v=arr.filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0) : null; }
 function avgNonNull(arr){ const v=arr.filter(x=>x!==null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; }
 function getFY(y){ return [[y,4],[y,5],[y,6],[y,7],[y,8],[y,9],[y,10],[y,11],[y,12],[y+1,1],[y+1,2],[y+1,3]]; }
 function fmtN(v,dec=0){ if(!v&&v!==0)return'－'; return dec?v.toFixed(dec):Math.round(v).toLocaleString(); }
@@ -2109,7 +2288,7 @@ window.loadReport = async function(){
   window._tpm=tpm; window._tRev=tRev; window._capacity=capacity;
   window._wdPerMonth=wdPerMonth; window._unitPrice=unitPrice;
 
-  renderTrendChart(ML_ARR, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalary, tRev);
+  renderTrendChart('', ML_ARR, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalary, tRev);
 };
 
 // 月別推移グラフ：実績人数の棒（達成度で色分け）＋予定・目標・損益分岐の基準線＋キャンセル率の折れ線
@@ -2128,20 +2307,23 @@ function legendDiamond(color, size=9) {
   return c;
 }
 
-function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalary, tRev) {
+function renderTrendChart(idSuffix, labels, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalary, tRev) {
   if (typeof Chart === 'undefined') return;
+  window._trendCharts = window._trendCharts || {};
+  const chartKey = idSuffix || 'main';
+  const charts = window._trendCharts[chartKey] || (window._trendCharts[chartKey] = {});
 
   // 左：実績人数を基軸の棒とし、目標線・損益線に対する達成度で棒の色を変える
-  const leftCanvas = document.getElementById('trend-chart-left');
+  const leftCanvas = document.getElementById('trend-chart-left' + idSuffix);
   if (leftCanvas) {
-    if (window._trendChartLeft) window._trendChartLeft.destroy();
+    if (charts.left) charts.left.destroy();
     // 実績（緑）を基本とし、目標未達分は赤、目標超過分は青を積み上げて表示
     const greenSeg = aPpl.map((v,i)=> (tpm[i] && v>0) ? Math.min(v,tpm[i]) : null);
     const shortSeg = aPpl.map((v,i)=> (tpm[i] && v>0 && v < tpm[i]) ? tpm[i]-v : null);
     const overSeg  = aPpl.map((v,i)=> (tpm[i] && v>0 && v >= tpm[i]) ? v-tpm[i] : null);
     const salaryLine = aSalary.map(v=>v>0?v:null);
     const avgTargetRev = avg(tRev.filter(v=>v>0)); // 目標貢献報酬の12ヶ月平均
-    window._trendChartLeft = new Chart(leftCanvas, {
+    charts.left = new Chart(leftCanvas, {
       data: {
         labels,
         datasets: [
@@ -2179,13 +2361,13 @@ function renderTrendChart(labels, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalar
   }
 
   // 右：実績（緑）を基本とし、予定未達分は赤、予定超過分は青を積み上げ、目標人数線は紫で表示
-  const rightCanvas = document.getElementById('trend-chart-right');
+  const rightCanvas = document.getElementById('trend-chart-right' + idSuffix);
   if (rightCanvas) {
-    if (window._trendChartRight) window._trendChartRight.destroy();
+    if (charts.right) charts.right.destroy();
     const rGreenSeg = aPpl.map((v,i)=> (plannedPpl[i] && v>0) ? Math.min(v,plannedPpl[i]) : null);
     const rShortSeg = aPpl.map((v,i)=> (plannedPpl[i] && v>0 && v < plannedPpl[i]) ? plannedPpl[i]-v : null);
     const rOverSeg  = aPpl.map((v,i)=> (plannedPpl[i] && v>0 && v >= plannedPpl[i]) ? v-plannedPpl[i] : null);
-    window._trendChartRight = new Chart(rightCanvas, {
+    charts.right = new Chart(rightCanvas, {
       data: {
         labels,
         datasets: [
@@ -2244,15 +2426,49 @@ window.toggleCollapse = function(id) {
   arrow.textContent = open ? '▼' : '▶';
 };
 
-window.toggleTrendDetail = function() {
-  const body = document.getElementById('trend-detail-body');
-  const lbl  = document.getElementById('trend-toggle-lbl');
+// 全社表示の事業所折りたたみ：開いた瞬間に初めてフル版（詳細表＋サービス別＋分析グラフ）を
+// 取得・描画する（事業所数が多いため、開いていない事業所の重いデータは取得しない）
+const _officeSectionLoaded = new Set();
+function collapsibleOfficeSection(officeName, year) {
+  const id = 'cs' + (collapseSeq++);
+  return `
+  <div class="collapse-wrap">
+    <div class="collapse-header" onclick="toggleOfficeSection('${id}','${officeName}',${year})">
+      <span class="collapse-arrow" id="arrow-${id}">▶</span>
+      <span>${officeName}</span>
+    </div>
+    <div class="collapse-body" id="body-${id}"></div>
+  </div>`;
+}
+window.toggleOfficeSection = async function(id, officeName, year) {
+  const body  = document.getElementById('body-'+id);
+  const arrow = document.getElementById('arrow-'+id);
+  const open  = body.classList.toggle('open');
+  arrow.textContent = open ? '▼' : '▶';
+  if (!open || _officeSectionLoaded.has(id)) return;
+  _officeSectionLoaded.add(id);
+  body.innerHTML = '<div class="loading">読み込み中...</div>';
+  try {
+    const idSuffix = '-' + id;
+    const data = await loadOfficeFullAnalysis(officeName, year);
+    body.innerHTML = renderOfficeFullSection(idSuffix, officeName, data);
+    renderTrendChart(idSuffix, ML_ARR, data.plannedPpl, data.tpm, data.bpm, data.aPpl, data.cancelRate, data.aSal, data.tRev);
+  } catch(e) {
+    console.error(e);
+    body.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa;font-size:13px">読み込みに失敗しました</div>';
+  }
+};
+
+window.toggleTrendDetail = function(idSuffix='') {
+  const body = document.getElementById('trend-detail-body' + idSuffix);
+  const lbl  = document.getElementById('trend-toggle-lbl' + idSuffix);
   const open = body.classList.toggle('open');
   lbl.textContent = open ? '▲ 詳細を隠す' : '▼ 詳細を表示';
   if (open) {
     requestAnimationFrame(()=>{
-      window._trendChartLeft && window._trendChartLeft.resize();
-      window._trendChartRight && window._trendChartRight.resize();
+      const charts = window._trendCharts && window._trendCharts[idSuffix || 'main'];
+      charts && charts.left && charts.left.resize();
+      charts && charts.right && charts.right.resize();
     });
   }
 };
