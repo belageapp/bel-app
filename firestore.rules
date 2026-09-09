@@ -156,9 +156,9 @@ service cloud.firestore {
       allow delete: if isSupporter();
     }
 
-    // 賃金台帳（機微情報）：閲覧も salary.view が必要
+    // 賃金台帳：部課単位の合計額のみで個人が特定できる情報を含まないため、閲覧は全員に開放
     match /salaries/{docId} {
-      allow read: if hasPerm('salary.view');
+      allow read: if isAuth();
       allow write: if isSupporter();
     }
 

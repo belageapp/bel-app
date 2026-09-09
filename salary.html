@@ -12,7 +12,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { can, resolveTier } from './perm.js';
+  import { resolveTier } from './perm.js';
   import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
   const firebaseConfig = {
   apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
@@ -52,9 +52,6 @@
     currentUserData = snap.data();
     currentRole = currentUserData.role;
     renderUserBadge(document.getElementById('top-bar-user-info'), currentUserData, user.email);
-    if (!can(currentUserData, 'salary.view')) {
-      document.getElementById('no-permission').style.display = 'flex';
-    }
   });
 
   window._logout = async function() { await signOut(auth); location.href = 'login.html'; };
@@ -316,20 +313,9 @@ th{background:#f5f5f5;text-align:center;font-weight:600;color:#555;font-size:11p
 .save-complete-icon{font-size:36px;margin-bottom:8px}
 .save-complete-title{font-size:16px;font-weight:700;color:#0F6E56;margin-bottom:6px}
 .save-complete-sub{font-size:12px;color:#666}
-#no-permission{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);justify-content:center;align-items:center;z-index:999}
-.no-perm-box{background:#fff;border-radius:8px;padding:32px;text-align:center}
 </style>
 </head>
 <body>
-
-<div id="no-permission">
-  <div class="no-perm-box">
-    <div style="font-size:40px;margin-bottom:12px">🔒</div>
-    <div style="font-weight:700;margin-bottom:8px">アクセス権限がありません</div>
-    <div style="font-size:13px;color:#888">この画面はadmin・supportのみ利用できます</div>
-    <br><a href="index.html" style="color:#1D9E75;font-weight:600">ポータルに戻る</a>
-  </div>
-</div>
 
 <script src="sidebar.js?v=2"></script>
 <div class="main">

@@ -1061,7 +1061,7 @@ async function loadUsers() {
     const userMap = {};
     users.forEach(u => userMap[u.id] = u.displayName || u.email || '');
 
-    const PERM_SHORT = {'todo.edit':'ToDo','monthly.edit':'月次','workdays.approve':'稼働日承認','morning.write':'朝礼','master.edit':'マスタ','import.use':'取込','salary.view':'賃金','notice.write':'お知らせ'};
+    const PERM_SHORT = {'todo.edit':'ToDo','monthly.edit':'月次','workdays.approve':'稼働日承認','morning.write':'朝礼','master.edit':'マスタ','import.use':'取込','notice.write':'お知らせ'};
     tb.innerHTML = users.map(u => {
       const resolved = resolveTier(u);
       const permNote = resolved.tier === 'editor' && resolved.permissions.length

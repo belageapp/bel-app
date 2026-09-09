@@ -24,7 +24,6 @@ export const PERMISSION_FLAGS = {
   'morning.write':    '朝礼報告の入力（全事業所）',
   'master.edit':      'マスタ設定の編集（事業所・単価・部署等）',
   'import.use':       '国保連CSV取込',
-  'salary.view':      '賃金台帳の閲覧',
   'notice.write':     'お知らせ配信',
   'leads.manage':     '問合せ・見学リードの仕分け管理',
 };
