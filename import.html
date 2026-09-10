@@ -525,6 +525,7 @@ function extractDigitGroups(raw) {
   if (!serviceCodesMap[codeCandidate]) return null;
   const rest = raw.slice(6);
   if (!/^\d+$/.test(rest)) return null; // コードより後ろ（単位数・回数・サービス単位数）は数字のみのはず
+  let fallback = null;
   for (let uLen = 1; uLen <= 4; uLen++) {
     for (let cLen = 1; cLen <= 3; cLen++) {
       const tLen = rest.length - uLen - cLen;
@@ -532,10 +533,17 @@ function extractDigitGroups(raw) {
       const uStr = rest.slice(0, uLen), cStr = rest.slice(uLen, uLen+cLen), tStr = rest.slice(uLen+cLen);
       if (uStr[0] === '0' || cStr[0] === '0' || (tStr.length > 1 && tStr[0] === '0')) continue;
       const units = parseInt(uStr), count = parseInt(cStr), total = parseInt(tStr);
-      if (units * count === total) return { code: codeCandidate, units, count };
+      if (units * count === total) {
+        const g = { code: codeCandidate, units, count };
+        // 回数（利用回数）は1ヶ月の日数を超えることは実質ないため、複数の分割候補が
+        // 数学的に一致してしまう場合はcount<=31のものを優先する（例：明細書の単位数666・
+        // 回数6・サービス単位数3996を、逆に単位数6・回数666と誤読してしまうのを防ぐ）
+        if (count <= 31) return g;
+        if (!fallback) fallback = g;
+      }
     }
   }
-  return null;
+  return fallback;
 }
 
 async function parsePDFFile(file) {
