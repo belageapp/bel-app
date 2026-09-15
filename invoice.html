@@ -105,7 +105,7 @@ table.detail-table thead td{background:#fafafa;font-weight:700;color:#333;font-s
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, collection, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, collectionGroup, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const cfg = {
   apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
@@ -148,19 +148,11 @@ async function init() {
     selO.appendChild(opt);
   });
 
-  // 請求月セレクター（actualsコレクションから取得）
-  // 請求月一覧をbillingドキュメントから収集
-  const actualsSnap = await getDocs(collection(db,'actuals'));
+  // 請求月セレクター：全事業所・全年度のbillingサブコレクションをcollectionGroupで一括取得
+  // （以前は事業所×年度×月ごとに逐次getDocsしており、選択肢が表示されるまで異常に遅かった）
+  const billSnap = await getDocs(collectionGroup(db,'billing'));
   const ymSet = new Set();
-  for (const d of actualsSnap.docs) {
-    try {
-      const monthsSnap = await getDocs(collection(db,'actuals',d.id,'months'));
-      for (const mDoc of monthsSnap.docs) {
-        const billSnap = await getDocs(collection(db,'actuals',d.id,'months',mDoc.id,'billing'));
-        billSnap.forEach(bDoc => ymSet.add(bDoc.id)); // billingのIDが請求月
-      }
-    } catch(e) {}
-  }
+  billSnap.forEach(bDoc => ymSet.add(bDoc.id)); // billingのIDが請求月
 
   const selYM = document.getElementById('sel-year-month');
   [...ymSet].sort().reverse().forEach(ym => {

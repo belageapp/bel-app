@@ -125,6 +125,12 @@ service cloud.firestore {
         }
       }
     }
+    // 報酬内容明細（invoice.html）が請求月一覧を集める際、全事業所・全年度のbillingを
+    // collectionGroupクエリで一括取得するために必要（上のネストしたルールとは別に、
+    // collectionGroupクエリにはこのワイルドカードルールが要る）
+    match /{path=**}/billing/{billingId} {
+      allow read: if isAuth();
+    }
     match /dailyActuals/{docId} {
       allow read: if isAuth();
       allow write: if hasPerm('import.use');
