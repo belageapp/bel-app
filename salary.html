@@ -93,6 +93,10 @@
     if (idxDept < 0 || idxTotal < 0) {
       throw new Error('列「社員部課」「支給合計」が見つかりません。TKC給与データ（支給実績）CSVか確認してください');
     }
+    // イレギュラーな一時金で貢献実績表の給与比率には含めたくない項目。
+    // 列が存在する月だけ支給合計から差し引く（2026年8月分以降、処遇緊急支援/補助が対象）。
+    const EXCLUDE_ITEMS = ['処遇緊急支援', '処遇緊急補助'];
+    const idxExcludes = EXCLUDE_ITEMS.map(name => header.indexOf(name)).filter(idx => idx >= 0);
 
     // ファイル名（...パート.CSV／...正社員.CSV）でまず判定し、取れなければ社員体系列で判定
     let type = /パート/.test(file.name) ? 'part' : /正社員/.test(file.name) ? 'seishain' : null;
@@ -113,8 +117,13 @@
       if (CODE_ALIAS[code]) code = CODE_ALIAS[code];
       if (!code || !DEPT_MAP[code]) continue;
       const totalStr = (cols[idxTotal]||'').replace(/,/g,'').trim();
-      const total = totalStr ? parseInt(totalStr, 10) : 0;
+      let total = totalStr ? parseInt(totalStr, 10) : 0;
       if (!Number.isFinite(total)) continue;
+      for (const idxEx of idxExcludes) {
+        const exStr = (cols[idxEx]||'').replace(/,/g,'').trim();
+        const ex = exStr ? parseInt(exStr, 10) : 0;
+        if (Number.isFinite(ex)) total -= ex;
+      }
 
       if (!agg[code]) agg[code] = { sum: 0, count: 0 };
       agg[code].sum += total;
