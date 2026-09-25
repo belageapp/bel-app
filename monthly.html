@@ -13,7 +13,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333;font-size:12px}
 
-.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 22px;background:#fff;border-bottom:1px solid #E8EAED}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 22px;background:#fff;border-bottom:1px solid #E8EAED;position:sticky;top:57px;z-index:98}
 
 /* 月ナビ */
 .month-nav{display:flex;align-items:center;gap:6px}
@@ -36,7 +36,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 .content{padding:14px 16px;overflow-x:auto}
 
 /* ===== カレンダーテーブル ===== */
-.cal-wrap{min-width:max-content;background:#fff;border-radius:10px;border:1px solid #E8EAED;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+.cal-wrap{min-width:max-content;background:#fff;border-radius:10px;border:1px solid #E8EAED;overflow:clip;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+thead th{position:sticky;top:113px;z-index:20}
 table{border-collapse:collapse;font-size:11px;width:100%}
 th,td{border-right:1px solid #E8EAED;border-bottom:1px solid #E8EAED;padding:0;text-align:center;white-space:nowrap}
 th:last-child,td:last-child{border-right:none}
@@ -45,7 +46,7 @@ th:last-child,td:last-child{border-right:none}
 .th-office{
   background:#F8F9FA;color:#444;font-weight:600;font-size:11px;
   padding:8px 12px;min-width:132px;text-align:left;
-  position:sticky;left:0;z-index:10;
+  position:sticky;top:113px;left:0;z-index:30;
   border-right:2px solid #E8EAED;
 }
 .th-date{
