@@ -482,6 +482,8 @@ function render(fiscalYear, year, month, monthStr) {
     <th class="th-summary" style="min-width:36px;font-size:9px">予定</th>
     <th class="th-summary" style="min-width:28px;font-size:9px">キャン<br>セル</th>
     <th class="th-summary" style="min-width:44px;font-size:9px">キャンセル<br>概算</th>
+    <th class="th-summary" style="min-width:28px;font-size:9px">定員<br>超過</th>
+    <th class="th-summary" style="min-width:28px;font-size:9px">予定<br>超過</th>
     <th class="th-summary" style="min-width:28px;font-size:9px">稼働<br>予定</th>
     <th class="th-summary" style="min-width:28px;font-size:9px">稼働<br>実績</th>`;
   html += '</tr></thead>';
@@ -557,6 +559,19 @@ function officeRows(o, dates, goals, actuals, explicitPlanned, todayStr) {
     return s + Math.max(0, ep - av);
   }, 0);
   const cancelEstimate = monthCancel * (officePrices[o] || 0);
+  // 定員超過人数：予定人数が定員を超えた日の超過分合計
+  const monthOverCap = dates.reduce((s,{dateStr}) => {
+    const p = goals[o][dateStr];
+    if (p == null) return s;
+    return s + Math.max(0, p - cap);
+  }, 0);
+  // 予定超過人数：実績が予定人数を超えた日の超過分合計
+  const monthOverPlan = dates.reduce((s,{dateStr}) => {
+    const p = goals[o][dateStr];
+    const av = actuals[o]?.[dateStr];
+    if (p == null || av == null) return s;
+    return s + Math.max(0, av - p);
+  }, 0);
 
   // === 予約行 ===
   html += `<tr>`;
@@ -587,6 +602,8 @@ function officeRows(o, dates, goals, actuals, explicitPlanned, todayStr) {
   html += `<td class="td-sum planned-sum" rowspan="${rowspan}" style="vertical-align:middle">${monthPlanned||'—'}</td>`;
   html += `<td class="td-sum cancel-sum" rowspan="${rowspan}" style="vertical-align:middle;${monthCancel>0?'color:#C0392B;font-weight:700':''}">${monthCancel>0 ? monthCancel : '—'}</td>`;
   html += `<td class="td-sum cancel-est-sum" rowspan="${rowspan}" style="vertical-align:middle;${cancelEstimate>0?'color:#C0392B;font-weight:700':''}">${cancelEstimate>0 ? '¥'+cancelEstimate.toLocaleString('ja-JP') : '—'}</td>`;
+  html += `<td class="td-sum" rowspan="${rowspan}" style="vertical-align:middle;${monthOverCap>0?'color:#E67E22;font-weight:700':''}">${monthOverCap>0 ? monthOverCap : '—'}</td>`;
+  html += `<td class="td-sum" rowspan="${rowspan}" style="vertical-align:middle;${monthOverPlan>0?'color:#1D9E75;font-weight:700':''}">${monthOverPlan>0 ? monthOverPlan : '—'}</td>`;
   html += `<td class="td-sum days-sum" rowspan="${rowspan}" style="vertical-align:middle">${planDays||'—'}</td>`;
   html += `<td class="td-sum days-sum" rowspan="${rowspan}" style="vertical-align:middle">${actDays||'—'}</td>`;
   html += `</tr>`;
@@ -668,15 +685,20 @@ function areaSum(offices, dates, goals, actuals, explicitPlanned, label, todaySt
     const cap = capacities[o] || 10;
     dates.forEach(({ dateStr }) => { if (workdays[o]?.[dateStr] === 1) mGoalCapacity += cap; });
   });
-  let mCancel = 0, mCancelEstimate = 0;
+  let mCancel = 0, mCancelEstimate = 0, mOverCap = 0, mOverPlan = 0;
   dates.forEach(({ dateStr }) => {
     offices.forEach(o => {
       const ep = explicitPlanned[o][dateStr];
+      const p  = goals[o][dateStr];
       const av = actuals[o]?.[dateStr];
-      if (ep == null || av == null) return;
-      const c = Math.max(0, ep - av);
-      mCancel += c;
-      mCancelEstimate += c * (officePrices[o] || 0);
+      const cap = capacities[o] || 10;
+      if (ep != null && av != null) {
+        const c = Math.max(0, ep - av);
+        mCancel += c;
+        mCancelEstimate += c * (officePrices[o] || 0);
+      }
+      if (p != null) mOverCap += Math.max(0, p - cap);
+      if (p != null && av != null) mOverPlan += Math.max(0, av - p);
     });
   });
   dates.forEach(({ dateStr, dow }) => {
@@ -710,6 +732,8 @@ function areaSum(offices, dates, goals, actuals, explicitPlanned, label, todaySt
   html += `<td class="td-sum" style="${s};color:#5B9BD5;font-weight:600">${mPlanned||'—'}</td>`;
   html += `<td class="td-sum" style="${s};${mCancel>0?'color:#C0392B;font-weight:700':'color:#888'}">${mCancel>0 ? mCancel : '—'}</td>`;
   html += `<td class="td-sum" style="${s};${mCancelEstimate>0?'color:#C0392B;font-weight:700':'color:#888'}">${mCancelEstimate>0 ? '¥'+mCancelEstimate.toLocaleString('ja-JP') : '—'}</td>`;
+  html += `<td class="td-sum" style="${s};${mOverCap>0?'color:#E67E22;font-weight:700':'color:#888'}">${mOverCap>0 ? mOverCap : '—'}</td>`;
+  html += `<td class="td-sum" style="${s};${mOverPlan>0?'color:#1D9E75;font-weight:700':'color:#888'}">${mOverPlan>0 ? mOverPlan : '—'}</td>`;
   html += `<td class="td-sum" style="${s};color:#888">—</td>`;
   html += `<td class="td-sum" style="${s};color:#888">—</td>`;
   html += `</tr>`;
@@ -727,15 +751,20 @@ function catSum(offices, dates, goals, actuals, explicitPlanned, label, todayStr
     const cap = capacities[o] || 10;
     dates.forEach(({ dateStr }) => { if (workdays[o]?.[dateStr] === 1) mGoalCapacity += cap; });
   });
-  let mCancel = 0, mCancelEstimate = 0;
+  let mCancel = 0, mCancelEstimate = 0, mOverCap = 0, mOverPlan = 0;
   dates.forEach(({ dateStr }) => {
     offices.forEach(o => {
       const ep = explicitPlanned[o][dateStr];
+      const p  = goals[o][dateStr];
       const av = actuals[o]?.[dateStr];
-      if (ep == null || av == null) return;
-      const c = Math.max(0, ep - av);
-      mCancel += c;
-      mCancelEstimate += c * (officePrices[o] || 0);
+      const cap = capacities[o] || 10;
+      if (ep != null && av != null) {
+        const c = Math.max(0, ep - av);
+        mCancel += c;
+        mCancelEstimate += c * (officePrices[o] || 0);
+      }
+      if (p != null) mOverCap += Math.max(0, p - cap);
+      if (p != null && av != null) mOverPlan += Math.max(0, av - p);
     });
   });
   dates.forEach(({ dateStr, dow }) => {
@@ -769,6 +798,8 @@ function catSum(offices, dates, goals, actuals, explicitPlanned, label, todayStr
   html += `<td class="td-sum" style="${s2};color:#1D9E75;font-weight:600">${mPlanned||'—'}</td>`;
   html += `<td class="td-sum" style="${s2};${mCancel>0?'color:#C0392B;font-weight:700':'color:#888'}">${mCancel>0 ? mCancel : '—'}</td>`;
   html += `<td class="td-sum" style="${s2};${mCancelEstimate>0?'color:#C0392B;font-weight:700':'color:#888'}">${mCancelEstimate>0 ? '¥'+mCancelEstimate.toLocaleString('ja-JP') : '—'}</td>`;
+  html += `<td class="td-sum" style="${s2};${mOverCap>0?'color:#E67E22;font-weight:700':'color:#888'}">${mOverCap>0 ? mOverCap : '—'}</td>`;
+  html += `<td class="td-sum" style="${s2};${mOverPlan>0?'color:#1D9E75;font-weight:700':'color:#888'}">${mOverPlan>0 ? mOverPlan : '—'}</td>`;
   html += `<td class="td-sum" style="${s2};color:#888">—</td>`;
   html += `<td class="td-sum" style="${s2};color:#888">—</td>`;
   html += `</tr>`;
