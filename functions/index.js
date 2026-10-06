@@ -48,7 +48,28 @@ async function getPrevBusinessDay(db) {
   return null;
 }
 
+// 指定日に有効な定員を返す（フロントの office-config.js と同じ規則）
+// offices.priceHistory: [{ from:'YYYY-MM-DD'|'', priceId, targetCapacity }]（from 昇順、'' は最初から）
+// 日付 d に有効な設定 = from <= d を満たす最後のエントリ。履歴が無ければ事業所の現在値（priceId）。
+function capacityOn(data, prices, dateStr) {
+  const hist = (data.priceHistory || [])
+    .filter((e) => e && typeof e === "object" && e.priceId !== undefined)
+    .map((e) => ({ from: e.from || "", priceId: e.priceId || "" }))
+    .sort((a, b) => a.from.localeCompare(b.from));
+  let priceId = data.priceId;
+  if (hist.length) {
+    let cur = null;
+    for (const e of hist) {
+      if (!e.from || e.from <= dateStr) cur = e; else break;
+    }
+    if (cur) priceId = cur.priceId;
+  }
+  const price = (priceId && prices[priceId]) || {};
+  return price.capacity || data.capacity || 10;
+}
+
 // offices + prices + serviceTypes を結合して返す
+// capacity は今日時点の定員。日付ごとの定員は capacityOn(dateStr) で取る（定員変更履歴を反映）
 async function getOffices(db) {
   const [offSnap, prSnap] = await Promise.all([
     db.collection("offices").get(),
@@ -57,14 +78,15 @@ async function getOffices(db) {
   const prices = {};
   prSnap.forEach((d) => (prices[d.id] = d.data()));
 
+  const today = toDateStr(jstNow());
   const list = [];
   offSnap.forEach((d) => {
     const data = d.data();
-    const price = prices[data.priceId] || {};
     list.push({
       id: d.id,
       name: data.name,
-      capacity: price.capacity || data.capacity || 10,
+      capacity: capacityOn(data, prices, today),
+      capacityOn: (dateStr) => capacityOn(data, prices, dateStr),
       serviceTypes: data.serviceTypes || null,
       order: data.order || 99,
       isActive: data.isActive !== false,
@@ -277,9 +299,9 @@ function buildChatworkMessage(dateStr, offices, reports, openSet) {
         }
       });
     } else {
-      // 通常の単一サービス事業所
+      // 通常の単一サービス事業所（定員は投稿対象日のもの）
       const actual = rep ? rep.kids : null;
-      const cap = o.capacity;
+      const cap = o.capacityOn ? o.capacityOn(dateStr) : o.capacity;
       const rate = actual !== null ? (actual / cap) * 100 : null;
       const em = rate !== null ? rateEmoji(rate) : "";
 
