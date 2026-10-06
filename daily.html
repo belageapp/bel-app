@@ -848,7 +848,8 @@ window.loadHistory=async function(){
 };
 
 function calcKouken(offices, reps, dateStr){
-  const rep=offices.filter(o=>reps[o]);
+  // 実績（kids）が入っている事業所だけを対象にする（予定だけ入力済みの事業所は未報告扱い）
+  const rep=offices.filter(o=>reps[o]&&reps[o].kids!=null);
   if(!rep.length)return null;
   const sumK=rep.reduce((s,o)=>s+reps[o].kids,0);
   const sumC=rep.reduce((s,o)=>s+capOn(o, dateStr),0);
@@ -857,7 +858,7 @@ function calcKouken(offices, reps, dateStr){
 
 function officeNumHTML(o, reps, dateStr){
   const r=reps[o];
-  if(!r)return`<span class="office-row-num pending">未報告</span>`;
+  if(!r||r.kids==null)return`<span class="office-row-num pending">未報告</span>`;
   const pct=(r.kids/capOn(o, dateStr)*100).toFixed(1);
   if(isLafore(o)&&r.care!=null&&r.work!=null){
     return`<span class="office-row-num">${r.kids}名 <span style="font-size:11px;color:#888">(${pct}%)</span></span>
