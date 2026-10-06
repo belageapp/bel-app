@@ -623,7 +623,7 @@ function officeRows(o, dates, goals, actuals, explicitPlanned, todayStr) {
     const colBg = isToday ? '#F5FDF9' : isSun ? '#FDF8F8' : isSat ? '#F8FAFD' : '#FAFFFE';
 
     if (av !== null && av !== undefined) {
-      const cls = av < cap ? 'under' : '';
+      const cls = av < capOn(o, dateStr) ? 'under' : '';
       html += `<td class="td-data td-actual" style="background:${colBg}" ${canEdit?`onclick="editCell('actual','${o}','${dateStr}',${av})" style="background:${colBg};cursor:pointer" title="クリックして編集"`:''}">
         <div class="cell-inner"><span class="cell-actual ${cls}">${av}</span></div>
       </td>`;
