@@ -288,6 +288,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { can, resolveTier } from './perm.js';
 import { getFirestore, collection, doc, getDoc, getDocs, query, orderBy, limit, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { resolveOfficeConfig } from './office-config.js?v=1';
 
 const firebaseConfig = {
   apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
@@ -379,21 +380,22 @@ async function loadDashboard(){
     const [offSnap,prSnap]=await Promise.all([getDocs(collection(db,'offices')),getDocs(collection(db,'prices'))]);
     const prices={};
     prSnap.forEach(d=>prices[d.id]=d.data());
-    const officeCapMap={};
+    const officeDocs={};
     const idToOfficeName={};
     offSnap.forEach(d=>{
       const data=d.data();
       if(!data.name)return;
-      const pr=prices[data.priceId]||{};
-      officeCapMap[data.name]=pr.capacity||data.capacity||10;
+      officeDocs[data.name]=data;
       idToOfficeName[d.id]=data.name;
     });
+    // 指定日に有効な定員（定員変更履歴があれば適用開始日で切り替わる）
+    const capOn=(name,dateStr)=>resolveOfficeConfig(officeDocs[name]||{},prices,dateStr).capacity||10;
     const userOfficeName=dashUserData&&dashUserData.officeId?idToOfficeName[dashUserData.officeId]||null:null;
     const openState=dashComputeOpenState(dashUserData,userOfficeName);
 
     // 2. workdays（月の稼働日）
     const fy=dashMonth>=4?dashYear:dashYear-1;
-    const allNames=Object.keys(officeCapMap);
+    const allNames=Object.keys(officeDocs);
     const wdByOffice={};
     allNames.forEach(n=>wdByOffice[n]={});
     await Promise.all(allNames.map(async name=>{
@@ -423,7 +425,6 @@ async function loadDashboard(){
     const monthEnd=`${monthStr}-${String(new Date(dashYear,dashMonth,0).getDate()).padStart(2,'0')}`;
     const statsMap={};
     allNames.forEach(name=>{
-      const cap=officeCapMap[name];
       const wdays=wdByOffice[name]||{};
       const reps=repByOffice[name]||{};
       let actual=0; const wdDates=[]; let lastDate=null;
@@ -434,13 +435,15 @@ async function loadDashboard(){
           if(rep){actual+=rep.actual;if(rep.actual>0&&(!lastDate||d>lastDate))lastDate=d;}
         }
       });
-      const goal=cap*wdDates.length;
+      // 月間目標＝稼働日ごとの定員の合計
+      const goal=wdDates.reduce((s,d)=>s+capOn(name,d),0);
       const pct=goal>0?Math.min(Math.round(actual/goal*100),100):0;
       let markerPct=null,paceText=null,paceColor='#0F6E56',barStyle=null;
       if(lastDate&&goal>0&&wdDates.length>0){
-        const elapsed=wdDates.filter(d=>d<=lastDate).length;
+        const elapsedDates=wdDates.filter(d=>d<=lastDate);
+        const elapsed=elapsedDates.length;
         if(elapsed>0){
-          const expPace=Math.round(goal*elapsed/wdDates.length);
+          const expPace=elapsedDates.reduce((s,d)=>s+capOn(name,d),0);
           markerPct=Math.min(Math.round(elapsed/wdDates.length*100),100);
           const diff=actual-expPace;
           if(diff>0){paceText=`+${diff}名`;paceColor='#0F6E56';}

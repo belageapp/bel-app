@@ -203,6 +203,7 @@ import { getFirestore, collection, doc, getDoc, setDoc, query, where, getDocs }
 import { getAuth, onAuthStateChanged, signOut }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { can } from './perm.js';
+import { resolveOfficeConfig, todayStr as cfgToday } from './office-config.js?v=1';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
@@ -233,7 +234,10 @@ let currentWeekStart = null;
 let currentWeekEnd   = null;
 let myOffices  = [];
 let allOffices = [];
-let capacityMap = {};
+let officeDocs = {};  // office名 → officesドキュメント（priceHistory を含む）
+let pricesById = {};  // priceId → pricesドキュメント
+// 指定日に有効な定員。定員変更履歴（適用開始日）を反映する
+function capOn(name, dateStr){ const d = officeDocs[name]; if(!d) return 10; return resolveOfficeConfig(d, pricesById, dateStr).capacity || 10; }
 let savedReport = null;
 let activeTab = 'input';
 let cachedWeeklyStats   = null;
@@ -330,16 +334,16 @@ async function loadMasterData() {
     getDocs(collection(db, 'offices')),
     getDocs(collection(db, 'prices'))
   ]);
-  const prices = {};
-  prSnap.forEach(d => prices[d.id] = d.data());
+  pricesById = {};
+  prSnap.forEach(d => pricesById[d.id] = d.data());
   allOffices = [];
+  officeDocs = {};
   offSnap.forEach(d => {
     const data = d.data();
     if (!data.name) return;
-    const price = prices[data.priceId] || {};
-    const cap = price.capacity || data.capacity || 10;
-    capacityMap[data.name] = cap;
-    allOffices.push({ id: d.id, ...data, capacity: cap });
+    officeDocs[data.name] = data;
+    // capacity は今日時点の定員（互換用）。日付ごとの集計では capOn(name, dateStr) を使う
+    allOffices.push({ id: d.id, ...data, capacity: capOn(data.name, cfgToday()) });
   });
   allOffices.sort((a, b) => {
     const ai = OFFICE_ORDER.indexOf(a.name);
@@ -476,25 +480,25 @@ async function loadAndRender() {
 
     myOffices.forEach(office => {
       const name = office.name;
-      const cap  = capacityMap[name] || 10;
       const wdays = workdaysByOffice[name] || {};
 
-      // 前5週の集計（oldest→newest）
+      // 前5週の集計（oldest→newest）。定員は日付ごとに解決（定員変更履歴を反映）
       weeklyStats[name] = prevWeeks.map(w => {
-        let workDays=0, actual=0, planned=0, reportedDays=0;
+        let workDays=0, actual=0, planned=0, reportedDays=0, capTotal=0, repCap=0;
         getDatesInRange(w.startStr, w.endStr).forEach(d => {
           if (wdays[d] === 1) {
             workDays++;
+            const c = capOn(name, d);
+            capTotal += c;
             const rep = reportsByOffice[name][d];
-            if (rep) { actual += rep.actual; planned += rep.planned; if (rep.reported) reportedDays++; }
+            if (rep) { actual += rep.actual; planned += rep.planned; if (rep.reported) { reportedDays++; repCap += c; } }
           }
         });
-        const repCap = cap * reportedDays;
         return {
           startDate:    w.start,
           endDate:      w.end,
           workDays,
-          capTotal:     cap * workDays,
+          capTotal,
           actualTotal:  actual,
           plannedTotal: planned,
           avgActual:    reportedDays > 0 ? actual / reportedDays : null,
@@ -503,15 +507,15 @@ async function loadAndRender() {
       });
 
       // 月次集計（報告週が属する月）
-      let monWorkDays=0, monCap=0, monActual=0, monPlanned=0, monReportedDays=0;
+      let monWorkDays=0, monCap=0, monActual=0, monPlanned=0, monReportedDays=0, monRepCap=0;
       getDatesInRange(monthStart, monthEnd).forEach(d => {
         if (wdays[d] === 1) {
-          monWorkDays++; monCap += cap;
+          const c = capOn(name, d);
+          monWorkDays++; monCap += c;
           const rep = reportsByOffice[name][d];
-          if (rep) { monActual += rep.actual; monPlanned += rep.planned; if (rep.reported) monReportedDays++; }
+          if (rep) { monActual += rep.actual; monPlanned += rep.planned; if (rep.reported) { monReportedDays++; monRepCap += c; } }
         }
       });
-      const monRepCap = cap * monReportedDays;
       monthlyStats[name] = {
         workDays:     monWorkDays,
         capTotal:     monCap,
@@ -529,7 +533,6 @@ async function loadAndRender() {
     const progressData = {};
     myOffices.forEach(office => {
       const name  = office.name;
-      const cap   = capacityMap[name] || 10;
       const wdays = workdaysByOffice[name] || {};
       progressData[name] = progressMonths.map(mo => {
         let actual = 0;
@@ -546,15 +549,17 @@ async function loadAndRender() {
           }
         });
         const workDays = wdDatesInMonth.length;
-        const goal = cap * workDays;
+        // 月間目標＝稼働日ごとの定員の合計（定員変更履歴があれば日付ごとに反映）
+        const goal = wdDatesInMonth.reduce((s,d)=>s+capOn(name,d),0);
         const pct  = goal > 0 ? Math.min(Math.round(actual / goal * 100), 100) : 0;
 
         // ペース計算
         let markerPct = null, paceText = null, paceColor = '#0F6E56', barStyle = null;
         if (lastActualDate && goal > 0 && workDays > 0) {
-          const elapsed = wdDatesInMonth.filter(d => d <= lastActualDate).length;
+          const elapsedDates = wdDatesInMonth.filter(d => d <= lastActualDate);
+          const elapsed = elapsedDates.length;
           if (elapsed > 0) {
-            const expectedPace = Math.round(goal * elapsed / workDays);
+            const expectedPace = elapsedDates.reduce((s,d)=>s+capOn(name,d),0);
             markerPct = Math.min(Math.round(elapsed / workDays * 100), 100);
             const diff = actual - expectedPace;
             if (diff > 0)       { paceText = `+${diff}名 順調`; paceColor = '#0F6E56'; }

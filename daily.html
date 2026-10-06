@@ -556,6 +556,7 @@ textarea:focus{border-color:#1D9E75}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, deleteDoc, updateDoc, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { resolveOfficeConfig } from './office-config.js?v=1';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { can, resolveTier } from './perm.js';
 
@@ -601,15 +602,15 @@ async function loadMasterData() {
     getDocs(collection(db, 'offices')),
     getDocs(collection(db, 'prices'))
   ]);
-  const prices = {};
-  prSnap.forEach(d => prices[d.id] = d.data());
+  PRICES = {};
+  prSnap.forEach(d => PRICES[d.id] = d.data());
+  OFFICE_DOCS = {};
   offSnap.forEach(d => {
     const data = d.data();
     if (!data.name) return;
-    const price = prices[data.priceId] || {};
-    const cap = price.capacity || data.capacity || 10;
-    // 実質目標人数（settings.htmlで事業所ごとに任意設定）を優先し、未設定なら定員を使う
-    CAPACITY[data.name] = (data.targetCapacity > 0) ? data.targetCapacity : cap;
+    OFFICE_DOCS[data.name] = data;
+    // 互換用：今日時点の実質目標（定員）。日付が決まっている処理では capOn(office, dateStr) を使う
+    CAPACITY[data.name] = capOn(data.name, todayStr);
     OFFICE_ID_TO_NAME[d.id] = data.name;
     if (data.managerUid) MANAGER_UID_TO_OFFICE_ID[data.managerUid] = d.id;
   });
@@ -622,7 +623,19 @@ const OFFICES = [
   "にじのいえ","はれのいえ",
   "ラフォーレ高陽","ラフォーレ亀山","レポ白木"
 ];
-let CAPACITY = {}; // Firestoreのoffices+pricesから起動時に動的構築
+let CAPACITY = {}; // 今日時点の実質目標（互換用）。Firestoreのoffices+pricesから起動時に動的構築
+let OFFICE_DOCS = {}; // office名 → officesドキュメント（priceHistory を含む）
+let PRICES = {};      // priceId → pricesドキュメント
+// 指定日に有効な「実質目標人数」（settings.htmlの実質目標 → なければ定員）。定員変更履歴（適用開始日）を反映する
+function capOn(office, dateStr){
+  const o = OFFICE_DOCS[office]; if(!o) return 10;
+  return resolveOfficeConfig(o, PRICES, dateStr || todayStr).targetCapacity || 10;
+}
+// 指定日に有効な「定員」（実質目標を使わない素の定員）
+function rawCapOn(office, dateStr){
+  const o = OFFICE_DOCS[office]; if(!o) return 0;
+  return resolveOfficeConfig(o, PRICES, dateStr || todayStr).capacity || 0;
+}
 let OFFICE_ID_TO_NAME = {};
 let MANAGER_UID_TO_OFFICE_ID = {}; // offices.managerUid → officeId
 const STRUCTURE = [
@@ -797,7 +810,7 @@ window.loadHistory=async function(){
     }else{
       kidsCell='<span style="color:#ddd;font-size:11px">休</span>';
     }
-    const officeCap=CAPACITY[state.cur]||10;
+    const officeCap=capOn(state.cur, dateStr);
     const plannedNum=(rep&&rep.planned>0?rep.planned:0)||(dpPlanned[dateStr]||0);
     const plannedVal=isWd?(plannedNum>0?`${plannedNum}`:`<span style="color:#bbb">${officeCap}</span>`):'';
     const cmt=(rep&&rep.comment||'');
@@ -839,18 +852,18 @@ window.loadHistory=async function(){
     </div>`;
 };
 
-function calcKouken(offices, reps){
+function calcKouken(offices, reps, dateStr){
   const rep=offices.filter(o=>reps[o]);
   if(!rep.length)return null;
   const sumK=rep.reduce((s,o)=>s+reps[o].kids,0);
-  const sumC=rep.reduce((s,o)=>s+(CAPACITY[o]||10),0);
+  const sumC=rep.reduce((s,o)=>s+capOn(o, dateStr),0);
   return (sumK/sumC*100).toFixed(1);
 }
 
-function officeNumHTML(o, reps){
+function officeNumHTML(o, reps, dateStr){
   const r=reps[o];
   if(!r)return`<span class="office-row-num pending">未報告</span>`;
-  const pct=(r.kids/(CAPACITY[o]||10)*100).toFixed(1);
+  const pct=(r.kids/capOn(o, dateStr)*100).toFixed(1);
   if(isLafore(o)&&r.care!=null&&r.work!=null){
     return`<span class="office-row-num">${r.kids}名 <span style="font-size:11px;color:#888">(${pct}%)</span></span>
     <span class="single-sub">介護${r.care} / 就労${r.work}</span>`;
@@ -858,7 +871,8 @@ function officeNumHTML(o, reps){
   return`<span class="office-row-num">${r.kids}名 <span style="font-size:11px;color:#888">(${pct}%)</span></span>`;
 }
 
-function renderHQ(reps){
+function renderHQ(reps, dateStr){
+  dateStr = dateStr || state.hqDate || todayStr; // 表示日の定員で貢献率を出す
   let html='';
   STRUCTURE.forEach(cat=>{
     html+=`<div class="cat-block"><div class="cat-header">${cat.cat}</div><div class="cat-body">`;
@@ -867,18 +881,18 @@ function renderHQ(reps){
       cat.areas.forEach(area=>{
         html+=`<div class="area-label">${area.label}</div>`;
         area.offices.forEach(o=>{
-          html+=`<div class="office-row"><span class="office-row-name">${o}</span><div class="office-row-right">${officeNumHTML(o,reps)}</div></div>`;
+          html+=`<div class="office-row"><span class="office-row-name">${o}</span><div class="office-row-right">${officeNumHTML(o,reps,dateStr)}</div></div>`;
         });
-        const kr=calcKouken(area.offices,reps);
+        const kr=calcKouken(area.offices,reps,dateStr);
         html+=`<div class="area-avg"><span class="area-avg-lbl">${area.label}　貢献率</span><span class="area-avg-num">${kr!==null?kr+'%':'—'}</span></div>`;
       });
-      const kr=calcKouken(allO,reps);
+      const kr=calcKouken(allO,reps,dateStr);
       html+=`<div class="cat-summary"><span class="cat-summary-lbl">${cat.summaryLabel}</span><span class="cat-summary-num">${kr!==null?kr+'%':'—'}</span></div>`;
     }else{
       cat.single.forEach(o=>{
-        html+=`<div class="single-row"><span class="single-name">${o}</span><div class="single-right">${officeNumHTML(o,reps)}</div></div>`;
+        html+=`<div class="single-row"><span class="single-name">${o}</span><div class="single-right">${officeNumHTML(o,reps,dateStr)}</div></div>`;
       });
-      const kr=calcKouken(cat.single,reps);
+      const kr=calcKouken(cat.single,reps,dateStr);
       html+=`<div class="cat-summary"><span class="cat-summary-lbl">${cat.summaryLabel}</span><span class="cat-summary-num">${kr!==null?kr+'%':'—'}</span></div>`;
     }
     html+=`</div></div>`;
@@ -942,12 +956,13 @@ async function loadGoalsSimple(){
     const offMap={};offSnap.forEach(d=>offMap[d.data().name]={...d.data(),id:d.id});
     for(const office of OFFICES){
       const off=offMap[office];if(!off)continue;
-      const price=prices[off.priceId];if(!price||!price.capacity)continue;
       const wdDocId=`${fiscalYear}_${office}`;
       const wdSnap=await getDoc(doc(db,'workdays',wdDocId));
       const wdays=wdSnap.exists()?wdSnap.data().days||{}:{};
       const wdDates=Object.entries(wdays).filter(([k,v])=>k.startsWith(monthStr)&&v===1).map(([k])=>k).sort();
-      const goal=wdDates.length*price.capacity;
+      // 月間目標＝稼働日ごとの定員の合計（定員変更履歴があれば日付ごとに反映）
+      const goal=wdDates.reduce((s,d)=>s+(resolveOfficeConfig(off, prices, d).capacity||0),0);
+      if(goal<=0)continue;
       if(goal>0){
         state.goals[office]=goal;state.wdInfo[office]={total:wdDates.length,wdDates};
         if(isLafore(office)){
@@ -1014,7 +1029,7 @@ async function loadToday(){
     const raw=[];snap.forEach(d=>{raw.push({...d.data(),_id:d.id});});
     state.reports=aggregateReports(raw);
     renderBtns();
-    if(state.hqDate===todayStr)renderHQ(state.reports);
+    if(state.hqDate===todayStr)renderHQ(state.reports, todayStr);
     showConn('conn-banner',true,'Firebaseに接続済み');
   }catch(e){showConn('conn-banner',false,'データ取得エラー: '+e.message);}
 }
@@ -1030,7 +1045,7 @@ window.loadHqDate=async function(){
     const raw=[];snap.forEach(d=>{raw.push({...d.data(),_id:d.id});});
     const reps=aggregateReports(raw);
     if(dateVal===todayStr)state.reports=reps;
-    renderHQ(reps);
+    renderHQ(reps, dateVal);
   }catch(e){document.getElementById('hq-body').innerHTML=`<div class="loading">読み込みエラー</div>`;}
 };
 
@@ -1086,7 +1101,7 @@ async function loadMonthly(){
               ${goal>0?monthlyProgressHTML(t,goal):''}</div></div>`;
           });
           const aT=area.offices.reduce((s,o)=>s+(totals[o]||0),0);
-          const aC=area.offices.reduce((s,o)=>s+(CAPACITY[o]||10),0);
+          const aC=area.offices.reduce((s,o)=>s+capOn(o, monthStr+'-01'),0);
           const aD=area.offices.reduce((max,o)=>Math.max(max,days[o]?days[o].size:0),0);
           const aRate=aD>0?(aT/(aC*aD)*100).toFixed(1)+'%':'—';
           html+=`<div class="monthly-area-summary"><span class="monthly-area-summary-lbl">${area.label}　貢献率</span><span class="monthly-area-summary-num">${aRate}</span></div>`;
@@ -1100,7 +1115,7 @@ async function loadMonthly(){
         });
       }
       const cT=catO.reduce((s,o)=>s+(totals[o]||0),0);
-      const cC=catO.reduce((s,o)=>s+(CAPACITY[o]||10),0);
+      const cC=catO.reduce((s,o)=>s+capOn(o, monthStr+'-01'),0);
       const cD=catO.reduce((max,o)=>Math.max(max,days[o]?days[o].size:0),0);
       const cRate=cD>0?(cT/(cC*cD)*100).toFixed(1)+'%':'—';
       html+=`<div class="monthly-cat-summary"><span class="monthly-cat-summary-lbl">${cat.cat}　月次貢献率</span><span class="monthly-cat-summary-num">${cRate}</span></div></div>`;
@@ -1553,7 +1568,7 @@ window.switchTab=function(tab){
   setDirty(false);
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['input','hq'][i]===tab));
   ['sec-input','sec-hq'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',['input','hq'][i]===tab));
-  if(tab==='hq')renderHQ(state.reports);
+  if(tab==='hq')renderHQ(state.reports, state.hqDate||todayStr);
 };
 
 window.downloadCSV=async function(){
@@ -1564,7 +1579,7 @@ window.downloadCSV=async function(){
   const reps=aggregateReports(raw);
   let csv='事業所名,貢献人数,定員,当日貢献率,報告時刻,コメント\n';
   OFFICES.forEach(o=>{
-    const r=reps[o],cap=CAPACITY[o]||10;
+    const r=reps[o],cap=capOn(o, dateVal);
     const rate=r?(r.kids/cap*100).toFixed(1)+'%':'';
     let comment=r?r.comment:'';
     if(isLafore(o)&&r){comment=`介護:${r.care??'—'} 就労:${r.work??'—'}`;}
@@ -1777,7 +1792,7 @@ function maybeCelebrate(office,date,kids){
   const key=office+'_'+date;
   if(celebratedKeys.has(key))return;
   celebratedKeys.add(key);
-  const cap=CAPACITY[office];
+  const cap=capOn(office, date);
   const hitTarget=cap>0&&kids>=cap;
   const icon=hitTarget?'assets/beruru_kanryo.png?v=2':'assets/beruru_nikoniko.png?v=2';
   let msg;

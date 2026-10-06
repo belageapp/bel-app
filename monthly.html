@@ -190,6 +190,7 @@ th:last-child,td:last-child{border-right:none}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, doc, getDoc, getDocs, query, where, setDoc, addDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { resolveOfficeConfig } from './office-config.js?v=1';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { can } from './perm.js';
 
@@ -245,8 +246,12 @@ let viewYear  = now.getFullYear();
 let viewMonth = now.getMonth() + 1; // 1-indexed
 
 // -------- データキャッシュ --------
-let capacities = {};   // office → capacity
-let officePrices = {}; // office → 単価
+let officeDocs = {};   // office → officesドキュメント（priceHistory を含む）
+let pricesById = {};   // priceId → pricesドキュメント
+// 指定日に有効な実質目標（settings.htmlの実質目標 → なければ定員）。定員変更履歴（適用開始日）を反映する
+function capOn(o, dateStr){ const d = officeDocs[o]; if(!d) return 10; return resolveOfficeConfig(d, pricesById, dateStr).targetCapacity || 10; }
+// 指定日に有効な単価
+function priceOn(o, dateStr){ const d = officeDocs[o]; if(!d) return 0; return resolveOfficeConfig(d, pricesById, dateStr).unitPrice || 0; }
 let workdays   = {};   // office → { "YYYY-MM-DD": 0|1 }
 let reports    = {};   // "YYYY-MM-DD" → { office → {kids, care, work} }
 let dailyPlanned = {}; // office → { "YYYY-MM-DD": 予定人数 }
@@ -327,17 +332,15 @@ async function init() {
     getDocs(collection(db, 'offices')),
     getDocs(collection(db, 'prices'))
   ]);
-  const prices = {};
-  prSnap.forEach(d => prices[d.id] = d.data());
+  pricesById = {};
+  prSnap.forEach(d => pricesById[d.id] = d.data());
+  officeDocs = {};
   offSnap.forEach(d => {
     const o = d.data();
-    const p = prices[o.priceId];
-    // 予定人数のデフォルト/目標には、事業所ごとの実質目標（settings.htmlで任意設定）を
-    // 優先し、未設定なら定員をそのまま使う
-    const cap = p?.capacity || 0;
-    if (cap || o.targetCapacity) capacities[o.name] = (o.targetCapacity > 0) ? o.targetCapacity : cap;
-    officePrices[o.name] = o.price ?? p?.price ?? 0;
+    if (o.name) officeDocs[o.name] = o;
   });
+  // 予定人数のデフォルト/目標・単価は日付ごとに capOn / priceOn で解決する
+  // （事業所ごとの実質目標を優先し、未設定なら定員。定員変更履歴があれば適用開始日で切り替わる）
   await loadMonth();
 }
 
@@ -448,11 +451,11 @@ function render(fiscalYear, year, month, monthStr) {
     planned[o]  = {};
     actuals[o]  = {};
     explicitPlanned[o] = {};
-    const cap = capacities[o] || 10;
     const wd  = workdays[o] || {};
     dates.forEach(({ dateStr }) => {
       const isOpen = wd[dateStr] === 1;
-      // 予定人数：dailyPlannedがあればその値、なければ定員（開所日のみ）
+      const cap = capOn(o, dateStr);
+      // 予定人数：dailyPlannedがあればその値、なければその日の定員（開所日のみ）
       const p = dailyPlanned[o]?.[dateStr];
       planned[o][dateStr]  = isOpen ? (p || cap) : null;
       explicitPlanned[o][dateStr] = isOpen && p ? p : null;
@@ -536,11 +539,10 @@ function render(fiscalYear, year, month, monthStr) {
 // -------- 事業所行（予約・実績・詳細）--------
 function officeRows(o, dates, goals, actuals, explicitPlanned, todayStr) {
   let html = '';
-  const cap = capacities[o] || 10;
   const rowspan = detailMode ? 4 : 2;
 
-  // 月計事前計算
-  const monthGoal    = dates.reduce((s,{dateStr}) => s + (workdays[o]?.[dateStr]===1 ? cap : 0), 0);
+  // 月計事前計算（定員・単価は日付ごとに解決）
+  const monthGoal    = dates.reduce((s,{dateStr}) => s + (workdays[o]?.[dateStr]===1 ? capOn(o, dateStr) : 0), 0);
   const monthPlanned = dates.reduce((s,{dateStr}) => {
     const g = goals[o][dateStr]; return s + (g !== null ? g : 0);
   }, 0);
@@ -552,18 +554,20 @@ function officeRows(o, dates, goals, actuals, explicitPlanned, todayStr) {
   }).length;
   const avgActual    = actDays > 0 ? (monthActual / actDays).toFixed(1) : null;
   // キャンセル人数：予定人数が明示入力された日のみ（定員フォールバック日は対象外）
-  const monthCancel  = dates.reduce((s,{dateStr}) => {
+  let monthCancel = 0, cancelEstimate = 0;
+  dates.forEach(({dateStr}) => {
     const ep = explicitPlanned[o][dateStr];
     const av = actuals[o]?.[dateStr];
-    if (ep == null || av == null) return s;
-    return s + Math.max(0, ep - av);
-  }, 0);
-  const cancelEstimate = monthCancel * (officePrices[o] || 0);
-  // 定員超過人数：予定人数が定員を超えた日の超過分合計
+    if (ep == null || av == null) return;
+    const c = Math.max(0, ep - av);
+    monthCancel += c;
+    cancelEstimate += c * priceOn(o, dateStr);
+  });
+  // 定員超過人数：予定人数がその日の定員を超えた日の超過分合計
   const monthOverCap = dates.reduce((s,{dateStr}) => {
     const p = goals[o][dateStr];
     if (p == null) return s;
-    return s + Math.max(0, p - cap);
+    return s + Math.max(0, p - capOn(o, dateStr));
   }, 0);
   // 予定超過人数：実績が予定人数を超えた日の超過分合計
   const monthOverPlan = dates.reduce((s,{dateStr}) => {
@@ -682,8 +686,7 @@ function areaSum(offices, dates, goals, actuals, explicitPlanned, label, todaySt
   let mPlanned = 0, mActual = 0, hasActual = false;
   let mGoalCapacity = 0;
   offices.forEach(o => {
-    const cap = capacities[o] || 10;
-    dates.forEach(({ dateStr }) => { if (workdays[o]?.[dateStr] === 1) mGoalCapacity += cap; });
+    dates.forEach(({ dateStr }) => { if (workdays[o]?.[dateStr] === 1) mGoalCapacity += capOn(o, dateStr); });
   });
   let mCancel = 0, mCancelEstimate = 0, mOverCap = 0, mOverPlan = 0;
   dates.forEach(({ dateStr }) => {
@@ -691,11 +694,11 @@ function areaSum(offices, dates, goals, actuals, explicitPlanned, label, todaySt
       const ep = explicitPlanned[o][dateStr];
       const p  = goals[o][dateStr];
       const av = actuals[o]?.[dateStr];
-      const cap = capacities[o] || 10;
+      const cap = capOn(o, dateStr);
       if (ep != null && av != null) {
         const c = Math.max(0, ep - av);
         mCancel += c;
-        mCancelEstimate += c * (officePrices[o] || 0);
+        mCancelEstimate += c * priceOn(o, dateStr);
       }
       if (p != null) mOverCap += Math.max(0, p - cap);
       if (p != null && av != null) mOverPlan += Math.max(0, av - p);
@@ -748,8 +751,7 @@ function catSum(offices, dates, goals, actuals, explicitPlanned, label, todayStr
   let mPlanned = 0, mActual = 0, hasActual = false;
   let mGoalCapacity = 0;
   offices.forEach(o => {
-    const cap = capacities[o] || 10;
-    dates.forEach(({ dateStr }) => { if (workdays[o]?.[dateStr] === 1) mGoalCapacity += cap; });
+    dates.forEach(({ dateStr }) => { if (workdays[o]?.[dateStr] === 1) mGoalCapacity += capOn(o, dateStr); });
   });
   let mCancel = 0, mCancelEstimate = 0, mOverCap = 0, mOverPlan = 0;
   dates.forEach(({ dateStr }) => {
@@ -757,11 +759,11 @@ function catSum(offices, dates, goals, actuals, explicitPlanned, label, todayStr
       const ep = explicitPlanned[o][dateStr];
       const p  = goals[o][dateStr];
       const av = actuals[o]?.[dateStr];
-      const cap = capacities[o] || 10;
+      const cap = capOn(o, dateStr);
       if (ep != null && av != null) {
         const c = Math.max(0, ep - av);
         mCancel += c;
-        mCancelEstimate += c * (officePrices[o] || 0);
+        mCancelEstimate += c * priceOn(o, dateStr);
       }
       if (p != null) mOverCap += Math.max(0, p - cap);
       if (p != null && av != null) mOverPlan += Math.max(0, av - p);
