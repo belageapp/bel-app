@@ -298,13 +298,16 @@ function monthConfigs(office, year){
 function fyPriceLabel(cfgs){
   if(!cfgs.some(c=>c.price)) return '未設定';
   const parts=[]; let prev=null;
+  let prevType=null;
   cfgs.forEach((c,i)=>{
     const key=`${c.type}|${c.capacity}`;
     if(key===prev) return;
-    parts.push(i===0 || prev===null
-      ? `${c.type}　定員${c.capacity>0?c.capacity:'－'}`
-      : `→ 定員${c.capacity>0?c.capacity:'－'}（${MONTHS_ARR[i]}月〜）`);
-    prev=key;
+    const capTxt=`定員${c.capacity>0?c.capacity:'－'}`;
+    // 種別も変わった場合は種別名も出す（例：放デイ 定員20 → 児童発 定員10（10月〜））
+    parts.push(prev===null
+      ? `${c.type}　${capTxt}`
+      : `→ ${c.type!==prevType?c.type+' ':''}${capTxt}（${MONTHS_ARR[i]}月〜）`);
+    prev=key; prevType=c.type;
   });
   return parts.join(' ');
 }
