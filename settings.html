@@ -961,9 +961,11 @@ window.saveOffices = async function(){
     const hist = sortHistory(o.priceHistory);
     if(hist.length >= 2){
       const e = historyEntryForSave(o); // 今日有効なエントリ（基準値を含む）
-      o.priceId = e.priceId || '';
-      o.price   = (pricesById()[o.priceId] || {}).price || null;
-      o.targetCapacity = e.targetCapacity || null;
+      if(e){
+        o.priceId = e.priceId || '';
+        o.price   = (pricesById()[o.priceId] || {}).price || null;
+        o.targetCapacity = e.targetCapacity || null;
+      }
     }
     await setDoc(doc(db,'offices',o.id),{
       name:        o.name,
