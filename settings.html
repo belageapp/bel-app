@@ -98,6 +98,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
 .cal-day:not(.empty):hover{opacity:0.8;transform:scale(0.93)}
 /* ユーザー一覧：セル内で折り返さない（横スクロールで対応） */
 #users-table th,#users-table td{white-space:nowrap}
+/* 定員変更履歴モーダル */
+.hist-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px}
+.hist-overlay.show{display:flex}
+.hist-modal{background:#fff;border-radius:10px;width:100%;max-width:640px;max-height:90vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.hist-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #E8EAED}
+.hist-title{font-size:14px;font-weight:700;color:#333}
+.hist-body{padding:14px 18px}
+.hist-desc{font-size:12px;color:#777;margin-bottom:12px;line-height:1.6}
+.hist-table{width:100%;border-collapse:collapse;font-size:12px}
+.hist-table th{background:#F4F6F8;color:#666;font-weight:600;padding:7px 8px;text-align:left;white-space:nowrap}
+.hist-table td{padding:6px 8px;border-bottom:1px solid #F0F0F0;vertical-align:middle}
+.hist-table input,.hist-table select{padding:5px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit}
+.hist-base{color:#888;font-size:11px}
+.hist-foot{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid #E8EAED}
+.hist-badge{display:inline-block;background:#FFF4E0;color:#B26A00;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500;margin-left:4px;white-space:nowrap}
+.hist-current{font-size:12px;color:#333}
+.hist-link{background:none;border:none;color:#185FA5;font-size:11px;cursor:pointer;font-family:inherit;padding:2px 0;text-decoration:underline dotted;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -268,7 +285,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI'
     <div class="page" id="page-offices">
       <div class="page-header">
         <div class="page-title">事業所登録</div>
-        <div class="page-desc">事業所の部署・単価設定を管理します。</div>
+        <div class="page-desc">事業所の部署・単価設定を管理します。定員や単価が途中で変わる事業所は「種別／定員」欄の「変更履歴」から適用開始日つきで登録します。</div>
       </div>
       <div class="card">
         <div class="card-header">
@@ -454,6 +471,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, getDocs, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { can, resolveTier, TIER_LABELS, PERMISSION_FLAGS } from './perm.js';
+import { sortHistory, hasHistory, resolveOfficeConfig, todayStr, configLabel } from './office-config.js?v=1';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
@@ -799,11 +817,19 @@ function renderOfficeTable(){
         </select>
       </td>
       <td>
+        ${hasHistory(o) ? (()=>{
+          const cfg = resolveOfficeConfig(o, pricesById(), todayStr());
+          const n = sortHistory(o.priceHistory).length - 1;
+          return `<div class="hist-current">${configLabel(cfg)}<span class="hist-badge">履歴 ${n}件</span></div>
+            <button class="hist-link" onclick="openHistoryModal('${o.id}')">変更履歴を編集</button>`;
+        })() : `
         <select class="office-price-select" id="priceid-${o.id}" onchange="updateOfficePrice('${o.id}',this.value)">
           ${['<option value="">未設定</option>',...cache.prices.map(p=>`<option value="${p.id}"${o.priceId===p.id?' selected':''}>${p.type}${p.capacity>0?' 定員'+p.capacity:''}${p.price?' ('+p.price.toLocaleString()+'円)':''}</option>`)].join('')}
         </select>
+        <div><button class="hist-link" onclick="openHistoryModal('${o.id}')">変更履歴（適用開始日つき）</button></div>`}
       </td>
       <td>
+        ${hasHistory(o) ? `<span class="hist-current">${(()=>{const c=resolveOfficeConfig(o, pricesById(), todayStr()); return c.targetCapacity||'—';})()}</span>` : `
         <input
           type="number"
           value="${o.targetCapacity||''}"
@@ -811,9 +837,9 @@ function renderOfficeTable(){
           style="width:60px;padding:5px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:inherit;text-align:center"
           placeholder="定員と同じ"
           min="0"
-        >
+        >`}
       </td>
-      <td><span class="derived-price" id="derived-${o.id}">${o.price?o.price.toLocaleString()+'円':'—'}</span></td>
+      <td><span class="derived-price" id="derived-${o.id}">${(()=>{const c=resolveOfficeConfig(o, pricesById(), todayStr()); return c.unitPrice?c.unitPrice.toLocaleString()+'円':'—';})()}</span></td>
       <td>
         <select class="office-price-select" style="width:160px" id="manager-${o.id}" onchange="updateOfficeManager('${o.id}',this.value)">
           <option value="">未設定</option>
@@ -854,8 +880,91 @@ window.updateOfficeManager = function(id, uid){
   const o = cache.offices.find(x=>x.id===id);
   if(o) o.managerUid = uid;
 };
+
+// ===== 定員・単価の変更履歴（適用開始日つき） =====
+function pricesById(){ const m={}; (cache.prices||[]).forEach(p=>m[p.id]=p); return m; }
+// 今日有効な履歴エントリ（保存時の現在値書き戻しに使う）
+function historyEntryForSave(o){
+  const h = sortHistory(o.priceHistory); if(!h.length) return null;
+  const t = todayStr(); let cur=null;
+  for(const e of h){ if(!e.from || e.from<=t) cur=e; else break; }
+  return cur;
+}
+let histEditing = null; // { officeId, rows:[{from,priceId,targetCapacity}] }
+
+window.openHistoryModal = function(officeId){
+  const o = cache.offices.find(x=>x.id===officeId); if(!o) return;
+  let rows = sortHistory(o.priceHistory);
+  if(!rows.length){
+    // 初回：現在の設定を「開始時〜」の基準値として置き、変更行を1つ用意する
+    rows = [{from:'', priceId:o.priceId||'', targetCapacity:o.targetCapacity||null}, {from:'', priceId:o.priceId||'', targetCapacity:null, _new:true}];
+  }
+  histEditing = { officeId, rows: rows.map(r=>({...r})) };
+  document.getElementById('hist-office-name').textContent = o.name;
+  renderHistRows();
+  document.getElementById('hist-overlay').classList.add('show');
+};
+window.closeHistoryModal = function(){ histEditing=null; document.getElementById('hist-overlay').classList.remove('show'); };
+
+function renderHistRows(){
+  const tb = document.getElementById('hist-tbody');
+  const priceOpts = sel => ['<option value="">未設定</option>',...cache.prices.map(p=>`<option value="${p.id}"${sel===p.id?' selected':''}>${p.type}${p.capacity>0?' 定員'+p.capacity:''}${p.price?' ('+p.price.toLocaleString()+'円)':''}</option>`)].join('');
+  tb.innerHTML = histEditing.rows.map((r,i)=>`
+    <tr>
+      <td>${i===0
+        ? `<span class="hist-base">開始時〜（基準）</span>`
+        : `<input type="date" value="${r.from||''}" onchange="histUpdate(${i},'from',this.value)" style="width:140px">`}</td>
+      <td><select onchange="histUpdate(${i},'priceId',this.value)" style="max-width:220px">${priceOpts(r.priceId)}</select></td>
+      <td><input type="number" min="0" value="${r.targetCapacity||''}" placeholder="定員と同じ" onchange="histUpdate(${i},'targetCapacity',this.value)" style="width:70px;text-align:center"></td>
+      <td>${i===0?'':`<button class="btn btn-danger btn-sm" onclick="histRemove(${i})">削除</button>`}</td>
+    </tr>`).join('');
+}
+window.histUpdate = function(i, key, val){
+  const r = histEditing.rows[i]; if(!r) return;
+  if(key==='targetCapacity') r.targetCapacity = parseInt(val)>0 ? parseInt(val) : null;
+  else r[key] = val;
+};
+window.histRemove = function(i){ histEditing.rows.splice(i,1); renderHistRows(); };
+window.histAddRow = function(){
+  const last = histEditing.rows[histEditing.rows.length-1] || {};
+  histEditing.rows.push({from:'', priceId:last.priceId||'', targetCapacity:null});
+  renderHistRows();
+};
+window.applyHistory = function(){
+  const o = cache.offices.find(x=>x.id===histEditing.officeId); if(!o) return;
+  const base = histEditing.rows[0];
+  const changes = histEditing.rows.slice(1);
+  // 検証：変更行は適用開始日・種別／定員が必須、日付の重複なし
+  for(const r of changes){
+    if(!r.from){ showStatus('変更行には適用開始日を入れてください', true); return; }
+    if(!r.priceId){ showStatus('変更行には種別／定員を選んでください', true); return; }
+  }
+  const froms = changes.map(r=>r.from);
+  if(new Set(froms).size !== froms.length){ showStatus('同じ適用開始日が2つあります', true); return; }
+  if(!changes.length){
+    // 変更行なし＝履歴を使わない。基準値を現在値に戻す
+    o.priceHistory = [];
+    o.priceId = base.priceId||''; o.targetCapacity = base.targetCapacity||null;
+    o.price = (pricesById()[o.priceId]||{}).price||null;
+  }else{
+    o.priceHistory = sortHistory([base, ...changes]);
+  }
+  closeHistoryModal();
+  renderOfficeTable();
+  showStatus('履歴を反映しました。「変更を保存」を押すと確定します');
+};
+
 window.saveOffices = async function(){
   for(const o of cache.offices){
+    // 定員変更履歴があれば、今日有効なエントリの値を現在値（priceId/price/targetCapacity）にも書き戻す。
+    // 履歴に未対応のコード（Cloud Functions など）でも今日の定員・単価が正しく読めるようにするため。
+    const hist = sortHistory(o.priceHistory);
+    if(hist.length >= 2){
+      const e = historyEntryForSave(o); // 今日有効なエントリ（基準値を含む）
+      o.priceId = e.priceId || '';
+      o.price   = (pricesById()[o.priceId] || {}).price || null;
+      o.targetCapacity = e.targetCapacity || null;
+    }
     await setDoc(doc(db,'offices',o.id),{
       name:        o.name,
       providerNumber: o.providerNumber||'',
@@ -864,6 +973,7 @@ window.saveOffices = async function(){
       priceId:     o.priceId||'',
       price:       o.price||null,
       targetCapacity: o.targetCapacity||null,
+      priceHistory: hist.length >= 2 ? hist : [],
       deptCode:    o.deptCode||'',
       order:       o.order||99,
       createdAt:   o.createdAt||'',
@@ -1249,5 +1359,31 @@ window.saveUser = async function() {
 
 init();
 </script>
+
+<!-- 定員・単価の変更履歴モーダル -->
+<div class="hist-overlay" id="hist-overlay" onclick="if(event.target===this)closeHistoryModal()">
+  <div class="hist-modal">
+    <div class="hist-head">
+      <div class="hist-title">定員・単価の変更履歴　<span id="hist-office-name" style="color:#1D9E75"></span></div>
+      <button class="btn btn-secondary btn-sm" onclick="closeHistoryModal()">閉じる</button>
+    </div>
+    <div class="hist-body">
+      <div class="hist-desc">
+        1行目は「開始時からの設定（基準）」です。定員や単価が変わった日を「適用開始日」にして行を追加すると、
+        その日以降の貢献速報・貢献実績表・朝礼報告・Chatwork速報は新しい定員で計算され、それより前の月は元の定員のまま残ります。<br>
+        実質目標は空欄なら定員と同じになります。
+      </div>
+      <table class="hist-table">
+        <thead><tr><th>適用開始日</th><th>種別／定員（単価）</th><th>実質目標</th><th></th></tr></thead>
+        <tbody id="hist-tbody"></tbody>
+      </table>
+      <div style="margin-top:10px"><button class="btn btn-blue btn-sm" onclick="histAddRow()">＋ 変更行を追加</button></div>
+    </div>
+    <div class="hist-foot">
+      <button class="btn btn-secondary" onclick="closeHistoryModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="applyHistory()">この内容を反映</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
