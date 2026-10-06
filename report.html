@@ -183,6 +183,7 @@ th{background:#f5f5f5;text-align:center;font-weight:500;color:#555}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, doc, getDoc, setDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { resolveOfficeConfig, todayStr as cfgToday } from './office-config.js?v=1';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const firebaseConfig = {
@@ -283,6 +284,41 @@ const MONTHS_ARR = [4,5,6,7,8,9,10,11,12,1,2,3];
 const ML_ARR     = ["4月","5月","6月","7月","8月","9月","10月","11月","12月","1月","2月","3月"];
 const BREAK = 0.93;
 const SALARY = 0.44;
+
+// ===== 定員・単価の日付解決（定員変更履歴＝適用開始日を反映） =====
+function pricesMap(){ const m={}; (prices||[]).forEach(p=>m[p.id]=p); return m; }
+// 指定日に有効な設定 { capacity, unitPrice, targetCapacity, type, price }
+function configOn(office, dateStr){ return resolveOfficeConfig(office||{}, pricesMap(), dateStr); }
+// 年度12か月分（各月1日時点）の設定
+function monthConfigs(office, year){
+  const pm = pricesMap();
+  return getFY(year).map(([y,m]) => resolveOfficeConfig(office||{}, pm, `${y}-${String(m).padStart(2,'0')}-01`));
+}
+// 種別／定員ラベル。年度内に変わる場合は「放デイ　定員20 → 定員10（10月〜）」
+function fyPriceLabel(cfgs){
+  if(!cfgs.some(c=>c.price)) return '未設定';
+  const parts=[]; let prev=null;
+  cfgs.forEach((c,i)=>{
+    const key=`${c.type}|${c.capacity}`;
+    if(key===prev) return;
+    parts.push(i===0 || prev===null
+      ? `${c.type}　定員${c.capacity>0?c.capacity:'－'}`
+      : `→ 定員${c.capacity>0?c.capacity:'－'}（${MONTHS_ARR[i]}月〜）`);
+    prev=key;
+  });
+  return parts.join(' ');
+}
+// 単価ラベル。年度内に変わる場合は「9,500円 → 12,400円（10月〜）」
+function fyUnitLabel(upM){
+  const parts=[]; let prev=null;
+  upM.forEach((u,i)=>{
+    if(u===prev) return;
+    const t = u ? u.toLocaleString()+'円' : '未設定';
+    parts.push(prev===null ? t : `→ ${t}（${MONTHS_ARR[i]}月〜）`);
+    prev=u;
+  });
+  return parts.join(' ');
+}
 
 // サービス種別バッジクラス
 const SVC_CLS = {
@@ -433,15 +469,19 @@ async function loadOfficeData(officeName, year) {
   });
 
   const office = offices.find(o=>o.name===officeName);
-  const price  = prices.find(p=>p.id===office?.priceId);
-  const cap    = price?.capacity || 0;
-  const up     = price?.price    || 0;
-  const priceLabel = price ? `${price.type}　定員${cap>0?cap:'－'}` : '未設定';
-  // 実質目標人数（settings.htmlで事業所ごとに任意設定）。未設定なら定員をそのまま使う
-  const targetCapacity = (office?.targetCapacity>0) ? office.targetCapacity : cap;
+  // 定員・単価・実質目標は月ごと（各月1日時点）に解決する（定員変更履歴があれば途中の月で切り替わる）
+  const cfgM  = monthConfigs(office, year);
+  const capM  = cfgM.map(c=>c.capacity);
+  const tcapM = cfgM.map(c=>c.targetCapacity);
+  const upM   = cfgM.map(c=>c.unitPrice);
+  const priceLabel = fyPriceLabel(cfgM);
+  const unitLabel  = fyUnitLabel(upM);
+  // 互換用のスカラー値（今日時点）
+  const curCfg = configOn(office, cfgToday());
+  const cap = curCfg.capacity, up = curCfg.unitPrice, targetCapacity = curCfg.targetCapacity;
 
-  const tpm  = wdPerMonth.map(w=>w*targetCapacity);
-  const tRev = tpm.map(t=>t*up);
+  const tpm  = wdPerMonth.map((w,i)=>w*tcapM[i]);
+  const tRev = tpm.map((t,i)=>t*upM[i]);
 
   // 実績（全サービス合算）＋ サービス種別ごとの内訳（byService）
   // サービス種別ごとの目標・稼働日数・給与は算出根拠がない（定員・給与は事業所単位でしか
@@ -501,7 +541,7 @@ async function loadOfficeData(officeName, year) {
   });
   const aSal   = MONTHS_ARR.map((_,i)=>aSalS[i]+aSalP[i]);
 
-  return { officeName, cap, targetCapacity, up, priceLabel, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, aSalS, aSalP, byService };
+  return { officeName, cap, targetCapacity, up, priceLabel, unitLabel, capM, tcapM, upM, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, aSalS, aSalP, byService };
 }
 
 // loadOfficeData()の結果に、事業所単独モードの「月別推移とキャンセル分析」に必要な
@@ -510,6 +550,7 @@ async function loadOfficeData(officeName, year) {
 async function loadOfficeFullAnalysis(officeName, year) {
   const data = await loadOfficeData(officeName, year);
   const fy = getFY(year);
+  const office = offices.find(o=>o.name===officeName);
 
   const wdSnap = await getDoc(doc(db,'workdays',`${year}_${officeName}`));
   const wd = wdSnap.exists() ? wdSnap.data().days || {} : {};
@@ -531,7 +572,7 @@ async function loadOfficeFullAnalysis(officeName, year) {
     const mk = `${y}-${String(m).padStart(2,'0')}`;
     let total = 0;
     Object.entries(wd).forEach(([dateStr,v])=>{
-      if (v===1 && dateStr.startsWith(mk)) total += plannedOverride[dateStr] ?? dailyPlannedAll[dateStr] ?? data.targetCapacity;
+      if (v===1 && dateStr.startsWith(mk)) total += plannedOverride[dateStr] ?? dailyPlannedAll[dateStr] ?? configOn(office, dateStr).targetCapacity;
     });
     return total;
   });
@@ -739,10 +780,10 @@ function renderServiceTable(sv, title, aWd) {
 // 事業所モード（loadReport）と同じ目標・損益分岐・実績・貢献度の詳細表（27行）を、
 // 印刷／PDF出力の事業所単位の「全体合計」表として静的に描画する（入力欄・再計算は持たない）。
 function renderOfficeDetailTable(data, title) {
-  const { cap, targetCapacity, up, priceLabel, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, aSalS, aSalP, byService } = data;
+  const { cap, targetCapacity, up, priceLabel, unitLabel, capM, tcapM, upM, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, aSalS, aSalP, byService } = data;
 
   const bpm  = tpm.map(t=>Math.ceil(t*BREAK));
-  const bpd  = Math.ceil(targetCapacity*BREAK*10)/10;
+  const bpdM = tcapM.map(t=>Math.ceil(t*BREAK*10)/10);
   const bRev = tRev.map(r=>Math.ceil(r*BREAK));
 
   const h1wd=sum(wdPerMonth.slice(0,6)), h2wd=sum(wdPerMonth.slice(6)), totalWd=h1wd+h2wd;
@@ -750,7 +791,7 @@ function renderOfficeDetailTable(data, title) {
   const totalBpm=sum(bpm), totalBrev=sum(bRev);
 
   const aPpd  = MONTHS_ARR.map((_,i)=>aWd[i]&&aPpl[i]?aPpl[i]/aWd[i]:0);
-  const aPdef = MONTHS_ARR.map((_,i)=>cap&&aPpd[i]?aPpd[i]/cap:0);
+  const aPdef = MONTHS_ARR.map((_,i)=>capM[i]&&aPpd[i]?aPpd[i]/capM[i]:0);
   const aUnit = MONTHS_ARR.map((_,i)=>aPpl[i]&&aRev[i]?aRev[i]/aPpl[i]:0);
   const aGr   = MONTHS_ARR.map((_,i)=>aRev[i]&&aSal[i]?aSal[i]/aRev[i]:0);
 
@@ -817,8 +858,8 @@ function renderOfficeDetailTable(data, title) {
       <td class="val-total">${totalTpm?totalTpm.toLocaleString():'－'}</td>
     </tr>
     <tr><td class="row-label">貢献人数／日</td>
-      ${Array(6).fill(`<td class="val val-fixed">${targetCapacity||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-      ${Array(6).fill(`<td class="val val-fixed">${targetCapacity||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${tcapM.slice(0,6).map(v=>`<td class="val val-fixed">${v||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${tcapM.slice(6).map(v=>`<td class="val val-fixed">${v||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
       <td class="val-total">－</td>
     </tr>
     <tr><td class="row-label">貢献報酬</td>
@@ -827,8 +868,8 @@ function renderOfficeDetailTable(data, title) {
       <td class="val-total">${totalTrev?totalTrev.toLocaleString():'－'}</td>
     </tr>
     <tr><td class="row-label">単価</td>
-      ${Array(6).fill(`<td class="val val-fixed">${up?up.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-      ${Array(6).fill(`<td class="val val-fixed">${up?up.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${upM.slice(0,6).map(v=>`<td class="val val-fixed">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${upM.slice(6).map(v=>`<td class="val val-fixed">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
       <td class="val-total">－</td>
     </tr>
     <tr><td class="row-label">給与比率</td>
@@ -842,8 +883,8 @@ function renderOfficeDetailTable(data, title) {
       <td class="val-total">${totalBpm?totalBpm.toLocaleString():'－'}</td>
     </tr>
     <tr><td class="row-label">貢献人数／日</td>
-      ${Array(6).fill(`<td class="val-break">${bpd||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-      ${Array(6).fill(`<td class="val-break">${bpd||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${bpdM.slice(0,6).map(v=>`<td class="val-break">${v||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+      ${bpdM.slice(6).map(v=>`<td class="val-break">${v||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
       <td class="val-total">－</td>
     </tr>
     <tr><td class="row-label">貢献報酬</td>
@@ -963,7 +1004,7 @@ function renderOfficeDetailTable(data, title) {
     <div class="office-name">${title}</div>
     <div class="office-meta">
       <span><strong>種別／定員：</strong>${priceLabel}</span>
-      <span><strong>単価：</strong>${up?up.toLocaleString()+'円':'未設定'}</span>
+      <span><strong>単価：</strong>${unitLabel}</span>
       <span><strong>給与比率：</strong>${(SALARY*100).toFixed(1)}%</span>
       <span><strong>損益分岐率：</strong>${(BREAK*100).toFixed(0)}%</span>
       ${multiSvc?`<span><strong>事業：</strong>${allSvcs.map(s=>svcBadge(s)).join(' ')}</span>`:''}
@@ -1089,6 +1130,11 @@ function xlRowSum(arr) {
 function xlRowFixed(v) {
   return [v,v,v,v,v,v, null, v,v,v,v,v,v, null, null];
 }
+// 月ごとに値が変わりうる「固定値」行（定員・単価など）。小計・合計は出さない
+function xlRowMonthly(arr) {
+  const a = arr||[];
+  return [...a.slice(0,6), null, ...a.slice(6,12), null, null];
+}
 function xlAvgOf(a) { const v = a.filter(x=>x>0); return v.length ? v.reduce((s,x)=>s+x,0)/v.length : null; }
 function xlRowAvg(arr) {
   const h1 = xlAvgOf(arr.slice(0,6)), h2 = xlAvgOf(arr.slice(6));
@@ -1109,9 +1155,9 @@ function xlRowRatio(aPpl, tpm) {
 
 // renderOfficeDetailTableと同じ27行（目標6・損益分岐3・実績14・貢献度4）の行定義
 function officeDetailRowSpecs(data) {
-  const { cap, targetCapacity, up, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, aSalS, aSalP } = data;
+  const { cap, targetCapacity, up, capM, tcapM, upM, wdPerMonth, tpm, tRev, aWd, aPpl, aBasic, aBody, aActR, aTreat, aRev, aSal, aSalS, aSalP } = data;
   const bpm = tpm.map(t=>Math.ceil(t*BREAK));
-  const bpd = Math.ceil(targetCapacity*BREAK*10)/10;
+  const bpdM = tcapM.map(t=>Math.ceil(t*BREAK*10)/10);
   const bRev = tRev.map(r=>Math.ceil(r*BREAK));
   const aPpd = MONTHS_ARR.map((_,i)=>aWd[i]&&aPpl[i]?aPpl[i]/aWd[i]:0);
   const aUnit = MONTHS_ARR.map((_,i)=>aPpl[i]&&aRev[i]?aRev[i]/aPpl[i]:0);
@@ -1124,12 +1170,12 @@ function officeDetailRowSpecs(data) {
   return [
     { cat:'target', label:'稼働日数',      vals: xlRowSum(wdPerMonth), numFmt:'#,##0' },
     { cat:'target', label:'貢献人数／月',   vals: xlRowSum(tpm), numFmt:'#,##0' },
-    { cat:'target', label:'貢献人数／日',   vals: xlRowFixed(targetCapacity), numFmt:'#,##0' },
+    { cat:'target', label:'貢献人数／日',   vals: xlRowMonthly(tcapM), numFmt:'#,##0' },
     { cat:'target', label:'貢献報酬',      vals: xlRowSum(tRev), numFmt:'#,##0' },
-    { cat:'target', label:'単価',         vals: xlRowFixed(up), numFmt:'#,##0' },
+    { cat:'target', label:'単価',         vals: xlRowMonthly(upM), numFmt:'#,##0' },
     { cat:'target', label:'給与比率',      vals: xlRowFixed(SALARY), numFmt:'0.0%' },
     { cat:'break',  label:'貢献人数／月',   vals: xlRowSum(bpm), numFmt:'#,##0' },
-    { cat:'break',  label:'貢献人数／日',   vals: xlRowFixed(bpd), numFmt:'0.0' },
+    { cat:'break',  label:'貢献人数／日',   vals: xlRowMonthly(bpdM), numFmt:'0.0' },
     { cat:'break',  label:'貢献報酬',      vals: xlRowSum(bRev), numFmt:'#,##0' },
     { cat:'actual', label:'稼働日数',      vals: xlRowSum(aWd), numFmt:'#,##0' },
     { cat:'actual', label:'貢献人数／月',   vals: xlRowSum(aPpl), numFmt:'#,##0' },
@@ -1794,12 +1840,16 @@ window.loadReport = async function(){
   if(!currentOffice) return;
   document.getElementById('report-area').innerHTML='<div class="loading">読み込み中...</div>';
 
-  const price     = prices.find(p=>p.id===currentOffice.priceId);
-  const unitPrice = price?.price || 0;
-  const capacity  = price?.capacity || 0;
-  const priceLabel= price ? `${price.type}　定員${capacity>0?capacity:'－'}` : '未設定';
-  // 実質目標人数（settings.htmlで事業所ごとに任意設定）。未設定なら定員をそのまま使う
-  const targetCapacity = (currentOffice.targetCapacity>0) ? currentOffice.targetCapacity : capacity;
+  // 定員・単価・実質目標は月ごと（各月1日時点）に解決する（定員変更履歴があれば途中の月で切り替わる）
+  const cfgM  = monthConfigs(currentOffice, currentYear);
+  const capM  = cfgM.map(c=>c.capacity);
+  const tcapM = cfgM.map(c=>c.targetCapacity);
+  const upM   = cfgM.map(c=>c.unitPrice);
+  const priceLabel = fyPriceLabel(cfgM);
+  const unitLabel  = fyUnitLabel(upM);
+  // 互換用のスカラー値（今日時点）
+  const curCfg = configOn(currentOffice, cfgToday());
+  const unitPrice = curCfg.unitPrice, capacity = curCfg.capacity, targetCapacity = curCfg.targetCapacity;
 
   const wdSnap = await getDoc(doc(db,'workdays',`${currentYear}_${currentOffice.name}`));
   wdData = wdSnap.exists() ? wdSnap.data().days||{} : {};
@@ -1850,16 +1900,16 @@ window.loadReport = async function(){
     let total = 0;
     Object.entries(wdData).forEach(([dateStr,v])=>{
       if (v===1 && dateStr.startsWith(mk)) {
-        total += plannedOverride[dateStr] ?? dailyPlannedAll[dateStr] ?? targetCapacity;
+        total += plannedOverride[dateStr] ?? dailyPlannedAll[dateStr] ?? configOn(currentOffice, dateStr).targetCapacity;
       }
     });
     return total;
   });
 
-  const tpm  = wdPerMonth.map(w=>w*targetCapacity);
-  const tRev = tpm.map(t=>t*unitPrice);
+  const tpm  = wdPerMonth.map((w,i)=>w*tcapM[i]);
+  const tRev = tpm.map((t,i)=>t*upM[i]);
   const bpm  = tpm.map(t=>Math.ceil(t*BREAK));
-  const bpd  = Math.ceil(targetCapacity*BREAK*10)/10;
+  const bpdM = tcapM.map(t=>Math.ceil(t*BREAK*10)/10);
   const bRev = tRev.map(r=>Math.ceil(r*BREAK));
 
   const h1wd=sum(wdPerMonth.slice(0,6)), h2wd=sum(wdPerMonth.slice(6));
@@ -1918,7 +1968,7 @@ window.loadReport = async function(){
   const aSalary = MONTHS_ARR.map((_,i)=>aSalaryS[i]+aSalaryP[i]);
 
   const aPpd  = MONTHS_ARR.map((_,i)=>aWd[i]&&aPpl[i]?aPpl[i]/aWd[i]:0);
-  const aPdef = MONTHS_ARR.map((_,i)=>capacity&&aPpd[i]?aPpd[i]/capacity:0);
+  const aPdef = MONTHS_ARR.map((_,i)=>capM[i]&&aPpd[i]?aPpd[i]/capM[i]:0);
   const aUnit = MONTHS_ARR.map((_,i)=>aPpl[i]&&aRev[i]?aRev[i]/aPpl[i]:0);
   const aGr   = MONTHS_ARR.map((_,i)=>aRev[i]&&aSalary[i]?aSalary[i]/aRev[i]:0);
 
@@ -2108,7 +2158,7 @@ window.loadReport = async function(){
     <div class="office-name">${currentOffice.name}</div>
     <div class="office-meta">
       <span><strong>種別／定員：</strong>${priceLabel}</span>
-      <span><strong>単価：</strong>${unitPrice?unitPrice.toLocaleString()+'円':'未設定'}</span>
+      <span><strong>単価：</strong>${unitLabel}</span>
       <span><strong>給与比率：</strong>${(SALARY*100).toFixed(1)}%</span>
       <span><strong>損益分岐率：</strong>${(BREAK*100).toFixed(0)}%</span>
       ${multiSvc?`<span><strong>事業：</strong>${allSvcs.map(s=>svcBadge(s)).join(' ')}</span>`:''}
@@ -2132,8 +2182,8 @@ window.loadReport = async function(){
         <td class="val-total">${totalTpm?totalTpm.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label">貢献人数／日</td>
-        ${Array(6).fill(`<td class="val val-fixed">${targetCapacity||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-        ${Array(6).fill(`<td class="val val-fixed">${targetCapacity||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${tcapM.slice(0,6).map(v=>`<td class="val val-fixed">${v||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${tcapM.slice(6).map(v=>`<td class="val val-fixed">${v||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total">－</td>
       </tr>
       <tr><td class="row-label">貢献報酬</td>
@@ -2142,8 +2192,8 @@ window.loadReport = async function(){
         <td class="val-total">${totalTrev?totalTrev.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label">単価</td>
-        ${Array(6).fill(`<td class="val val-fixed">${unitPrice?unitPrice.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-        ${Array(6).fill(`<td class="val val-fixed">${unitPrice?unitPrice.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${upM.slice(0,6).map(v=>`<td class="val val-fixed">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${upM.slice(6).map(v=>`<td class="val val-fixed">${v?v.toLocaleString():'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total">－</td>
       </tr>
       <tr><td class="row-label">給与比率</td>
@@ -2158,8 +2208,8 @@ window.loadReport = async function(){
         <td class="val-total">${totalBpm?totalBpm.toLocaleString():'－'}</td>
       </tr>
       <tr><td class="row-label">貢献人数／日</td>
-        ${Array(6).fill(`<td class="val-break">${bpd||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
-        ${Array(6).fill(`<td class="val-break">${bpd||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${bpdM.slice(0,6).map(v=>`<td class="val-break">${v||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
+        ${bpdM.slice(6).map(v=>`<td class="val-break">${v||'－'}</td>`).join('')}<td class="val-subtotal">－</td>
         <td class="val-total">－</td>
       </tr>
       <tr><td class="row-label">貢献報酬</td>
@@ -2285,8 +2335,8 @@ window.loadReport = async function(){
   ${multiSvc ? allSvcs.map(svc => renderServiceTable(byServiceLR[svc], `${currentOffice.name}（${svc}）`, aWd)).join('') : ''}`;
 
   document.getElementById('report-area').innerHTML = html;
-  window._tpm=tpm; window._tRev=tRev; window._capacity=capacity;
-  window._wdPerMonth=wdPerMonth; window._unitPrice=unitPrice;
+  window._tpm=tpm; window._tRev=tRev; window._capacity=capacity; window._capacityByMonth=capM;
+  window._wdPerMonth=wdPerMonth; window._unitPrice=unitPrice; window._unitPriceByMonth=upM;
 
   renderTrendChart('', ML_ARR, plannedPpl, tpm, bpm, aPpl, cancelRate, aSalary, tRev);
 };
@@ -2482,7 +2532,7 @@ window.recalc = function(mi) {
   const tot = getMonthTotals(MONTHS_ARR[mi]);
   const ppl = tot.people;
   const rev = tot.totalRev;
-  const cap = window._capacity||0;
+  const cap = (window._capacityByMonth||[])[mi] ?? (window._capacity||0); // その月の定員
   const ppd = wd&&ppl?ppl/wd:0;
   const pdef= cap&&ppd?ppd/cap:0;
   const unitp=ppl&&rev?rev/ppl:0;
@@ -2515,8 +2565,8 @@ window.recalcTotals = function(){
   const aTreat=tots.map(t=>t.treatRev);
   const aSal = MONTHS_ARR.map((_,i)=>aSS[i]+aSP[i]);
   const aPpd = MONTHS_ARR.map((_,i)=>aWd[i]&&aPpl[i]?aPpl[i]/aWd[i]:0);
-  const cap  = window._capacity||0;
-  const aPdef= MONTHS_ARR.map((_,i)=>cap&&aPpd[i]?aPpd[i]/cap:0);
+  const capM = window._capacityByMonth||[];
+  const aPdef= MONTHS_ARR.map((_,i)=>{ const cap=capM[i] ?? (window._capacity||0); return cap&&aPpd[i]?aPpd[i]/cap:0; });
   const aUnit= MONTHS_ARR.map((_,i)=>aPpl[i]&&aRev[i]?aRev[i]/aPpl[i]:0);
   const aGr  = MONTHS_ARR.map((_,i)=>aRev[i]&&aSal[i]?aSal[i]/aRev[i]:0);
 
