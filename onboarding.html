@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon_32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon_192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="assets/favicon_512.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新人チェックリスト | ベルアージュ</title>
+<link rel="stylesheet" href="sidebar.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#F4F6F8;color:#333}
+.content{padding:20px;max-width:1000px;margin:0 auto}
+.card{background:#fff;border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.card-title{font-size:14px;font-weight:700;color:#1D9E75;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #E0F5ED}
+.hidden{display:none !important}
+.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.tab-btn{background:#fff;color:#555;border:1px solid #E8EAED;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.tab-btn.active{background:#F0FAF6;color:#1D9E75;border-color:#1D9E75}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.toolbar select,.toolbar input{padding:6px 10px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:12px;background:#fff}
+.btn-primary{background:#F0FAF6;color:#1D9E75;border:1px solid #1D9E75;padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}
+.btn-primary:hover{background:#E0F5ED}
+.btn-secondary{background:#fff;color:#555;padding:7px 16px;border-radius:6px;border:1px solid #E8EAED;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-secondary:hover{background:#F4F6F8}
+.btn-danger{background:#fff;color:#C62828;padding:7px 16px;border-radius:6px;border:1px solid #F5C2C2;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-sm{padding:4px 10px;font-size:11px;border-radius:5px}
+.ml-auto{margin-left:auto}
+.empty-msg{color:#aaa;font-size:13px;text-align:center;padding:40px 0}
+/* 一覧 */
+table.list{width:100%;border-collapse:collapse;font-size:13px}
+table.list th{font-size:11px;color:#888;font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid #E8EAED;white-space:nowrap}
+table.list td{padding:10px;border-bottom:1px solid #F1F3F5;vertical-align:middle}
+table.list tr.row{cursor:pointer}
+table.list tr.row:hover td{background:#F8FBFA}
+.bar{display:inline-block;width:90px;height:8px;background:#EEF1F3;border-radius:4px;overflow:hidden;vertical-align:middle;margin-right:6px}
+.bar i{display:block;height:100%;background:#2FAF87}
+.pill{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.p-wait{background:#FFF3E0;color:#CC6600}
+.p-done{background:#E8F5EE;color:#1D6E3E}
+.p-grey{background:#F1F1F1;color:#777}
+/* 1人分 */
+.d-head{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.d-name{font-size:18px;font-weight:700}
+.d-meta{font-size:12px;color:#777;margin-top:4px}
+.d-stats{display:flex;gap:16px;margin-top:10px;font-size:12px;color:#555;flex-wrap:wrap}
+.d-stats b{font-size:16px;color:#333}
+.rec-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#F8F9FA;border-radius:8px;padding:10px 12px;margin-top:14px;font-size:12px}
+.rec-bar input{padding:5px 8px;border:1px solid #E8EAED;border-radius:6px;font-family:inherit;font-size:12px}
+.rec-bar .note{color:#999;font-size:11px}
+.sec{background:#fff;border-radius:8px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden}
+.sec-head{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;user-select:none}
+.sec-title{font-size:14px;font-weight:700;color:#1D6E56}
+.sec-count{font-size:11px;color:#888}
+.sec-arrow{margin-left:auto;color:#bbb;font-size:11px;transition:transform .2s}
+.sec.closed .sec-arrow{transform:rotate(-90deg)}
+.sec.closed .sec-body{display:none}
+.sec-note{font-size:12px;color:#8A5A00;background:#FFF8E6;padding:8px 16px;border-top:1px solid #F5E6C4}
+.item{display:flex;gap:12px;padding:12px 16px;border-top:1px solid #F1F3F5;align-items:flex-start}
+.item-mark{font-size:18px;line-height:1.2;width:20px;text-align:center;flex-shrink:0}
+.item-main{flex:1;min-width:0}
+.item-title{font-size:13px;font-weight:600;line-height:1.5}
+.item-details{font-size:12px;color:#666;line-height:1.7;margin-top:3px}
+.item-details div::before{content:'└ ';color:#bbb}
+.item-rec{font-size:11px;color:#1D6E3E;margin-top:6px}
+.item-rec.wait{color:#CC6600}
+.item-memo{font-size:12px;color:#555;background:#F8F9FA;border-radius:6px;padding:6px 10px;margin-top:6px;white-space:pre-wrap}
+.item-actions{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;justify-content:flex-end;max-width:240px}
+.st-done .item-mark{color:#2FAF87}
+.st-practiced .item-mark{color:#2FAF87}
+.st-overview .item-mark{color:#E08A00}
+.st-none .item-mark{color:#ccc}
+/* モーダル */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:#fff;border-radius:10px;padding:20px;width:100%;max-width:440px}
+.modal h3{font-size:15px;margin-bottom:14px;color:#1D6E56}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:12px;color:#555;margin-bottom:4px;font-weight:600}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;border:1px solid #E8EAED;border-radius:6px;font-size:13px;font-family:inherit;background:#fff}
+.warn{font-size:11px;color:#C62828;margin-top:4px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+/* ひな形 */
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#tpl-text{width:100%;min-height:520px;padding:10px 12px;border:1px solid #E8EAED;border-radius:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.7}
+.tpl-help{font-size:12px;color:#666;line-height:1.8;margin-bottom:10px}
+.tpl-help code{background:#F1F3F5;padding:1px 5px;border-radius:4px}
+.tpl-prev{font-size:12px;line-height:1.7;max-height:560px;overflow:auto;border:1px solid #E8EAED;border-radius:6px;padding:10px 12px}
+.tpl-prev h4{font-size:13px;color:#1D6E56;margin:10px 0 4px}
+.tpl-err{font-size:12px;color:#C62828;margin:8px 0;line-height:1.7}
+.status-msg{font-size:12px;color:#1D9E75;margin-left:8px}
+.print-only{display:none}
+@media (max-width:700px){
+  .content{padding:12px}
+  .tpl-grid{grid-template-columns:1fr}
+  .item{flex-wrap:wrap}
+  .item-actions{max-width:none;width:100%;justify-content:flex-start;padding-left:32px}
+  table.list .hide-sp{display:none}
+}
+@media print{
+  .sidebar,.sidebar-overlay,.topbar,.tabs,.no-print,.item-actions,.rec-bar{display:none !important}
+  .main{margin-left:0}
+  body{background:#fff}
+  .content{padding:0;max-width:none}
+  .card,.sec{box-shadow:none;border:1px solid #ddd}
+  .sec.closed .sec-body{display:block}
+  .sec-arrow{display:none}
+  .item{break-inside:avoid}
+  .print-only{display:block}
+  .sign{display:flex;gap:24px;margin-top:20px;font-size:12px}
+  .sign div{flex:1;border-bottom:1px solid #999;padding-bottom:24px}
+}
+</style>
+</head>
+<body>
+<script src="sidebar.js?v=2"></script>
+<div class="main">
+  <div class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="メニュー">☰</button>
+    <span class="topbar-title">🔰 新人チェックリスト</span>
+    <div id="top-bar-user-info" style="display:flex;align-items:center;gap:8px;margin-left:auto"></div>
+  </div>
+<div class="content">
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="list" onclick="switchTab('list')">一覧</button>
+    <button class="tab-btn hidden" data-tab="tpl" id="tab-tpl" onclick="switchTab('tpl')">ひな形の編集</button>
+  </div>
+
+  <!-- ===== 一覧 ===== -->
+  <div id="view-list">
+    <div class="toolbar">
+      <select id="f-office" onchange="renderList()"><option value="">全事業所</option></select>
+      <select id="f-status" onchange="renderList()">
+        <option value="active">進行中</option>
+        <option value="closed">完了</option>
+        <option value="">すべて</option>
+      </select>
+      <button class="btn-primary ml-auto" onclick="openCreate()">＋ チェックリストを開始</button>
+    </div>
+    <div class="card" style="padding:8px 12px">
+      <table class="list">
+        <thead><tr><th>氏名</th><th>事業所</th><th class="hide-sp">着任日</th><th>初日の説明</th><th>実務で確認待ち</th><th class="hide-sp">状態</th></tr></thead>
+        <tbody id="list-body"><tr><td colspan="6" class="empty-msg">読み込み中...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== 1人分 ===== -->
+  <div id="view-detail" class="hidden">
+    <div class="toolbar no-print">
+      <button class="btn-secondary" onclick="backToList()">← 一覧へ</button>
+      <button class="btn-secondary ml-auto" onclick="window.print()">印刷</button>
+      <button class="btn-secondary" id="btn-close" onclick="toggleClosed()">完了にする</button>
+      <button class="btn-danger hidden" id="btn-delete" onclick="deleteRecord()">削除</button>
+    </div>
+    <div class="card">
+      <div class="print-only" style="font-size:12px;color:#777;margin-bottom:6px">新入社員着任時 業務説明チェックリスト</div>
+      <div class="d-head">
+        <div>
+          <div class="d-name" id="d-name"></div>
+          <div class="d-meta" id="d-meta"></div>
+        </div>
+      </div>
+      <div class="d-stats" id="d-stats"></div>
+      <div class="rec-bar">
+        <span>記録する内容：</span>
+        <label>説明者 <input type="text" id="rec-by" style="width:130px"></label>
+        <label>日付 <input type="date" id="rec-date"></label>
+        <span class="note">チェックすると、この説明者と日付で記録されます</span>
+      </div>
+    </div>
+    <div id="d-sections"></div>
+    <div class="print-only sign">
+      <div>説明者（管理者）</div><div>本人</div><div>確認日</div>
+    </div>
+  </div>
+
+  <!-- ===== ひな形の編集（admin・事業支援課） ===== -->
+  <div id="view-tpl" class="hidden">
+    <div class="card">
+      <div class="card-title">ひな形の編集（全事業所共通）</div>
+      <div class="tpl-help">
+        紙の様式と同じ書き方で編集します。行の先頭を
+        <code>##</code> 章 ／ <code>□</code> 項目 ／ <code>└</code> 説明すること ／ <code>※</code> 章の注記 にしてください。<br>
+        保存すると、<b>これから開始するチェックリスト</b>に反映されます。開始済みのチェックリストの項目は変わりません。
+        <div id="tpl-ver" style="color:#999;margin-top:4px"></div>
+      </div>
+      <div class="tpl-grid">
+        <div><textarea id="tpl-text" oninput="previewTpl()"></textarea></div>
+        <div>
+          <div id="tpl-err" class="tpl-err"></div>
+          <div class="tpl-prev" id="tpl-prev"></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn-primary" onclick="saveTpl()">保存する</button>
+        <button class="btn-secondary" onclick="resetTplToDefault()">初期値（受領した様式）に戻す</button>
+        <span id="tpl-status" class="status-msg"></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- 開始モーダル -->
+<div class="modal-bg hidden" id="create-modal">
+  <div class="modal">
+    <h3>チェックリストを開始</h3>
+    <div class="fg"><label>新入社員の氏名</label><input type="text" id="c-name" placeholder="例：山田　花子"></div>
+    <div class="fg"><label>着任する事業所</label><select id="c-office"></select></div>
+    <div class="fg"><label>着任日</label><input type="date" id="c-date"></div>
+    <div class="warn" id="c-err"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('create-modal')">やめる</button>
+      <button class="btn-primary" onclick="createRecord()">開始する</button>
+    </div>
+  </div>
+</div>
+
+<!-- メモモーダル -->
+<div class="modal-bg hidden" id="memo-modal">
+  <div class="modal">
+    <h3 id="memo-title">メモ</h3>
+    <div class="fg"><textarea id="memo-text" rows="4" placeholder="例：NASの接続は後日 IT 担当と設定する"></textarea>
+      <div class="warn">児童・保護者の氏名など、個人を特定できる情報は書かないでください。</div></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('memo-modal')">やめる</button>
+      <button class="btn-primary" onclick="saveMemo()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, deleteField, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { resolveTier } from './perm.js';
+import { DEFAULT_TEMPLATE_TEXT, parseTemplate, countItems } from './onboarding-template.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
+  authDomain:"daily-report-b90e8.firebaseapp.com",
+  projectId:"daily-report-b90e8",
+  storageBucket:"daily-report-b90e8.firebasestorage.app",
+  messagingSenderId:"16569831525",
+  appId:"1:16569831525:web:aa250f2061f762dfe1768c"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// 状態：none（未）/ done（説明済）/ overview（全体像のみ・実務で確認待ち）/ practiced（実務で確認済）
+// 最終形（本人の「理解した」チェック）は checks[itemId].ack と staffUid を足して対応する予定。
+const TPL_DOC = doc(db, 'onboardingTemplates', 'default');
+
+let currentUid = null;
+let currentUserData = null;
+let canManage = false;       // admin・事業支援課（ひな形の編集・記録の削除）
+let OFFICES = [];            // [{id,name}]
+let RECORDS = [];
+let current = null;          // 表示中の1人分
+let template = null;         // {text, version, updatedBy, updatedAt}
+let memoItemId = null;
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const fmtD = s => s ? s.replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_, y, m, d) => `${y}/${+m}/${+d}`) : '';
+const myName = () => currentUserData?.displayName || auth.currentUser?.email || '';
+const officeName = id => OFFICES.find(o => o.id === id)?.name || '';
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { location.href = 'login.html'; return; }
+  try {
+    currentUid = user.uid;
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (!snap.exists() || snap.data().disabled) { await signOut(auth); location.href = 'login.html'; return; }
+    currentUserData = snap.data();
+    renderUserBadge(document.getElementById('top-bar-user-info'), currentUserData, user.email);
+    const tier = resolveTier(currentUserData).tier;
+    canManage = tier === 'admin' || tier === 'supporter';
+    if (canManage) document.getElementById('tab-tpl').classList.remove('hidden');
+
+    const offSnap = await getDocs(collection(db, 'offices'));
+    const myOffices = [];
+    offSnap.forEach(d => {
+      const o = d.data();
+      if (!o.name) return;
+      OFFICES.push({ id: d.id, name: o.name });
+      if (o.managerUid === user.uid) myOffices.push(d.id);
+    });
+    OFFICES.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+    const opts = OFFICES.map(o => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
+    document.getElementById('f-office').insertAdjacentHTML('beforeend', opts);
+    document.getElementById('c-office').innerHTML = opts;
+    const mine = currentUserData.officeId || (myOffices.length === 1 ? myOffices[0] : '');
+    if (mine && !canManage) document.getElementById('f-office').value = mine;
+    if (mine) document.getElementById('c-office').value = mine;
+
+    await loadRecords();
+    const id = new URLSearchParams(location.search).get('id');
+    if (id) openDetail(id);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('list-body').innerHTML = '<tr><td colspan="6" class="empty-msg">読み込みに失敗しました</td></tr>';
+  }
+});
+
+window._logout = async function () { await signOut(auth); location.href = 'login.html'; };
+
+// ── 集計 ──────────────────────────────────────────
+function tally(r) {
+  const total = countItems(r.sections);
+  let started = 0, wait = 0, finished = 0;
+  (r.sections || []).forEach(s => s.items.forEach(it => {
+    const st = r.checks?.[it.id]?.status;
+    if (st) started++;
+    if (st === 'overview') wait++;
+    if (st === 'done' || st === 'practiced') finished++;
+  }));
+  return { total, started, wait, finished };
+}
+
+// ── 一覧 ──────────────────────────────────────────
+async function loadRecords() {
+  const snap = await getDocs(collection(db, 'onboardings'));
+  RECORDS = [];
+  snap.forEach(d => RECORDS.push({ id: d.id, ...d.data() }));
+  RECORDS.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+  renderList();
+}
+
+window.renderList = function () {
+  const fo = document.getElementById('f-office').value;
+  const fs = document.getElementById('f-status').value;
+  const rows = RECORDS.filter(r => (!fo || r.officeId === fo) && (!fs || (r.status || 'active') === fs));
+  const body = document.getElementById('list-body');
+  if (!rows.length) { body.innerHTML = '<tr><td colspan="6" class="empty-msg">該当するチェックリストはありません</td></tr>'; return; }
+  body.innerHTML = rows.map(r => {
+    const t = tally(r);
+    const pct = t.total ? Math.round(t.started / t.total * 100) : 0;
+    const st = r.status === 'closed' ? '<span class="pill p-done">完了</span>' : '<span class="pill p-grey">進行中</span>';
+    return `<tr class="row" onclick="openDetail('${esc(r.id)}')">
+      <td><b>${esc(r.staffName)}</b></td>
+      <td>${esc(r.officeName || officeName(r.officeId))}</td>
+      <td class="hide-sp">${esc(fmtD(r.startDate))}</td>
+      <td><span class="bar"><i style="width:${pct}%"></i></span>${t.started}/${t.total}</td>
+      <td>${t.wait ? `<span class="pill p-wait">${t.wait}件</span>` : '<span style="color:#bbb">―</span>'}</td>
+      <td class="hide-sp">${st}</td></tr>`;
+  }).join('');
+};
+
+window.switchTab = function (tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('view-list').classList.toggle('hidden', tab !== 'list');
+  document.getElementById('view-detail').classList.add('hidden');
+  document.getElementById('view-tpl').classList.toggle('hidden', tab !== 'tpl');
+  if (tab === 'tpl') loadTplEditor();
+  if (tab === 'list') history.replaceState(null, '', 'onboarding.html');
+};
+
+// ── ひな形 ────────────────────────────────────────
+async function getTemplate() {
+  const s = await getDoc(TPL_DOC);
+  template = s.exists() ? s.data() : { text: DEFAULT_TEMPLATE_TEXT, version: 0 };
+  return template;
+}
+
+async function loadTplEditor() {
+  const t = await getTemplate();
+  document.getElementById('tpl-text').value = t.text;
+  document.getElementById('tpl-ver').textContent = t.version
+    ? `現在：第${t.version}版（${t.updatedBy || ''} ${fmtD(t.updatedDate || '')} 保存）`
+    : '現在：初期値（まだ保存されていません）';
+  previewTpl();
+}
+
+window.previewTpl = function () {
+  const { sections, errors } = parseTemplate(document.getElementById('tpl-text').value);
+  document.getElementById('tpl-err').innerHTML = errors.map(esc).join('<br>');
+  document.getElementById('tpl-prev').innerHTML = `<div style="color:#999">全${countItems(sections)}項目</div>` + sections.map(s =>
+    `<h4>${esc(s.title)}</h4>` +
+    s.notes.map(n => `<div style="color:#8A5A00">※ ${esc(n)}</div>`).join('') +
+    s.items.map(it => `<div>□ ${esc(it.title)}</div>` + it.details.map(d => `<div style="color:#888;padding-left:14px">└ ${esc(d)}</div>`).join('')).join('')
+  ).join('');
+};
+
+window.resetTplToDefault = function () {
+  document.getElementById('tpl-text').value = DEFAULT_TEMPLATE_TEXT;
+  previewTpl();
+  document.getElementById('tpl-status').textContent = '初期値を読み込みました（まだ保存していません）';
+};
+
+window.saveTpl = async function () {
+  if (!canManage) return;
+  const text = document.getElementById('tpl-text').value;
+  const { errors } = parseTemplate(text);
+  if (errors.length) { document.getElementById('tpl-status').textContent = '書き方の誤りを直してから保存してください'; return; }
+  const version = (template?.version || 0) + 1;
+  try {
+    await setDoc(TPL_DOC, { text, version, scope: 'all', updatedBy: myName(), updatedByUid: currentUid, updatedDate: today(), updatedAt: serverTimestamp() });
+    document.getElementById('tpl-status').textContent = `第${version}版として保存しました`;
+    await loadTplEditor();
+  } catch (e) {
+    console.error(e);
+    document.getElementById('tpl-status').textContent = '保存に失敗しました';
+  }
+};
+
+// ── 開始 ──────────────────────────────────────────
+window.openCreate = function () {
+  document.getElementById('c-name').value = '';
+  document.getElementById('c-date').value = today();
+  document.getElementById('c-err').textContent = '';
+  document.getElementById('create-modal').classList.remove('hidden');
+  document.getElementById('c-name').focus();
+};
+window.closeModal = id => document.getElementById(id).classList.add('hidden');
+
+window.createRecord = async function () {
+  const staffName = document.getElementById('c-name').value.trim();
+  const officeId = document.getElementById('c-office').value;
+  const startDate = document.getElementById('c-date').value;
+  const err = document.getElementById('c-err');
+  if (!staffName || !officeId || !startDate) { err.textContent = '氏名・事業所・着任日を入れてください'; return; }
+  try {
+    const t = await getTemplate();
+    const { sections, errors } = parseTemplate(t.text);
+    if (errors.length) { err.textContent = 'ひな形に誤りがあります。事業支援課に連絡してください'; return; }
+    const ref = await addDoc(collection(db, 'onboardings'), {
+      staffName, staffUid: null, officeId, officeName: officeName(officeId), startDate,
+      status: 'active', templateVersion: t.version || 0, sections, checks: {},
+      createdBy: myName(), createdByUid: currentUid, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+    });
+    closeModal('create-modal');
+    await loadRecords();
+    openDetail(ref.id);
+  } catch (e) {
+    console.error(e);
+    err.textContent = '開始できませんでした';
+  }
+};
+
+// ── 1人分 ─────────────────────────────────────────
+window.openDetail = function (id) {
+  current = RECORDS.find(r => r.id === id);
+  if (!current) return;
+  history.replaceState(null, '', 'onboarding.html?id=' + encodeURIComponent(id));
+  document.getElementById('view-list').classList.add('hidden');
+  document.getElementById('view-tpl').classList.add('hidden');
+  document.getElementById('view-detail').classList.remove('hidden');
+  document.getElementById('rec-by').value = myName();
+  document.getElementById('rec-date').value = today();
+  document.getElementById('btn-delete').classList.toggle('hidden', !canManage);
+  renderDetail();
+  window.scrollTo(0, 0);
+};
+
+window.backToList = function () { switchTab('list'); };
+
+function recLine(c) {
+  if (!c?.status) return '';
+  const first = `${esc(c.by)} ${esc(fmtD(c.date))}`;
+  if (c.status === 'done') return `<div class="item-rec">説明済：${first}</div>`;
+  if (c.status === 'overview') return `<div class="item-rec wait">全体像のみ：${first} → 実務での確認待ち</div>`;
+  return `<div class="item-rec">全体像：${first} ／ 実務で確認済：${esc(c.practicedBy)} ${esc(fmtD(c.practicedDate))}</div>`;
+}
+
+function actions(it, c) {
+  const id = esc(it.id);
+  const st = c?.status;
+  const b = [];
+  if (!st) {
+    b.push(`<button class="btn-primary btn-sm" onclick="setStatus('${id}','done')">説明した</button>`);
+    b.push(`<button class="btn-secondary btn-sm" onclick="setStatus('${id}','overview')">全体像のみ</button>`);
+  } else if (st === 'overview') {
+    b.push(`<button class="btn-primary btn-sm" onclick="setStatus('${id}','practiced')">実務で確認した</button>`);
+    b.push(`<button class="btn-secondary btn-sm" onclick="setStatus('${id}','')">取消</button>`);
+  } else {
+    b.push(`<button class="btn-secondary btn-sm" onclick="setStatus('${id}','${st === 'practiced' ? 'overview' : ''}')">取消</button>`);
+  }
+  b.push(`<button class="btn-secondary btn-sm" onclick="openMemo('${id}')">メモ</button>`);
+  return b.join('');
+}
+
+const MARK = { done: '☑', practiced: '☑', overview: '◐' };
+
+function renderDetail() {
+  const r = current;
+  const closed = r.status === 'closed';
+  document.getElementById('d-name').textContent = r.staffName;
+  document.getElementById('d-meta').textContent =
+    `${r.officeName || officeName(r.officeId)}　着任日 ${fmtD(r.startDate)}　開始：${r.createdBy || ''}　ひな形 ${r.templateVersion ? '第' + r.templateVersion + '版' : '初期値'}${closed ? '　【完了】' : ''}`;
+  const t = tally(r);
+  document.getElementById('d-stats').innerHTML =
+    `<span>初日の説明 <b>${t.started}</b> / ${t.total}</span>` +
+    `<span>実務で確認待ち <b style="color:#CC6600">${t.wait}</b></span>` +
+    `<span>すべて済み <b>${t.finished}</b> / ${t.total}</span>`;
+  document.getElementById('btn-close').textContent = closed ? '進行中に戻す' : '完了にする';
+
+  const openState = {};
+  document.querySelectorAll('#d-sections .sec').forEach(el => openState[el.dataset.sec] = !el.classList.contains('closed'));
+  document.getElementById('d-sections').innerHTML = (r.sections || []).map(s => {
+    const done = s.items.filter(it => r.checks?.[it.id]?.status).length;
+    const isOpen = s.id in openState ? openState[s.id] : done < s.items.length;
+    return `<div class="sec${isOpen ? '' : ' closed'}" data-sec="${esc(s.id)}">
+      <div class="sec-head" onclick="this.parentElement.classList.toggle('closed')">
+        <span class="sec-title">${esc(s.title)}</span><span class="sec-count">${done}/${s.items.length}</span><span class="sec-arrow">▼</span>
+      </div>
+      <div class="sec-body">
+        ${s.notes?.length ? `<div class="sec-note">${s.notes.map(n => '※ ' + esc(n)).join('<br>')}</div>` : ''}
+        ${s.items.map(it => {
+          const c = r.checks?.[it.id];
+          return `<div class="item st-${c?.status || 'none'}">
+            <div class="item-mark">${MARK[c?.status] || '☐'}</div>
+            <div class="item-main">
+              <div class="item-title">${esc(it.title)}</div>
+              ${it.details?.length ? `<div class="item-details">${it.details.map(d => `<div>${esc(d)}</div>`).join('')}</div>` : ''}
+              ${recLine(c)}
+              ${c?.memo ? `<div class="item-memo">${esc(c.memo)}</div>` : ''}
+            </div>
+            <div class="item-actions">${closed ? '' : actions(it, c)}</div>
+          </div>`;
+        }).join('')}
+      </div></div>`;
+  }).join('');
+}
+
+async function writeCheck(itemId, next) {
+  const path = 'checks.' + itemId;
+  await updateDoc(doc(db, 'onboardings', current.id), {
+    [path]: next ?? deleteField(), updatedAt: serverTimestamp(),
+  });
+  current.checks = current.checks || {};
+  if (next) current.checks[itemId] = next; else delete current.checks[itemId];
+  renderDetail();
+}
+
+window.setStatus = async function (itemId, status) {
+  const by = document.getElementById('rec-by').value.trim();
+  const date = document.getElementById('rec-date').value;
+  if ((status === 'done' || status === 'overview' || status === 'practiced') && (!by || !date)) {
+    alert('説明者と日付を入れてください'); return;
+  }
+  const prev = current.checks?.[itemId] || {};
+  let next;
+  if (status === 'done' || (status === 'overview' && !prev.status)) {
+    next = { ...prev, status, by, byUid: currentUid, date };
+  } else if (status === 'practiced') {
+    next = { ...prev, status, practicedBy: by, practicedByUid: currentUid, practicedDate: date };
+  } else if (status === 'overview') {
+    // 実務で確認済 → 取消：全体像のみの状態に戻す
+    next = { ...prev, status };
+    delete next.practicedBy; delete next.practicedByUid; delete next.practicedDate;
+  } else {
+    if (prev.status && !confirm('このチェックを取り消しますか？')) return;
+    next = prev.memo ? { memo: prev.memo } : null;
+  }
+  try { await writeCheck(itemId, next); }
+  catch (e) { console.error(e); alert('保存に失敗しました'); }
+};
+
+window.openMemo = function (itemId) {
+  memoItemId = itemId;
+  const it = current.sections.flatMap(s => s.items).find(x => x.id === itemId);
+  document.getElementById('memo-title').textContent = 'メモ：' + (it?.title || '');
+  document.getElementById('memo-text').value = current.checks?.[itemId]?.memo || '';
+  document.getElementById('memo-modal').classList.remove('hidden');
+};
+
+window.saveMemo = async function () {
+  const memo = document.getElementById('memo-text').value.trim();
+  const prev = current.checks?.[memoItemId] || {};
+  const next = { ...prev };
+  if (memo) next.memo = memo; else delete next.memo;
+  try {
+    await writeCheck(memoItemId, Object.keys(next).length ? next : null);
+    closeModal('memo-modal');
+  } catch (e) { console.error(e); alert('保存に失敗しました'); }
+};
+
+window.toggleClosed = async function () {
+  const closing = current.status !== 'closed';
+  const t = tally(current);
+  if (closing && t.finished < t.total &&
+      !confirm(`まだ済んでいない項目が ${t.total - t.finished} 件あります（実務で確認待ちを含む）。完了にしますか？`)) return;
+  const status = closing ? 'closed' : 'active';
+  try {
+    await updateDoc(doc(db, 'onboardings', current.id), {
+      status, closedBy: closing ? myName() : deleteField(), closedDate: closing ? today() : deleteField(), updatedAt: serverTimestamp(),
+    });
+    current.status = status;
+    renderDetail(); renderList();
+  } catch (e) { console.error(e); alert('保存に失敗しました'); }
+};
+
+window.deleteRecord = async function () {
+  if (!canManage) return;
+  if (!confirm(`${current.staffName} さんのチェックリストを削除します。元に戻せません。よろしいですか？`)) return;
+  try {
+    await deleteDoc(doc(db, 'onboardings', current.id));
+    RECORDS = RECORDS.filter(r => r.id !== current.id);
+    current = null;
+    switchTab('list');
+    renderList();
+  } catch (e) { console.error(e); alert('削除に失敗しました'); }
+};
+</script>
+</body>
+</html>

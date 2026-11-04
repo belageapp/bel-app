@@ -11,6 +11,9 @@
     { label: '問合せ', items: [
       { href: 'leads.html', icon: '📞', label: '問合せ・見学管理' }
     ] },
+    { label: '職員', items: [
+      { href: 'onboarding.html', icon: '🔰', label: '新人チェックリスト' }
+    ] },
     { label: 'レポート', items: [
       { href: 'monthly.html', icon: '📈', label: '貢献速報（月次）' },
       { href: 'report.html', icon: '📊', label: '貢献実績表（年次）' },
