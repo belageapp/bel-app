@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon_192.png">
 <link rel="apple-touch-icon" sizes="512x512" href="assets/favicon_512.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>新人チェックリスト | ベルアージュ</title>
+<title>OJT伴走シート | ベルアージュ</title>
 <link rel="stylesheet" href="sidebar.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -118,7 +118,7 @@ table.list tr.row:hover td{background:#F8FBFA}
 <div class="main">
   <div class="topbar">
     <button class="hamburger" onclick="toggleSidebar()" aria-label="メニュー">☰</button>
-    <span class="topbar-title">🔰 新人チェックリスト</span>
+    <span class="topbar-title">🔰 OJT伴走シート</span>
     <div id="top-bar-user-info" style="display:flex;align-items:center;gap:8px;margin-left:auto"></div>
   </div>
 <div class="content">
@@ -137,7 +137,7 @@ table.list tr.row:hover td{background:#F8FBFA}
         <option value="closed">完了</option>
         <option value="">すべて</option>
       </select>
-      <button class="btn-primary ml-auto" onclick="openCreate()">＋ チェックリストを開始</button>
+      <button class="btn-primary ml-auto" onclick="openCreate()">＋ シートを開始</button>
     </div>
     <div class="card" style="padding:8px 12px">
       <table class="list">
@@ -156,7 +156,7 @@ table.list tr.row:hover td{background:#F8FBFA}
       <button class="btn-danger hidden" id="btn-delete" onclick="deleteRecord()">削除</button>
     </div>
     <div class="card">
-      <div class="print-only" style="font-size:12px;color:#777;margin-bottom:6px">新入社員着任時 業務説明チェックリスト</div>
+      <div class="print-only" style="font-size:12px;color:#777;margin-bottom:6px">OJT伴走シート（新入社員着任時の業務説明）</div>
       <div class="d-head">
         <div>
           <div class="d-name" id="d-name"></div>
@@ -184,7 +184,7 @@ table.list tr.row:hover td{background:#F8FBFA}
       <div class="tpl-help">
         紙の様式と同じ書き方で編集します。行の先頭を
         <code>##</code> 章 ／ <code>□</code> 項目 ／ <code>└</code> 説明すること ／ <code>※</code> 章の注記 にしてください。<br>
-        保存すると、<b>これから開始するチェックリスト</b>に反映されます。開始済みのチェックリストの項目は変わりません。
+        保存すると、<b>これから開始するシート</b>に反映されます。開始済みのシートの項目は変わりません。
         <div id="tpl-ver" style="color:#999;margin-top:4px"></div>
       </div>
       <div class="tpl-grid">
@@ -208,7 +208,7 @@ table.list tr.row:hover td{background:#F8FBFA}
 <!-- 開始モーダル -->
 <div class="modal-bg hidden" id="create-modal">
   <div class="modal">
-    <h3>チェックリストを開始</h3>
+    <h3>OJT伴走シートを開始</h3>
     <div class="fg"><label>新入社員の氏名</label><input type="text" id="c-name" placeholder="例：山田　花子"></div>
     <div class="fg"><label>着任する事業所</label><select id="c-office"></select></div>
     <div class="fg"><label>着任日</label><input type="date" id="c-date"></div>
@@ -337,7 +337,7 @@ window.renderList = function () {
   const fs = document.getElementById('f-status').value;
   const rows = RECORDS.filter(r => (!fo || r.officeId === fo) && (!fs || (r.status || 'active') === fs));
   const body = document.getElementById('list-body');
-  if (!rows.length) { body.innerHTML = '<tr><td colspan="6" class="empty-msg">該当するチェックリストはありません</td></tr>'; return; }
+  if (!rows.length) { body.innerHTML = '<tr><td colspan="6" class="empty-msg">該当するシートはありません</td></tr>'; return; }
   body.innerHTML = rows.map(r => {
     const t = tally(r);
     const pct = t.total ? Math.round(t.started / t.total * 100) : 0;
@@ -598,7 +598,7 @@ window.toggleClosed = async function () {
 
 window.deleteRecord = async function () {
   if (!canManage) return;
-  if (!confirm(`${current.staffName} さんのチェックリストを削除します。元に戻せません。よろしいですか？`)) return;
+  if (!confirm(`${current.staffName} さんのシートを削除します。元に戻せません。よろしいですか？`)) return;
   try {
     await deleteDoc(doc(db, 'onboardings', current.id));
     RECORDS = RECORDS.filter(r => r.id !== current.id);

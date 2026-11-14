@@ -12,7 +12,7 @@
       { href: 'leads.html', icon: '📞', label: '問合せ・見学管理' }
     ] },
     { label: '職員', items: [
-      { href: 'onboarding.html', icon: '🔰', label: '新人チェックリスト' }
+      { href: 'onboarding.html', icon: '🔰', label: 'OJT伴走シート' }
     ] },
     { label: 'レポート', items: [
       { href: 'monthly.html', icon: '📈', label: '貢献速報（月次）' },
