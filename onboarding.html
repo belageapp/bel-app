@@ -90,6 +90,16 @@ table.list tr.row:hover td{background:#F8FBFA}
 .tpl-prev h4{font-size:13px;color:#1D6E56;margin:10px 0 4px}
 .tpl-err{font-size:12px;color:#C62828;margin:8px 0;line-height:1.7}
 .status-msg{font-size:12px;color:#1D9E75;margin-left:8px}
+/* 担当業務 */
+.sec-x .sec-title{color:#3D5A99}
+.sec-x .sec-note{color:#3D5A99;background:#F1F5FC;border-top-color:#DCE5F5}
+.sec-x-add{padding:10px 16px;border-top:1px solid #F1F3F5}
+.x-list{max-height:280px;overflow:auto;border:1px solid #E8EAED;border-radius:6px;padding:4px 0;margin-bottom:12px}
+.x-list label{display:flex;gap:8px;align-items:flex-start;padding:7px 12px;font-size:13px;cursor:pointer}
+.x-list label:hover{background:#F8FBFA}
+.x-list label.added{color:#aaa;cursor:default}
+.x-list .x-det{font-size:11px;color:#888;line-height:1.6}
+.x-list input{margin-top:3px}
 .print-only{display:none}
 @media (max-width:700px){
   .content{padding:12px}
@@ -125,6 +135,7 @@ table.list tr.row:hover td{background:#F8FBFA}
 
   <div class="tabs">
     <button class="tab-btn active" data-tab="list" onclick="switchTab('list')">一覧</button>
+    <button class="tab-btn hidden" data-tab="xtra" id="tab-xtra" onclick="switchTab('xtra')">担当業務</button>
     <button class="tab-btn hidden" data-tab="tpl" id="tab-tpl" onclick="switchTab('tpl')">ひな形の編集</button>
   </div>
 
@@ -177,6 +188,33 @@ table.list tr.row:hover td{background:#F8FBFA}
     </div>
   </div>
 
+  <!-- ===== 担当業務（事業所の管理者・admin・事業支援課） ===== -->
+  <div id="view-xtra" class="hidden">
+    <div class="card">
+      <div class="card-title">担当業務（事業所ごと）</div>
+      <div class="tpl-help">
+        R・A Fitness の手配、外出支援の準備、クッキングの準備など、<b>担当になる人にだけ教える業務</b>を事業所ごとに登録します。<br>
+        行の先頭を <code>□</code> 業務名 ／ <code>└</code> 説明すること にしてください。<br>
+        登録した業務は、各シートの「＋ 担当業務を追加」から選んで入れます（進行中のシートにも入れられます）。
+      </div>
+      <div class="toolbar">
+        <select id="x-office" onchange="loadXEditor()"></select>
+        <span id="x-ver" style="color:#999;font-size:12px"></span>
+      </div>
+      <div class="tpl-grid">
+        <div><textarea id="x-text" style="width:100%;min-height:360px;padding:10px 12px;border:1px solid #E8EAED;border-radius:6px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.7" oninput="previewX()" placeholder="□ R・A Fitnessの手配&#10;└ 体育館の予約&#10;└ チャットワークで予定日と実施日の報告&#10;└ コーチへの連絡"></textarea></div>
+        <div>
+          <div id="x-err" class="tpl-err"></div>
+          <div class="tpl-prev" id="x-prev"></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn-primary" onclick="saveX()">保存する</button>
+        <span id="x-status" class="status-msg"></span>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== ひな形の編集（admin・事業支援課） ===== -->
   <div id="view-tpl" class="hidden">
     <div class="card">
@@ -220,6 +258,23 @@ table.list tr.row:hover td{background:#F8FBFA}
   </div>
 </div>
 
+<!-- 担当業務の追加モーダル -->
+<div class="modal-bg hidden" id="addx-modal">
+  <div class="modal" style="max-width:520px">
+    <h3>担当業務を追加</h3>
+    <div class="fg"><label>事業所の担当業務から選ぶ</label>
+      <div class="x-list" id="addx-list"></div></div>
+    <div class="fg"><label>一覧にない業務を足す（このシートだけ）</label>
+      <input type="text" id="addx-title" placeholder="業務名　例：おやつ作りの準備">
+      <textarea id="addx-details" rows="3" style="margin-top:6px" placeholder="説明すること（1行に1つ）"></textarea></div>
+    <div class="warn" id="addx-err"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('addx-modal')">やめる</button>
+      <button class="btn-primary" onclick="saveAddX()">追加する</button>
+    </div>
+  </div>
+</div>
+
 <!-- メモモーダル -->
 <div class="modal-bg hidden" id="memo-modal">
   <div class="modal">
@@ -238,7 +293,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getFirestore, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, deleteField, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { resolveTier } from './perm.js';
-import { DEFAULT_TEMPLATE_TEXT, parseTemplate, countItems } from './onboarding-template.js';
+import { DEFAULT_TEMPLATE_TEXT, parseTemplate, parseOfficeItems, countItems } from './onboarding-template.js';
 
 const firebaseConfig = {
   apiKey:"AIzaSyCl48Fay9AbMLRXJ7npya4PJIgDQPvltxs",
@@ -255,6 +310,9 @@ const auth = getAuth(app);
 // 状態：none（未）/ done（説明済）/ overview（全体像のみ・実務で確認待ち）/ practiced（実務で確認済）
 // 最終形（本人の「理解した」チェック）は checks[itemId].ack と staffUid を足して対応する予定。
 const TPL_DOC = doc(db, 'onboardingTemplates', 'default');
+// 担当業務：事業所ごとに onboardingOfficeItems/{officeId} {text, items, version}。
+// シートには custom:true の章（id 'sx'）として写し取る。項目IDは 'x' + 乱数で、ひな形の 's1-1' などと重ならない。
+const XSEC_ID = 'sx';
 
 let currentUid = null;
 let currentUserData = null;
@@ -264,12 +322,16 @@ let RECORDS = [];
 let current = null;          // 表示中の1人分
 let template = null;         // {text, version, updatedBy, updatedAt}
 let memoItemId = null;
+let MY_OFFICES = [];         // 自分が管理者の事業所（offices.managerUid）
+let xDoc = null;             // 担当業務の登録画面で開いている事業所の文書
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 const fmtD = s => s ? s.replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_, y, m, d) => `${y}/${+m}/${+d}`) : '';
 const myName = () => currentUserData?.displayName || auth.currentUser?.email || '';
 const officeName = id => OFFICES.find(o => o.id === id)?.name || '';
+const canEditOffice = id => canManage || MY_OFFICES.includes(id);
+const newItemId = () => 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 onAuthStateChanged(auth, async user => {
   if (!user) { location.href = 'login.html'; return; }
@@ -292,6 +354,12 @@ onAuthStateChanged(auth, async user => {
       if (o.managerUid === user.uid) myOffices.push(d.id);
     });
     OFFICES.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+    MY_OFFICES = myOffices;
+    if (canManage || MY_OFFICES.length) {
+      document.getElementById('tab-xtra').classList.remove('hidden');
+      document.getElementById('x-office').innerHTML = OFFICES.filter(o => canEditOffice(o.id))
+        .map(o => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
+    }
     const opts = OFFICES.map(o => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
     document.getElementById('f-office').insertAdjacentHTML('beforeend', opts);
     document.getElementById('c-office').innerHTML = opts;
@@ -311,16 +379,18 @@ onAuthStateChanged(auth, async user => {
 window._logout = async function () { await signOut(auth); location.href = 'login.html'; };
 
 // ── 集計 ──────────────────────────────────────────
+// 初日の説明（total・started）はひな形の項目だけで数える。担当業務は担当になったときに教えるので別に数える（xTotal・xStarted）。
+// 実務で確認待ち（wait）とすべて済み（finished / allTotal）は担当業務も含める。
 function tally(r) {
-  const total = countItems(r.sections);
-  let started = 0, wait = 0, finished = 0;
+  let total = 0, started = 0, xTotal = 0, xStarted = 0, wait = 0, finished = 0;
   (r.sections || []).forEach(s => s.items.forEach(it => {
     const st = r.checks?.[it.id]?.status;
-    if (st) started++;
+    if (s.custom) { xTotal++; if (st) xStarted++; }
+    else { total++; if (st) started++; }
     if (st === 'overview') wait++;
     if (st === 'done' || st === 'practiced') finished++;
   }));
-  return { total, started, wait, finished };
+  return { total, started, xTotal, xStarted, wait, finished, allTotal: total + xTotal };
 }
 
 // ── 一覧 ──────────────────────────────────────────
@@ -357,7 +427,9 @@ window.switchTab = function (tab) {
   document.getElementById('view-list').classList.toggle('hidden', tab !== 'list');
   document.getElementById('view-detail').classList.add('hidden');
   document.getElementById('view-tpl').classList.toggle('hidden', tab !== 'tpl');
+  document.getElementById('view-xtra').classList.toggle('hidden', tab !== 'xtra');
   if (tab === 'tpl') loadTplEditor();
+  if (tab === 'xtra') loadXEditor();
   if (tab === 'list') history.replaceState(null, '', 'onboarding.html');
 };
 
@@ -450,6 +522,7 @@ window.openDetail = function (id) {
   history.replaceState(null, '', 'onboarding.html?id=' + encodeURIComponent(id));
   document.getElementById('view-list').classList.add('hidden');
   document.getElementById('view-tpl').classList.add('hidden');
+  document.getElementById('view-xtra').classList.add('hidden');
   document.getElementById('view-detail').classList.remove('hidden');
   document.getElementById('rec-by').value = myName();
   document.getElementById('rec-date').value = today();
@@ -497,19 +570,24 @@ function renderDetail() {
   document.getElementById('d-stats').innerHTML =
     `<span>初日の説明 <b>${t.started}</b> / ${t.total}</span>` +
     `<span>実務で確認待ち <b style="color:#CC6600">${t.wait}</b></span>` +
-    `<span>すべて済み <b>${t.finished}</b> / ${t.total}</span>`;
+    (t.xTotal ? `<span>担当業務 <b>${t.xStarted}</b> / ${t.xTotal}</span>` : '') +
+    `<span>すべて済み <b>${t.finished}</b> / ${t.allTotal}</span>`;
   document.getElementById('btn-close').textContent = closed ? '進行中に戻す' : '完了にする';
 
   const openState = {};
   document.querySelectorAll('#d-sections .sec').forEach(el => openState[el.dataset.sec] = !el.classList.contains('closed'));
-  document.getElementById('d-sections').innerHTML = (r.sections || []).map(s => {
+  const canX = !closed && canEditOffice(r.officeId);
+  const secs = (r.sections || []).slice();
+  if (canX && !secs.some(s => s.custom)) secs.push({ id: XSEC_ID, custom: true, title: '担当業務', items: [] });
+  document.getElementById('d-sections').innerHTML = secs.map(s => {
     const done = s.items.filter(it => r.checks?.[it.id]?.status).length;
-    const isOpen = s.id in openState ? openState[s.id] : done < s.items.length;
-    return `<div class="sec${isOpen ? '' : ' closed'}" data-sec="${esc(s.id)}">
+    const isOpen = s.id in openState ? openState[s.id] : (s.custom || done < s.items.length);
+    return `<div class="sec${isOpen ? '' : ' closed'}${s.custom ? ' sec-x' : ''}${s.custom && !s.items.length ? ' no-print' : ''}" data-sec="${esc(s.id)}">
       <div class="sec-head" onclick="this.parentElement.classList.toggle('closed')">
         <span class="sec-title">${esc(s.title)}</span><span class="sec-count">${done}/${s.items.length}</span><span class="sec-arrow">▼</span>
       </div>
       <div class="sec-body">
+        ${s.custom ? `<div class="sec-note">※ 担当になる人にだけ教える業務です。担当になったときに説明します。</div>` : ''}
         ${s.notes?.length ? `<div class="sec-note">${s.notes.map(n => '※ ' + esc(n)).join('<br>')}</div>` : ''}
         ${s.items.map(it => {
           const c = r.checks?.[it.id];
@@ -521,9 +599,10 @@ function renderDetail() {
               ${recLine(c)}
               ${c?.memo ? `<div class="item-memo">${esc(c.memo)}</div>` : ''}
             </div>
-            <div class="item-actions">${closed ? '' : actions(it, c)}</div>
+            <div class="item-actions">${closed ? '' : actions(it, c)}${s.custom && canX && !c?.status ? `<button class="btn-secondary btn-sm" onclick="removeX('${esc(it.id)}')">外す</button>` : ''}</div>
           </div>`;
         }).join('')}
+        ${s.custom && canX ? `<div class="sec-x-add no-print"><button class="btn-primary btn-sm" onclick="openAddX()">＋ 担当業務を追加</button></div>` : ''}
       </div></div>`;
   }).join('');
 }
@@ -562,6 +641,118 @@ window.setStatus = async function (itemId, status) {
   catch (e) { console.error(e); alert('保存に失敗しました'); }
 };
 
+// ── 担当業務（シートへの追加・外す） ──────────────────
+async function getOfficeItems(officeId) {
+  const snap = await getDoc(doc(db, 'onboardingOfficeItems', officeId));
+  return snap.exists() ? snap.data() : null;
+}
+
+window.openAddX = async function () {
+  const list = document.getElementById('addx-list');
+  document.getElementById('addx-title').value = '';
+  document.getElementById('addx-details').value = '';
+  document.getElementById('addx-err').textContent = '';
+  list.innerHTML = '<div class="empty-msg" style="padding:16px 0">読み込み中...</div>';
+  document.getElementById('addx-modal').classList.remove('hidden');
+  try {
+    const d = await getOfficeItems(current.officeId);
+    const items = d?.items || [];
+    const have = new Set((current.sections || []).filter(s => s.custom).flatMap(s => s.items.map(it => it.title)));
+    list.innerHTML = items.length ? items.map((it, i) => {
+      const added = have.has(it.title);
+      return `<label class="${added ? 'added' : ''}"><input type="checkbox" value="${i}" ${added ? 'disabled checked' : ''}>
+        <span><b>${esc(it.title)}</b>${added ? '（追加済み）' : ''}${it.details?.length ? `<div class="x-det">${it.details.map(esc).join('／')}</div>` : ''}</span></label>`;
+    }).join('') : '<div class="empty-msg" style="padding:16px 0">この事業所の担当業務はまだ登録されていません（「担当業務」タブで登録できます）</div>';
+    list._items = items;
+  } catch (e) {
+    console.error(e);
+    list.innerHTML = '<div class="empty-msg" style="padding:16px 0">読み込みに失敗しました</div>';
+  }
+};
+
+async function writeSections(sections, extra = {}) {
+  await updateDoc(doc(db, 'onboardings', current.id), { sections, ...extra, updatedAt: serverTimestamp() });
+  current.sections = sections;
+}
+
+window.saveAddX = async function () {
+  const list = document.getElementById('addx-list');
+  const err = document.getElementById('addx-err');
+  const picked = [...list.querySelectorAll('input:checked:not(:disabled)')].map(el => list._items[+el.value]);
+  const title = document.getElementById('addx-title').value.trim();
+  const details = document.getElementById('addx-details').value.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  if (!title && details.length) { err.textContent = '業務名を入れてください'; return; }
+  const meta = { addedBy: myName(), addedByUid: currentUid, addedDate: today() };
+  const add = picked.map(it => ({ id: newItemId(), title: it.title, details: it.details || [], ...meta }));
+  if (title) add.push({ id: newItemId(), title, details, ...meta, adhoc: true });
+  if (!add.length) { err.textContent = '追加する業務を選ぶか、業務名を入れてください'; return; }
+  const sections = (current.sections || []).map(s => ({ ...s, items: s.items.slice() }));
+  let xs = sections.find(s => s.custom);
+  if (!xs) { xs = { id: XSEC_ID, custom: true, title: '担当業務', notes: [], items: [] }; sections.push(xs); }
+  xs.items.push(...add);
+  try {
+    await writeSections(sections);
+    closeModal('addx-modal');
+    renderDetail(); renderList();
+  } catch (e) { console.error(e); err.textContent = '保存に失敗しました'; }
+};
+
+window.removeX = async function (itemId) {
+  const xs = current.sections.find(s => s.custom);
+  const it = xs?.items.find(x => x.id === itemId);
+  if (!it) return;
+  if (current.checks?.[itemId]?.status) return;  // チェック済みの項目は外さない（先に取消する）
+  if (!confirm(`「${it.title}」をこのシートから外しますか？${current.checks?.[itemId]?.memo ? '（メモも消えます）' : ''}`)) return;
+  const sections = current.sections.map(s => s.custom ? { ...s, items: s.items.filter(x => x.id !== itemId) } : s)
+    .filter(s => !s.custom || s.items.length);
+  try {
+    await writeSections(sections, current.checks?.[itemId] ? { ['checks.' + itemId]: deleteField() } : {});
+    if (current.checks) delete current.checks[itemId];
+    renderDetail(); renderList();
+  } catch (e) { console.error(e); alert('保存に失敗しました'); }
+};
+
+// ── 担当業務の登録（事業所ごと） ────────────────────
+window.loadXEditor = async function () {
+  const officeId = document.getElementById('x-office').value;
+  const st = document.getElementById('x-status');
+  st.textContent = '';
+  if (!officeId) return;
+  try {
+    xDoc = await getOfficeItems(officeId);
+    document.getElementById('x-text').value = xDoc?.text || '';
+    document.getElementById('x-ver').textContent = xDoc?.version
+      ? `第${xDoc.version}版（${xDoc.updatedBy || ''} ${fmtD(xDoc.updatedDate || '')} 保存）`
+      : 'まだ登録されていません';
+    previewX();
+  } catch (e) { console.error(e); st.textContent = '読み込みに失敗しました'; }
+};
+
+window.previewX = function () {
+  const { items, errors } = parseOfficeItems(document.getElementById('x-text').value);
+  document.getElementById('x-err').innerHTML = errors.map(esc).join('<br>');
+  document.getElementById('x-prev').innerHTML = `<div style="color:#999">全${items.length}業務</div>` +
+    items.map(it => `<div>□ ${esc(it.title)}</div>` + it.details.map(d => `<div style="color:#888;padding-left:14px">└ ${esc(d)}</div>`).join('')).join('');
+};
+
+window.saveX = async function () {
+  const officeId = document.getElementById('x-office').value;
+  const st = document.getElementById('x-status');
+  if (!officeId || !canEditOffice(officeId)) return;
+  const text = document.getElementById('x-text').value;
+  const { items, errors } = parseOfficeItems(text);
+  if (errors.length) { st.textContent = '書き方の誤りを直してから保存してください'; return; }
+  const version = (xDoc?.version || 0) + 1;
+  try {
+    await setDoc(doc(db, 'onboardingOfficeItems', officeId), {
+      officeId, officeName: officeName(officeId), text, items, version,
+      updatedBy: myName(), updatedByUid: currentUid, updatedDate: today(), updatedAt: serverTimestamp(),
+    });
+    await loadXEditor();
+    st.textContent = `第${version}版として保存しました`;
+  } catch (e) { console.error(e); st.textContent = '保存に失敗しました'; }
+};
+
 window.openMemo = function (itemId) {
   memoItemId = itemId;
   const it = current.sections.flatMap(s => s.items).find(x => x.id === itemId);
@@ -584,8 +775,8 @@ window.saveMemo = async function () {
 window.toggleClosed = async function () {
   const closing = current.status !== 'closed';
   const t = tally(current);
-  if (closing && t.finished < t.total &&
-      !confirm(`まだ済んでいない項目が ${t.total - t.finished} 件あります（実務で確認待ちを含む）。完了にしますか？`)) return;
+  if (closing && t.finished < t.allTotal &&
+      !confirm(`まだ済んでいない項目が ${t.allTotal - t.finished} 件あります（実務で確認待ちを含む）。完了にしますか？`)) return;
   const status = closing ? 'closed' : 'active';
   try {
     await updateDoc(doc(db, 'onboardings', current.id), {

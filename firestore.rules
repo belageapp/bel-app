@@ -174,7 +174,7 @@ service cloud.firestore {
       allow write: if hasPerm('todo.edit');
     }
 
-    // 新人チェックリスト：ひな形は admin・事業支援課のみ編集。
+    // OJT伴走シート（旧 新人チェックリスト）：ひな形は admin・事業支援課のみ編集。
     // 記録（1人分）は説明者がその場でチェックするため全ユーザーが作成・更新でき、削除は admin・事業支援課のみ
     match /onboardingTemplates/{id} {
       allow read: if isAuth();
@@ -184,6 +184,12 @@ service cloud.firestore {
       allow read: if isAuth();
       allow create, update: if isActiveUser();
       allow delete: if isSupporter();
+    }
+    // OJT伴走シート：事業所ごとの担当業務（担当になる人にだけ教える項目）。その事業所の管理者と admin・事業支援課が編集
+    match /onboardingOfficeItems/{officeId} {
+      allow read: if isAuth();
+      allow write: if isSupporter()
+        || (isActiveUser() && get(/databases/$(database)/documents/offices/$(officeId)).data.managerUid == request.auth.uid);
     }
 
     // 問合せ・見学リード：閲覧・作成・更新は全ユーザー（reportsと同水準）、削除のみ仕分け権限者

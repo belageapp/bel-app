@@ -141,6 +141,31 @@ export function parseTemplate(text) {
   return { sections, errors };
 }
 
+// 事業所の担当業務（□ 項目／└ 説明 だけ。章は持たない）→ { items:[{title,details:[]}], errors:[] }
+// R・A Fitness の手配、外出支援の準備など、担当になる人にだけ教える業務。
+export function parseOfficeItems(text) {
+  const items = [];
+  const errors = [];
+  let item = null;
+  String(text || '').split(/\r?\n/).forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line) return;
+    const ln = i + 1;
+    if (line.startsWith('□') || line.startsWith('☐')) {
+      item = { title: line.replace(/^[□☐]\s*/, ''), details: [] };
+      if (!item.title) { errors.push(`${ln}行目：業務名がありません`); return; }
+      if (items.some(x => x.title === item.title)) errors.push(`${ln}行目：「${item.title}」が重複しています`);
+      items.push(item);
+    } else if (line.startsWith('└')) {
+      if (!item) { errors.push(`${ln}行目：業務（□ で始まる行）より前に説明（└）があります`); return; }
+      item.details.push(line.replace(/^└\s*/, ''));
+    } else {
+      errors.push(`${ln}行目：行の先頭は「□」「└」のどちらかにしてください（${line.slice(0, 20)}…）`);
+    }
+  });
+  return { items, errors };
+}
+
 export function countItems(sections) {
   return (sections || []).reduce((n, s) => n + (s.items || []).length, 0);
 }
